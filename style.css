@@ -1,0 +1,436 @@
+/* ============================================
+   SMART Tutor System – COMPLETE (Grey Cards + Note Styles)
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap');
+
+:root {
+    --brown-dark: #5d4037;
+    --brown-medium: #8d6e63;
+    --brown-light: #d7ccc8;
+    --brown-pale: #efe5dc;
+    --cream: #faf5ef;
+    --gold: #c9a82c;
+    --gold-dark: #a6851f;
+    --success: #2e7d32;
+    --warning: #ed6c02;
+    --error: #d32f2f;
+    --card-bg: #ffffff;
+    --card-alt-bg: #f8f9fa;
+    --card-shadow: 0 10px 15px -3px rgba(0,0,0,0.05), 0 4px 6px -2px rgba(0,0,0,0.02);
+    --hover-shadow: 0 20px 25px -12px rgba(0,0,0,0.1);
+    --border-radius: 1rem;
+    --transition: all 0.2s ease;
+    --input-radius: 0.75rem;
+    --input-padding: 0.9rem 1rem;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(145deg, #f3ede8 0%, #e2d4ca 100%);
+    color: #2c2e31;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 1.5rem;
+}
+
+/* ---------- Main Container ---------- */
+.container {
+    max-width: 1280px;
+    margin: 0 auto;
+    background: rgba(255, 248, 240, 0.88);
+    backdrop-filter: blur(8px);
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+}
+
+/* ---------- Header ---------- */
+.header {
+    background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown-medium) 100%);
+    color: white;
+    padding: 1.2rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    border-bottom: 3px solid var(--gold);
+}
+
+.header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.header h1 i {
+    color: var(--gold);
+}
+
+.header a {
+    color: white;
+    text-decoration: none;
+    margin-left: 1rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.header a:hover {
+    color: var(--gold);
+}
+
+.header .logout {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.5rem 1rem;
+    border-radius: 2rem;
+}
+
+.header .logout:hover {
+    background: var(--error);
+    color: white;
+}
+
+/* ---------- Profile Info Bar ---------- */
+.profile-info {
+    background: rgba(93, 64, 55, 0.08);
+    backdrop-filter: blur(4px);
+    padding: 0.8rem 2rem;
+    margin: 1rem 2rem;
+    border-radius: 2rem;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    border: 1px solid rgba(201, 168, 44, 0.3);
+}
+
+/* ---------- Cards (Grey) ---------- */
+.card,
+.stat {
+    background: var(--card-bg);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition);
+    border: 1px solid #e9ecef;
+}
+
+.card:hover,
+.stat:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--hover-shadow);
+    border-color: var(--gold);
+}
+
+.grid,
+.content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+.card i {
+    font-size: 2.5rem;
+    color: var(--brown-dark);
+    background: rgba(93, 64, 55, 0.1);
+    width: 4rem;
+    height: 4rem;
+    line-height: 4rem;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+}
+
+.card h3 {
+    margin-bottom: 0.75rem;
+    color: var(--brown-dark);
+}
+
+.card a {
+    background: var(--brown-dark);
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 2rem;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.card a:hover {
+    background: var(--gold-dark);
+    color: var(--brown-dark);
+}
+
+/* ---------- Tables ---------- */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: var(--card-shadow);
+}
+
+.data-table th {
+    background: var(--brown-dark);
+    color: white;
+    padding: 0.75rem;
+    font-weight: 500;
+    text-align: left;
+}
+
+.data-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* ---------- Buttons ---------- */
+button,
+.btn {
+    background: linear-gradient(135deg, var(--brown-dark), var(--brown-medium));
+    color: white;
+    padding: 0.8rem 1.8rem;
+    border: none;
+    border-radius: 2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+button:hover,
+.btn:hover {
+    background: var(--gold-dark);
+    color: var(--brown-dark);
+    transform: scale(1.02);
+}
+
+.btn-secondary {
+    background: var(--gold);
+    color: var(--brown-dark);
+}
+
+.btn-danger {
+    background: var(--error);
+}
+
+/* ---------- Forms ---------- */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--brown-dark);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: var(--input-padding);
+    border: 1px solid #cbd5e1;
+    border-radius: var(--input-radius);
+    background: white;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201, 168, 44, 0.3);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+/* ---------- Note Content Styles (Examples, Exercises, Equations) ---------- */
+.note-container {
+    padding: 2rem;
+    line-height: 1.7;
+    background: rgba(255, 248, 240, 0.7);
+    backdrop-filter: blur(4px);
+}
+
+.note-container h1,
+.note-container h2 {
+    color: var(--brown-dark);
+    border-left: 4px solid var(--gold);
+    padding-left: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.note-container .example {
+    background: #fef9e6;
+    border-left: 5px solid #f39c12;
+    padding: 1rem 1.5rem;
+    margin: 1.5rem 0;
+    border-radius: 0.5rem;
+    font-style: italic;
+}
+
+.note-container .exercise {
+    background: #e8f5e9;
+    border-left: 5px solid #2e7d32;
+    padding: 1rem 1.5rem;
+    margin: 1.5rem 0;
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+.note-container .equation,
+.note-container .formula {
+    background: rgba(241, 245, 249, 0.8);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-family: monospace;
+    text-align: center;
+    margin: 1rem 0;
+    overflow-x: auto;
+}
+
+.student-answer {
+    background: #fef9e6;
+    padding: 1rem;
+    margin-top: 0.75rem;
+    border-radius: 0.5rem;
+    border-left: 3px solid var(--gold);
+}
+
+/* ---------- Vision, Mission, Goals ---------- */
+.vmm-container {
+    background: linear-gradient(125deg, #5d4037 0%, #8d6e63 100%);
+    color: white;
+    padding: 2rem;
+    margin: 1rem;
+    border-radius: 1.5rem;
+    border: 1px solid rgba(201, 168, 44, 0.3);
+}
+
+.vmm-container h3 i {
+    color: var(--gold);
+}
+
+.vmm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+}
+
+.vmm-card {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(4px);
+    padding: 1.25rem;
+    border-radius: 1rem;
+}
+
+.vmm-card h4 {
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ---------- Progress Bar ---------- */
+.progress-bar {
+    background: rgba(93, 64, 55, 0.08);
+    border-radius: 1rem;
+    padding: 0.75rem;
+    margin: 0 2rem 1rem 2rem;
+    text-align: center;
+}
+
+.progress-fill {
+    background: var(--gold);
+    height: 0.6rem;
+    border-radius: 1rem;
+    transition: width 0.3s;
+}
+
+/* ---------- Alerts ---------- */
+.error {
+    background: rgba(255, 235, 238, 0.9);
+    color: var(--error);
+    border-left: 4px solid var(--error);
+}
+
+.success {
+    background: rgba(232, 245, 233, 0.9);
+    color: var(--success);
+    border-left: 4px solid var(--success);
+}
+
+.warning {
+    background: rgba(255, 243, 224, 0.9);
+    color: var(--warning);
+    border-left: 4px solid var(--warning);
+}
+
+.error,
+.success,
+.warning {
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin: 0.75rem 0;
+}
+
+/* ---------- Login / Signup / Apply Containers ---------- */
+.login-container,
+.signup-container,
+.apply-container {
+    max-width: 550px;
+    margin: 2rem auto;
+    background: rgba(255, 248, 240, 0.92);
+    backdrop-filter: blur(8px);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    border-top: 5px solid var(--gold);
+}
+
+.apply-container {
+    max-width: 800px;
+}
+
+/* ---------- Footer ---------- */
+.footer {
+    background: var(--brown-dark);
+    color: #d7ccc8;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.8rem;
+    border-top: 1px solid var(--gold);
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px) {
+    body {
+        padding: 0.5rem;
+    }
+    .header {
+        flex-direction: column;
+        text-align: center;
+    }
+    .grid,
+    .content-grid {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+    .note-container {
+        padding: 1rem;
+    }
+}

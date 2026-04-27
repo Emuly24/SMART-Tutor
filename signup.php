@@ -1,0 +1,39 @@
+<?php
+require_once 'config.php';
+session_start();
+if (isset($_SESSION['user_id'])) { header("Location: dashboard.php"); exit; }
+$error = '';
+$success = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $fullname = trim($_POST['fullname']);
+    $phone = trim($_POST['phone']);
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+    $confirm = $_POST['confirm_password'];
+    if (empty($fullname) || empty($phone) || empty($password)) {
+        $error = "Full name, phone number, and password are required.";
+    } elseif ($password !== $confirm) {
+        $error = "Passwords do not match.";
+    } elseif (strlen($password) < 5) {
+        $error = "Password must be at least 5 characters.";
+    } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email address.";
+    } else {
+        $conn = getDB();
+        $check = $conn->query("SELECT id FROM users WHERE phone = '$phone'");
+        if ($check->num_rows) {
+            $error = "Phone number already registered. Please login or use a different number.";
+        } else {
+            $hashed = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $conn->prepare("INSERT INTO users (fullname, phone, email, password, approved) VALUES (?, ?, ?, ?, 0)");
+            $stmt->bind_param("ssss", $fullname, $phone, $email, $hashed);
+            if ($stmt->execute()) {
+                $success = "Account created! You can now login and complete your application.";
+            } else {
+                $error = "Database error. Please try again.";
+            }
+        }
+    }
+}
+?>
+<!DOCTYPE html><html><head><title>Sign Up - SMART Tutor</title><link rel="stylesheet" href="style.css"></head><body class="signup-page"><div class="signup-container"><h1>Create Account</h1><?php if($error) echo "<div class='error'>".htmlspecialchars($error)."</div>"; if($success) echo "<div class='success'>".htmlspecialchars($success)." <a href='login.php'>Login now</a></div>"; if(!$success):?><form method="post"><div class="form-group"><label>Full Name *</label><input type="text" name="fullname" required></div><div class="form-group"><label>Phone Number *</label><input type="tel" name="phone" required></div><div class="form-group"><label>Email (optional)</label><input type="email" name="email"></div><div class="form-group"><label>Password * (min 5 chars)</label><input type="password" name="password" required></div><div class="form-group"><label>Confirm Password *</label><input type="password" name="confirm_password" required></div><button type="submit">Sign Up</button></form><p>Already have an account? <a href="login.php">Login here</a></p><?php endif;?></div></body></html>

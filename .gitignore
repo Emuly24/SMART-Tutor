@@ -1,0 +1,24 @@
+# Sensitive configuration
+config.php
+admin_config.php
+.env
+
+# Uploaded files (exam answers, books, assignments, exercises)
+uploads/
+
+# Backup and temporary files
+*.sql
+*.log
+backup_*.sql
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE folders (if any)
+.vscode/
+.idea/
+
+# Any file containing production credentials
+*secret*
+*password*

@@ -1,0 +1,12 @@
+<?php
+require_once 'config.php'; require_once 'check_access.php'; $conn=getDB(); $uid=$_SESSION['user_id']; $user=$conn->query("SELECT fullname,phone,parent_phone,email,class_level FROM users WHERE id=$uid")->fetch_assoc(); $msg='';
+if($_SERVER['REQUEST_METHOD']==='POST'){
+    $phone=$_POST['phone']; $parent=$_POST['parent_phone']; $email=$_POST['email']; $pass=$_POST['new_password'];
+    $updates=[]; $params=[]; $types="";
+    if($phone){ $updates[]="phone=?"; $params[]=$phone; $types.="s"; }
+    if($parent){ $updates[]="parent_phone=?"; $params[]=$parent; $types.="s"; }
+    if($email){ $updates[]="email=?"; $params[]=$email; $types.="s"; }
+    if(!empty($pass) && strlen($pass)>=5){ $updates[]="password=?"; $params[]=password_hash($pass,PASSWORD_DEFAULT); $types.="s"; }
+    if(!empty($updates)){ $params[]=$uid; $types.="i"; $sql="UPDATE users SET ".implode(",",$updates)." WHERE id=?"; $stmt=$conn->prepare($sql); $stmt->bind_param($types,...$params); $stmt->execute(); $msg="Updated."; $user=$conn->query("SELECT fullname,phone,parent_phone,email,class_level FROM users WHERE id=$uid")->fetch_assoc(); }
+}?>
+<!DOCTYPE html><html><head><title>Profile</title><link rel="stylesheet" href="style.css"></head><body><div class="container"><div class="header"><h1>Edit Profile</h1><a href="dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div><div class="form-container"><?php if($msg) echo "<p class='text-center'>$msg</p>";?><form method="post"><div class="form-group"><label>Full name (read only)</label><input type="text" value="<?=htmlspecialchars($user['fullname'])?>" disabled></div><div class="form-group"><label>Class</label><input value="<?=$user['class_level']?>" disabled></div><div class="form-group"><label>Phone</label><input type="tel" name="phone" value="<?=htmlspecialchars($user['phone'])?>"></div><div class="form-group"><label>Parent phone</label><input type="tel" name="parent_phone" value="<?=htmlspecialchars($user['parent_phone'])?>"></div><div class="form-group"><label>Email</label><input type="email" name="email" value="<?=htmlspecialchars($user['email'])?>"></div><div class="form-group"><label>New password (min 5)</label><input type="password" name="new_password"></div><button type="submit">Save</button></form><div class="footer"><a href="dashboard.php">← Back</a></div></div></div></body></html>
