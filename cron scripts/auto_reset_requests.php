@@ -1,1 +1,0 @@
-<?php $conn=new mysqli('localhost','root','','smart_tutor'); $conn->query("DELETE FROM topic_requests WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)"); echo "Deleted old topic requests.";?>

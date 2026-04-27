@@ -20,7 +20,7 @@ $allowed_dirs = [
     'book'       => 'uploads/books/',
     'exam'       => 'uploads/exam_answers/',
     'assignment' => 'uploads/assignments/',
-    'exercise'   => 'uploads/exercises/'   // <-- added for exercises
+    'exercise'   => 'uploads/exercises/'   
 ];
 
 if (!array_key_exists($type, $allowed_dirs)) die("Invalid type.");
