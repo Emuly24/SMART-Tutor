@@ -31,12 +31,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $why_join = trim($_POST['why_join'] ?? '');
     $subject_assist = $_POST['subject_assist'] ?? '';
     $target_points = (int)($_POST['target_points'] ?? 0);
-    $seriousness = json_encode([
-        'hardworking' => isset($_POST['serious_hardworking']),
-        'read_extensively' => isset($_POST['serious_read']),
-        'attend_regularly' => isset($_POST['serious_attend']),
-        'respect_rules' => isset($_POST['serious_respect'])
-    ]);
     
     if (empty($class_level) || empty($ambition) || empty($career_reason) || empty($university) || empty($why_join) || empty($subject_assist)) {
         $error = "Please fill all required fields.";
@@ -57,11 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-<!DOCTYPE html><html><head><title>Application Form</title><link rel="stylesheet" href="style.css"></head><body class="apply-page">
-    <?php include_once 'includes/header.php';
-    <?php include_once 'includes/progress_tracker.php'; ?>
- ?>
-<div class="apply-container">
+<!DOCTYPE html><html><head><title>Application Form</title><link rel="stylesheet" href="style.css"></head><body class="apply-page"><div class="apply-container">
     <h1>Application for Group Membership</h1>
     <?php if ($error): ?>
         <div class="error"><?= htmlspecialchars($error) ?></div>

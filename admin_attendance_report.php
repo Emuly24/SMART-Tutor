@@ -17,13 +17,11 @@ $students = $conn->query("SELECT id,fullname,class_level FROM users WHERE approv
 ?>
 <!DOCTYPE html><html><head><title>Attendance Report</title>    <link rel="stylesheet" href="style.css">
 </head><body>
-    <?php include_once 'includes/header.php'; ?>
-
 <div class="container">
 <div class="header"><h1>admin_attendance_report</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
 <div class="content-grid">
-<h1>📈 Attendance Report</h1><form method="get">From: <input type="date" name="start" value="<?=$start?>"> To: <input type="date" name="end" value="<?=$end?>"><button type="submit">Filter</button></form><table class="data-table" border="1"><tr><th>Student</th><th>Class</th><th>Present</th><th>Late</th><th>Absent</th><th>Total</th><th>% (P+L)</th></tr><?php while($s=$students->fetch_assoc()): $stats=$conn->query("SELECT SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) as p, SUM(CASE WHEN status='late' THEN 1 ELSE 0 END) as l, SUM(CASE WHEN status='absent' THEN 1 ELSE 0 END) as a, COUNT(*) as t FROM attendance WHERE user_id={$s['id']} AND date BETWEEN '$start' AND '$end'")->fetch_assoc(); $p=$stats['p']??0; $l=$stats['l']??0; $a=$stats['a']??0; $t=$stats['t']??0; $rate=$t?round(($p+$l)/$t*100,1):0;?><tr><td><?=htmlspecialchars($s['fullname'])?></td><td><?=$s['class_level']?></td><td><?=$p?></td><td><?=$l?></td><td><?=$a?></td><td><?=$t?></td><td><?=$rate?>%</td></tr><?php endwhile;?></table><a href="admin_dashboard.php">Back</a>
+<h1>📈 Attendance Report</h1><form method="get">From: <input type="date" name="start" value="<?=$start?>"> To: <input type="date" name="end" value="<?=$end?>"><button type="submit">Filter</button></form><table class="data-table" border="1"><tr><th>Student</th><th>Class</th><th>Present</th><th>Late</th><th>Absent</th><th>Total</th><th>% (P+L)</th></tr><?php while($s=$students->fetch_assoc()): $stats=$conn->query("SELECT SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) as p, SUM(CASE WHEN status='late' THEN 1 ELSE 0 END) as l, SUM(CASE WHEN status='absent' THEN 1 ELSE 0 END) as a, COUNT(*) as t FROM attendance WHERE user_id={$s['id']} AND date BETWEEN '$start' AND '$end'")->fetch_assoc(); $p=$stats['p']??0; $l=$stats['l']??0; $a=$stats['a']??0; $t=$stats['t']??0; $rate=$t?round(($p+$l)/$t*100,1):0;?><tr><td><?=htmlspecialchars($s['fullname'])?></td><td><?=$s['class_level']?></td><td><?=$p?></td><td><?=$l?></td><td><?=$a?></td><td><?=$t?></td><td><?=$rate?>%</td></tr><?php endwhile;?></table>
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn">← Back</a></div>
 </div>
 </body></html>
