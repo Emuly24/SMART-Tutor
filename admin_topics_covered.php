@@ -15,13 +15,11 @@ $covered = $conn->query("SELECT * FROM topics_covered ORDER BY covered_date DESC
 ?>
 <!DOCTYPE html><html><head><title>Covered Topics</title>    <link rel="stylesheet" href="style.css">
 </head><body>
-    <?php include_once 'includes/header.php'; ?>
-
 <div class="container">
 <div class="header"><h1>admin_topics_covered</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
 <div class="content-grid">
-<h1>📜 Topics Already Covered</h1><table class="data-table" border="1"><tr><th>Subject</th><th>Topic</th><th>Class</th><th>Covered Date</th></tr><?php while($c=$covered->fetch_assoc()):?><tr><td><?=htmlspecialchars($c['subject'])?></td><td><?=htmlspecialchars($c['topic'])?></td><td><?=$c['class_level']?></td><td><?=$c['covered_date']?></td></tr><?php endwhile;?></table><a href="admin_dashboard.php">Back</a>
+<h1>📜 Topics Already Covered</h1><table class="data-table" border="1"><tr><th>Subject</th><th>Topic</th><th>Class</th><th>Covered Date</th></tr><?php while($c=$covered->fetch_assoc()):?><tr><td><?=htmlspecialchars($c['subject'])?></td><td><?=htmlspecialchars($c['topic'])?></td><td><?=$c['class_level']?></td><td><?=$c['covered_date']?></td></tr><?php endwhile;?></table> 
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn">← Back</a></div>
 </div>
 </body></html>
