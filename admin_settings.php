@@ -25,13 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html><html><head><title>Admin Settings</title>    <link rel="stylesheet" href="style.css">
 </head><body>
-    <?php include_once 'includes/header.php'; ?>
-
 <div class="container">
 <div class="header"><h1>admin_settings</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
 <div class="content-grid">
-<h1>🔧 Admin Settings</h1><p><?=htmlspecialchars($msg)?></p><form method="post"><label>New password (min 5 characters)</label><input type="password" name="new_password" required><label>Confirm password</label><input type="password" name="confirm_password" required><button type="submit">Update Password</button></form><a href="admin_dashboard.php">Back</a>
+<h1>🔧 Admin Settings</h1><p><?=htmlspecialchars($msg)?></p><form method="post"><label>New password (min 5 characters)</label><input type="password" name="new_password" required><label>Confirm password</label><input type="password" name="confirm_password" required><button type="submit">Update Password</button></form> 
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn">← Back</a></div>
 </div>
 </body></html>
