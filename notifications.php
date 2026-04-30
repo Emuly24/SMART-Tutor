@@ -30,18 +30,13 @@ $approved = $user['approved'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body class="notification-page">
-    <?php include_once 'includes/header.php';
+    <?php include_once 'includes/header.php'; ?>
+
     <?php include_once 'includes/progress_tracker.php'; ?>
  ?>
 
 <div class="container">
-    <div class="header">
-        <h1><i class="fas fa-bell"></i> Notifications</h1>
-        <nav>
-            <a href="dashboard.php">Dashboard</a>
-            <a href="logout.php" class="logout">Logout</a>
-        </nav>
-    </div>
+    
 
     <?php include_once 'progress_tracker.php'; ?>
 
@@ -76,7 +71,9 @@ $approved = $user['approved'];
         <?php endif; ?>
     </div>
 
-    <div class="footer"><a href="dashboard.php">← Back</a></div>
+    <div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
+
 </body>
 </html>

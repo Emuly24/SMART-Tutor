@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $message = '';
@@ -74,9 +76,11 @@ $messages_history = $conn->query("SELECT m.*, u.fullname FROM admin_messages m J
 <!DOCTYPE html>
 <html><head><title>Admin Notifications Center</title><link rel="stylesheet" href="style.css"></head>
 <body>
-<div class="container">
     <?php include_once 'includes/header.php'; ?>
-    <h1>📢 Notifications Center</h1>
+
+<div class="container">
+    
+    
     <?php if ($message) echo "<div class='success'>$message</div>"; ?>
 
     <div class="tab">
@@ -243,7 +247,7 @@ document.getElementById('copyNumbersBtn').onclick = function() {
         </div>
     </div>
 
-    <div class="footer"><a href="admin_dashboard.php">← Back</a></div>
+    <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 <script>
     function openTab(evt, tabName) {
@@ -278,4 +282,5 @@ document.getElementById('copyNumbersBtn').onclick = function() {
         });
     }
 </script>
+
 </body></html>

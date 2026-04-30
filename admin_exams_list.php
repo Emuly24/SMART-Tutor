@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 if (isset($_GET['delete'])) {
@@ -21,11 +23,14 @@ $exams = $conn->query("SELECT e.*, (SELECT COUNT(*) FROM exam_questions WHERE ex
 ?>
 <!DOCTYPE html><html><head><title>Manage Exams</title>    <link rel="stylesheet" href="style.css">
 </head><body>
+    <?php include_once 'includes/header.php'; ?>
+
 <div class="container">
-<div class="header"><h1>admin_exams_list</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>📝 Manage Exams</h1><a href="admin_create_exam.php">+ Create New Exam</a><table class="data-table" border="1"><tr><th>ID</th><th>Title</th><th>Subject</th><th>Class</th><th>Duration</th><th>Questions</th><th>Actions</th></tr><?php while($e=$exams->fetch_assoc()):?><tr><td><?=$e['id']?></td><td><?=htmlspecialchars($e['title'])?></td><td><?=$e['subject']?></td><td><?=$e['class_level']?></td><td><?=$e['duration_minutes']?></td><td><?=$e['qcnt']?></td><td><a href="admin_add_questions.php?exam_id=<?=$e['id']?>">Edit Q's</a> | <a href="admin_mark_exams.php?exam_id=<?=$e['id']?>">Mark</a> | <a href="?delete=<?=$e['id']?>" onclick="return confirm('Delete?')">Delete</a></td></tr><?php endwhile;?></table> 
+<a href="admin_create_exam.php">+ Create New Exam</a><table class="data-table" border="1"><tr><th>ID</th><th>Title</th><th>Subject</th><th>Class</th><th>Duration</th><th>Questions</th><th>Actions</th></tr><?php while($e=$exams->fetch_assoc()):?><tr><td><?=$e['id']?></td><td><?=htmlspecialchars($e['title'])?></td><td><?=$e['subject']?></td><td><?=$e['class_level']?></td><td><?=$e['duration_minutes']?></td><td><?=$e['qcnt']?></td><td><a href="admin_add_questions.php?exam_id=<?=$e['id']?>">Edit Q's</a> | <a href="admin_mark_exams.php?exam_id=<?=$e['id']?>">Mark</a> | <a href="?delete=<?=$e['id']?>" onclick="return confirm('Delete?')">Delete</a></td></tr><?php endwhile;?></table> 
 </div>
-<div class="footer"><a href="admin_dashboard.php" class="btn">← Back</a></div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 
@@ -42,8 +44,10 @@ $quizzes = $conn->query("SELECT id, title, note_id FROM quizzes ORDER BY id");
 <body>
     <?php include_once 'includes/header.php'; ?>
 
+    
+
 <div class="container">
-<div class="header"><h1>🔒 Group Content Locks</h1><a href="admin_dashboard.php">Dashboard</a></div>
+
 <div class="content-grid">
 <?php while($g = $groups->fetch_assoc()): ?>
 <div class="card">
@@ -58,7 +62,7 @@ $quizzes = $conn->query("SELECT id, title, note_id FROM quizzes ORDER BY id");
         $is_locked = $locked ? $locked['is_locked'] : 1; // default locked
         $status = $is_locked ? '🔒 Locked' : '🔓 Unlocked';
         $toggle_link = "admin_group_locks.php?toggle=1&type=note&id={$n['id']}&group_id={$g['id']}";
-        echo "<li><strong>{$n['title']}</strong> – $status <a href='$toggle_link'>Toggle</a></li>";
+        echo "<li><strong>{$n['title']}</strong> – $status </li>";
     }
     ?>
     </ul>
@@ -72,7 +76,7 @@ $quizzes = $conn->query("SELECT id, title, note_id FROM quizzes ORDER BY id");
         $is_locked = $locked ? $locked['is_locked'] : 1;
         $status = $is_locked ? '🔒 Locked' : '🔓 Unlocked';
         $toggle_link = "admin_group_locks.php?toggle=1&type=exam&id={$e['id']}&group_id={$g['id']}";
-        echo "<li><strong>{$e['title']}</strong> – $status <a href='$toggle_link'>Toggle</a></li>";
+        echo "<li><strong>{$e['title']}</strong> – $status </li>";
     }
     ?>
     </ul>
@@ -85,7 +89,7 @@ $quizzes = $conn->query("SELECT id, title, note_id FROM quizzes ORDER BY id");
         $is_locked = $locked ? $locked['is_locked'] : 1;
         $status = $is_locked ? '🔒 Locked' : '🔓 Unlocked';
         $toggle_link = "admin_group_locks.php?toggle=1&type=assignment&id={$a['id']}&group_id={$g['id']}";
-        echo "<li><strong>{$a['title']}</strong> – $status <a href='$toggle_link'>Toggle</a></li>";
+        echo "<li><strong>{$a['title']}</strong> – $status </li>";
     }
     ?></ul>
     <h4>Quizzes</h4>
@@ -99,10 +103,12 @@ $quizzes = $conn->query("SELECT id, title, note_id FROM quizzes ORDER BY id");
         $is_locked = $locked ? $locked['is_locked'] : 1;
         $status = $is_locked ? '🔒 Locked' : '🔓 Unlocked';
         $toggle_link = "admin_group_locks.php?toggle=1&type=quiz&id={$q['id']}&group_id={$g['id']}";
-        echo "<li><strong>{$q['title']}</strong> – $status <a href='$toggle_link'>Toggle</a></li>";
+        echo "<li><strong>{$q['title']}</strong> – $status </li>";
     }
     ?></ul>
-</div>
+    <div class="card-buttons"><a href='$toggle_link'>Toggle</a><a href='$toggle_link'>Toggle</a><a href='$toggle_link'>Toggle</a><a href='$toggle_link'>Toggle</a></div></div>
 <?php endwhile; ?>
 </div>
-</div></body></html>
+</div><div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>

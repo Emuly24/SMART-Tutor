@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $msg = '';
@@ -34,11 +36,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head><body>
     <?php include_once 'includes/header.php'; ?>
 
-<div class="container">
-<div class="header"><h1>admin_delete_covered_topics</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
-<div class="content-grid">
-<h1>🗑️ Batch Delete Covered Topics</h1><p><?=$msg?></p><form method="post"><label>Class:</label><select name="class_level"><option value="all">All</option><option value="Form 3">Form 3</option><option value="Form 4">Form 4</option></select><br><label>Delete older than date:</label><input type="date" name="older_than"><br><button type="submit" onclick="return confirm('Delete?')">Delete</button></form><a href="admin_dashboard.php">Back</a>
+    
+
+<div class="admin-page">
+    <h2>Batch Delete Covered Topics</h2>
+    <form method="post">
+        <div class="form-group">
+            <label for="class">Class:</label>
+            <select id="class" name="class">
+                <option>All</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="delete_date">Delete older than date:</label>
+            <input type="date" id="delete_date" name="delete_date" placeholder="dd/mm/yyyy">
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-delete">Delete</button>
+        </div>
+    </form>
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+
 </div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+</div>
+
 </body></html>

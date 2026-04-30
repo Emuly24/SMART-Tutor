@@ -23,11 +23,15 @@ $templates = $conn->query("SELECT * FROM message_templates ORDER BY id");
 ?>
 <!DOCTYPE html><html><head><title>Message Templates</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class="container"><div class="header"><h1>✉️ Message Templates</h1><a href="admin_dashboard.php">Dashboard</a></div>
+
+    
+<div class="container">
 <h2>Create New Template</h2>
 <form method="post"><div class="form-group"><label>Title</label><input type="text" name="title" required></div><div class="form-group"><label>Message (use placeholders: {student}, {note_title}, {hours_remaining})</label><textarea name="message" rows="4" required></textarea></div><button type="submit" name="add_template">Save Template</button></form>
 <h2>Existing Templates</h2>
 <?php while($t=$templates->fetch_assoc()): ?>
 <div class="marking-block"><strong><?=htmlspecialchars($t['title'])?></strong><br><?=nl2br(htmlspecialchars($t['message']))?><br><a href="?delete=<?=$t['id']?>" onclick="return confirm('Delete?')">Delete</a></div>
 <?php endwhile; ?>
-</div></body></html>
+</div><div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>

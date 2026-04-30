@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $exam_id = (int)$_GET['exam_id'];
@@ -37,11 +39,14 @@ $questions = $conn->query("SELECT * FROM exam_questions WHERE exam_id=$exam_id O
 </head><body>
     <?php include_once 'includes/header.php'; ?>
 
+    
+
 <div class="container">
-<div class="header"><h1>admin_add_questions</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>Exam: <?=htmlspecialchars($exam['title'])?></h1><h2>Existing Questions</h2><?php while($q=$questions->fetch_assoc()):?><div><strong>Q<?=$q['sort_order']?>:</strong> <?=nl2br(htmlspecialchars($q['question_text']))?> (<?=$q['points']?> pts)</div><?php endwhile;?><h2>Add New Question</h2><form method="post"><label>Question text</label><textarea name="question_text" rows="3" required></textarea><label>Type</label><select name="question_type" id="qtype" onchange="toggleOptions()"><option value="essay">Essay</option><option value="short_answer">Short Answer</option><option value="multiple_choice">Multiple Choice</option></select><div id="options_div" style="display:none;"><label>Options (one per line)</label><textarea name="options_raw" rows="4"></textarea><label>Correct answer (exact match)</label><input type="text" name="correct_answer"></div><label>Points</label><input type="number" name="points" value="5"><label>Sort order</label><input type="number" name="sort_order" value="1"><button type="submit">Add Question</button></form><p><a href="admin_exams_list.php">Back</a></p>
+<h2>Existing Questions</h2><?php while($q=$questions->fetch_assoc()):?><div><strong>Q<?=$q['sort_order']?>:</strong> <?=nl2br(htmlspecialchars($q['question_text']))?> (<?=$q['points']?> pts)</div><?php endwhile;?><h2>Add New Question</h2><form method="post"><label>Question text</label><textarea name="question_text" rows="3" required></textarea><label>Type</label><select name="question_type" id="qtype" onchange="toggleOptions()"><option value="essay">Essay</option><option value="short_answer">Short Answer</option><option value="multiple_choice">Multiple Choice</option></select><div id="options_div" style="display:none;"><label>Options (one per line)</label><textarea name="options_raw" rows="4"></textarea><label>Correct answer (exact match)</label><input type="text" name="correct_answer"></div><label>Points</label><input type="number" name="points" value="5"><label>Sort order</label><input type="number" name="sort_order" value="1"><button type="submit">Add Question</button></form><p><a href="admin_exams_list.php">Back</a></p>
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

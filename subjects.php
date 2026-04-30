@@ -18,7 +18,9 @@ $subjects = $conn->query("SELECT DISTINCT n.subject
 <!DOCTYPE html>
 <html><head><title>Subjects</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class="container"><div class="header"><h1>📚 Subjects</h1><a href="dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
+    
+<div class="container">
 <div class="content-grid">
 <?php while($s = $subjects->fetch_assoc()): ?>
 <div class="card"><i class="fas fa-chalkboard"></i><h3><?= htmlspecialchars($s['subject']) ?></h3><a href="subject.php?subject=<?= urlencode($s['subject']) ?>">Explore Subject</a></div>
@@ -27,5 +29,6 @@ $subjects = $conn->query("SELECT DISTINCT n.subject
 <div class="card"><p>No subjects available for your group yet.</p></div>
 <?php endif; ?>
 </div>
-<div class="footer"><a href="dashboard.php">← Back</a></div>
-</div></body></html>
+<div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
+</div>
+</body></html>

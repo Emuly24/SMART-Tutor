@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $note_id = (int)($_GET['note_id'] ?? 0);
@@ -71,11 +73,16 @@ $quizzes = $conn->query("SELECT * FROM quizzes WHERE note_id=$note_id");
 ?>
 <!DOCTYPE html><html><head><title>Manage Quiz - <?=htmlspecialchars($note['title'])?></title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class="container"><div class="header"><h1>📝 Quiz Manager: <?=htmlspecialchars($note['title'])?></h1><a href="admin_notes_list.php">Back</a></div>
+
+    
+<div class="container">
 <?php while($qz = $quizzes->fetch_assoc()): ?>
-<div class="card" style="margin:20px;"><h3><?=htmlspecialchars($qz['title'])?></h3><p><?=nl2br(htmlspecialchars($qz['description']))?></p><p>Time: <?=$qz['time_limit']?> min | Passing: <?=$qz['passing_percentage']?>%</p><a href="?note_id=<?=$note_id?>&delete_quiz=<?=$qz['id']?>" onclick="return confirm('Delete quiz?')">Delete Quiz</a> | <a href="admin_edit_quiz_questions.php?quiz_id=<?=$qz['id']?>">Edit Questions</a></div>
+<div class="card" style="margin:20px;"><h3><?=htmlspecialchars($qz['title'])?></h3><p><?=nl2br(htmlspecialchars($qz['description']))?></p><p>Time: <?=$qz['time_limit']?> min | Passing: <?=$qz['passing_percentage']?>%</p> |
+    <div class="card-buttons"><a href="?note_id=<?=$note_id?>&delete_quiz=<?=$qz['id']?>" onclick="return confirm('Delete quiz?')">Delete Quiz</a><a href="admin_edit_quiz_questions.php?quiz_id=<?=$qz['id']?>">Edit Questions</a></div></div>
 <?php endwhile; ?>
 <h2>Create New Quiz</h2>
 <form method="post"><input type="hidden" name="quiz_id" value="0"><div class="form-group"><label>Title</label><input type="text" name="title" required></div><div class="form-group"><label>Description</label><textarea name="description"></textarea></div><div class="form-group"><label>Time limit (minutes)</label><input type="number" name="time_limit" value="30"></div><div class="form-group"><label>Passing percentage</label><input type="number" name="passing_percentage" value="70"></div><button type="submit" name="save_quiz">Create Quiz</button></form><hr>
 <h2>Add Question to Quiz</h2><form method="post"><div class="form-group"><label>Select Quiz</label><select name="quiz_id"><?php $qlist=$conn->query("SELECT id,title FROM quizzes WHERE note_id=$note_id"); while($q=$qlist->fetch_assoc()):?><option value="<?=$q['id']?>"><?=htmlspecialchars($q['title'])?></option><?php endwhile;?></select></div><div class="form-group"><label>Question Text</label><textarea name="question_text" rows="3" required></textarea></div><div class="form-group"><label>Type</label><select name="question_type" id="qtype" onchange="toggleOptions()"><option value="multiple_choice">Multiple Choice</option><option value="true_false">True/False</option><option value="short_answer">Short Answer</option></select></div><div id="options_div" style="display:none;"><div class="form-group"><label>Options (one per line)</label><textarea name="options_raw" rows="4"></textarea></div></div><div class="form-group"><label>Correct Answer</label><input type="text" name="correct_answer" required></div><div class="form-group"><label>Points</label><input type="number" name="points" value="5"></div><div class="form-group"><label>Sort Order</label><input type="number" name="sort_order" value="1"></div><button type="submit" name="add_question">Add Question</button></form>
-<script>function toggleOptions(){var t=document.getElementById('qtype').value; document.getElementById('options_div').style.display=(t=='multiple_choice')?'block':'none';}</script></div></body></html>
+<script>function toggleOptions(){var t=document.getElementById('qtype').value; document.getElementById('options_div').style.display=(t=='multiple_choice')?'block':'none';}</script></div><div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>

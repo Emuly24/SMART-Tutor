@@ -9,13 +9,14 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 
 // Ensure groups exist (run once if needed)
 $groups_exist = $conn->query("SELECT COUNT(*) FROM groups")->fetch_row()[0];
 if ($groups_exist < 10) {
-    // Insert default groups
     $conn->query("INSERT IGNORE INTO groups (class_level, group_number, max_members, male_limit, female_limit) VALUES
         ('Form 3', 1, 5, 2, 3),
         ('Form 3', 2, 5, 2, 3),
@@ -39,7 +40,6 @@ if (isset($_POST['app_id'])) {
         if (empty($class)) {
             $msg = "Student class level is missing.";
         } else {
-            // Find available group
             $available_group = null;
             $groups = $conn->query("SELECT g.id, g.group_number, 
                 (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as current_count,
@@ -80,10 +80,12 @@ $msg = $_GET['msg'] ?? '';
 ?>
 <!DOCTYPE html>
 <html><head><title>Approve Applications</title><link rel="stylesheet" href="style.css"></head><body>
-    <?php include_once 'includes/header.php';
-    <?php include_once 'includes/progress_tracker.php'; ?>
- ?>
-<div class="container"><div class="header"><h1>Pending Applications</h1><a href="admin_dashboard.php">Dashboard</a></div>
+    <?php include_once 'includes/header.php'; ?>
+
+
+<?php include_once 'includes/progress_tracker.php'; ?>
+<div class="container">
+
 <?php if($msg) echo "<div class='success'>$msg</div>"; while($r=$pending->fetch_assoc()): 
     $class = $r['class_level'];
     $groups_info = $conn->query("SELECT g.group_number, 
@@ -96,4 +98,7 @@ $msg = $_GET['msg'] ?? '';
 <p><strong>Group status (max 5 per group, 2M/3F):</strong></p><ul><?php while($g=$groups_info->fetch_assoc()):?><li>Group <?=$g['group_number']?>: <?=$g['cnt']?>/5 members (<?=$g['males']?>M / <?=$g['females']?>F)</li><?php endwhile;?></ul>
 <form method="post" style="display:inline"><input type="hidden" name="app_id" value="<?=$r['id']?>"><button type="submit" name="action" value="approve">Approve</button><button type="submit" name="action" value="reject">Reject</button></form></div>
 <?php endwhile; ?>
-</div></body></html>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+</div>
+
+</body></html>

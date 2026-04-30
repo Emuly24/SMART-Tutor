@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 
@@ -42,7 +44,9 @@ $notes = $conn->query("SELECT DISTINCT n.id, n.title FROM notes n JOIN note_exer
 <!DOCTYPE html><html><head><title>Mark Exercises</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
 
-<div class="container"><div class="header"><h1>📝 Mark Student Exercises</h1><a href="admin_dashboard.php">Dashboard</a> <a href="admin_send_reminders.php">Send Reminders</a> <a href="admin_message_templates.php">Manage Templates</a></div>
+    
+
+<div class="container">
 <div class="content-grid">
 <?php while($n = $notes->fetch_assoc()): ?>
     <div class="card"><h3><?=htmlspecialchars($n['title'])?></h3><a href="?note_id=<?=$n['id']?>">View Submissions</a></div>
@@ -93,4 +97,6 @@ $notes = $conn->query("SELECT DISTINCT n.id, n.title FROM notes n JOIN note_exer
         </div>
     <?php endwhile; ?>
 <?php endif; ?>
-</div></body></html>
+</div><div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>

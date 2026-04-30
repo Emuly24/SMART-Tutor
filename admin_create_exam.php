@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn = getDB();
@@ -27,11 +29,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head><body>
     <?php include_once 'includes/header.php'; ?>
 
+    
+
 <div class="container">
-<div class="header"><h1>admin_create_exam</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>➕ Create Exam</h1><form method="post"><label>Title</label><input type="text" name="title" required><label>Subject</label><input type="text" name="subject" required><label>Class</label><select name="class_level"><option>Form 3</option><option>Form 4</option></select><label>Description</label><textarea name="description"></textarea><label>Duration (minutes)</label><input type="number" name="duration_minutes" value="60"><button type="submit">Create & Add Questions</button></form><a href="admin_dashboard.php">Back</a>
+<form method="post"><label>Title</label><input type="text" name="title" required><label>Subject</label><input type="text" name="subject" required><label>Class</label><select name="class_level"><option>Form 3</option><option>Form 4</option></select><label>Description</label><textarea name="description"></textarea><label>Duration (minutes)</label><input type="number" name="duration_minutes" value="60"><button type="submit">Create & Add Questions</button></form>
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

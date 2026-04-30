@@ -12,14 +12,10 @@ $uid = $_SESSION['user_id'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body class="about-page">
+    <?php include_once 'includes/header.php'; ?>
+
 <div class="container">
-    <div class="header">
-        <h1><i class="fas fa-chalkboard-teacher"></i> About SMART Tutor</h1>
-        <nav>
-            <a href="dashboard.php">Dashboard</a>
-            <a href="logout.php" class="logout">Logout</a>
-        </nav>
-    </div>
+    
 
     <div class="note-container">
         <div class="card">
@@ -44,7 +40,8 @@ $uid = $_SESSION['user_id'];
         </div>
     </div>
 
-    <div class="footer"><a href="dashboard.php">← Back to Dashboard</a></div>
+    <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
 </div>
+
 </body>
 </html>

@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 if (isset($_GET['mark_covered'])) {
@@ -29,11 +31,14 @@ $classes = ['Form 3', 'Form 4'];
 ?>
 <!DOCTYPE html><html><head><title>Topic Requests</title>    <link rel="stylesheet" href="style.css">
 </head><body>
+    <?php include_once 'includes/header.php'; ?>
+
 <div class="container">
-<div class="header"><h1>admin_topic_requests</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>💡 Topic Requests</h1><?php foreach($classes as $c): $req=$conn->query("SELECT subject, topic, COUNT(*) as cnt FROM topic_requests WHERE class_level='$c' GROUP BY subject, topic ORDER BY cnt DESC");?><h2><?=$c?> <a href="?clear_class=<?=$c?>" onclick="return confirm('Clear all requests for <?=$c?>?')">Clear all</a></h2><?php if($req->num_rows==0) echo "<p>None.</p>"; else{?><table class="data-table" border="1"><tr><th>Subject</th><th>Topic</th><th>Requests</th><th>Action</th></tr><?php while($r=$req->fetch_assoc()):?><tr><td><?=htmlspecialchars($r['subject'])?></td><td><?=htmlspecialchars($r['topic'])?></td><td><?=$r['cnt']?></td><td><a href="?mark_covered=1&subject=<?=urlencode($r['subject'])?>&topic=<?=urlencode($r['topic'])?>&class=<?=$c?>" onclick="return confirm('Mark as covered?')">Mark Covered</a></td></tr><?php endwhile;?></table><?php } endforeach;?> 
+<?php foreach($classes as $c): $req=$conn->query("SELECT subject, topic, COUNT(*) as cnt FROM topic_requests WHERE class_level='$c' GROUP BY subject, topic ORDER BY cnt DESC");?><h2><?=$c?> <a href="?clear_class=<?=$c?>" onclick="return confirm('Clear all requests for <?=$c?>?')">Clear all</a></h2><?php if($req->num_rows==0) echo "<p>None.</p>"; else{?><table class="data-table" border="1"><tr><th>Subject</th><th>Topic</th><th>Requests</th><th>Action</th></tr><?php while($r=$req->fetch_assoc()):?><tr><td><?=htmlspecialchars($r['subject'])?></td><td><?=htmlspecialchars($r['topic'])?></td><td><?=$r['cnt']?></td><td><a href="?mark_covered=1&subject=<?=urlencode($r['subject'])?>&topic=<?=urlencode($r['topic'])?>&class=<?=$c?>" onclick="return confirm('Mark as covered?')">Mark Covered</a></td></tr><?php endwhile;?></table><?php } endforeach;?> 
 </div>
-<div class="footer"><a href="admin_dashboard.php" class="btn">← Back</a></div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

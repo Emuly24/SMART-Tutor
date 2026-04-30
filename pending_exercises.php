@@ -14,7 +14,9 @@ $pending = $conn->query("SELECT a.promised_at, e.question, n.title as note_title
 <!DOCTYPE html><html><head><title>Pending Paper Exercises</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
 
-<div class="container"><div class="header"><h1>📋 Pending Exercises (Paper)</h1><a href="dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+    
+
+<div class="container">
 <div class="content-grid">
 <?php while($p = $pending->fetch_assoc()):
     $deadline = strtotime($p['promised_at']) + 86400; // 24h
@@ -34,4 +36,6 @@ $pending = $conn->query("SELECT a.promised_at, e.question, n.title as note_title
         <a href="view_note.php?id=<?=$p['note_id']?>" class="btn">Go to Note</a>
     </div>
 <?php endwhile; ?>
-</div></div></body></html>
+</div></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>

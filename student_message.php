@@ -23,9 +23,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 ?>
 <!DOCTYPE html>
 <html><head><title>Contact Admin</title><link rel="stylesheet" href="style.css"></head>
-<body><div class="container">
+<body>
     <?php include_once 'includes/header.php'; ?>
-    <h1>📬 Send Message to Admin</h1>
+<div class="container">
+    
+    
     <p>Use this form to report issues, suggest improvements, or ask questions. The admin will respond as soon as possible.</p>
     <?php if ($error): ?><div class="error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
     <?php if ($success): ?><div class="success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
@@ -36,5 +38,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="submit" class="btn">Send Message</button>
         </form>
     </div>
-    <div class="footer"><a href="dashboard.php">← Back to Dashboard</a></div>
-</div></body></html>
+    <div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
+</div>
+</body></html>

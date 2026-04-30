@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $total_students = $conn->query("SELECT COUNT(*) FROM users WHERE approved=1 AND status!='dismissed'")->fetch_row()[0];
@@ -26,13 +28,8 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-    <?php include_once 'includes/header.php'; ?>
-
 <div class="container">
-    <div class="header">
-        <h1><i class="fas fa-graduation-cap"></i> SMART Tutor Admin Dashboard</h1>
-        <div><a href="admin_dashboard.php">Home</a><a href="logout.php" class="logout">Logout</a></div>
-    </div>
+    <?php include_once 'includes/header.php'; ?>
 
     <!-- Stats cards -->
     <div class="stats" style="display: flex; gap: 20px; flex-wrap: wrap; padding: 20px;">
@@ -43,16 +40,73 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
         <div class="stat card" style="flex:1; min-width:150px;"><i class="fas fa-ban"></i><br><strong><?= $suspensions ?></strong><br>Suspended Students</div>
     </div>
 
-    <!-- Admin menu grid -->
-    <div class="content-grid" style="padding: 0 20px 20px 20px;">
-        <div class="card"><i class="fas fa-user-check"></i><h3>Student Management</h3><a href="admin_approve.php">Approve Applications</a><div class="card"><i class="fas fa-bullhorn"></i><h3>Group Notifications</h3><a href="admin_send_notification.php">Send Meeting Alerts</a></div><a href="admin_students_list.php">Student List</a><a href="admin_discipline.php">Discipline</a><a href="admin_attendance.php">Mark Attendance</a><a href="admin_reports.php">Student Reports</a></div>
-        <div class="card"><i class="fas fa-book"></i><h3>Content</h3><a href="admin_note_editor.php">Write Note</a><a href="admin_notes_list.php">Manage Notes</a><a href="admin_upload_book.php">Upload Book</a></div>
-        <div class="card"><i class="fas fa-pen-alt"></i><h3>Exams</h3><a href="admin_create_exam.php">Create Exam</a><a href="admin_exams_list.php">Manage Exams</a><a href="admin_mark_exams.php">Mark Submissions</a></div>
-        <div class="card"><i class="fas fa-tasks"></i><h3>Assignments</h3><a href="admin_create_assignment.php">Create Assignment</a><a href="admin_assignments_list.php">Manage Assignments</a><a href="admin_mark_assignments.php">Mark Submissions</a></div>
-        <div class="card"><i class="fas fa-lightbulb"></i><h3>Topic Requests</h3><a href="admin_topic_requests.php">View Requests</a><a href="admin_topics_covered.php">Covered Topics</a><a href="admin_delete_covered_topics.php">Batch Delete Covered</a><a href="admin_export_covered_form.php">Export CSV</a></div>
-        <div class="card"><i class="fas fa-chart-line"></i><h3>Reports</h3><a href="admin_attendance_report.php">Attendance Report</a><a href="admin_discipline_log.php">Discipline Log</a><a href="admin_class_overview.php">Class Overview</a></div>
-        <div class="card"><i class="fas fa-cogs"></i><h3>System</h3><a href="admin_backup.php">Backup Database</a><a href="admin_settings.php">Change Password</a></div>
-        <div class="card"><i class="fas fa-bell"></i><h3>Notifications</h3><a href="admin_notifications.php">Manage Messages</a></div>
+    <!-- Admin action cards (core daily tasks) -->
+    <div class="content-grid">
+        <div class="card">
+            <i class="fas fa-user-check"></i>
+            <h3>Student Management</h3>
+            <div class="card-buttons">
+                <a href="admin_approve.php">Approve Applications</a>
+                <a href="admin_students_list.php">Student List</a>
+                <a href="admin_discipline.php">Discipline</a>
+                <a href="admin_attendance.php">Mark Attendance</a>
+                <a href="admin_reports.php">Student Reports</a>
+            </div>
+        </div>
+        <div class="card">
+            <i class="fas fa-book"></i>
+            <h3>Content</h3>
+            <div class="card-buttons">
+                <a href="admin_note_editor.php">Write Note</a>
+                <a href="admin_notes_list.php">Manage Notes</a>
+                <a href="admin_upload_book.php">Upload Book</a>
+            </div>
+        </div>
+        <div class="card">
+            <i class="fas fa-pen-alt"></i>
+            <h3>Exams</h3>
+            <div class="card-buttons">
+                <a href="admin_create_exam.php">Create Exam</a>
+                <a href="admin_exams_list.php">Manage Exams</a>
+                <a href="admin_mark_exams.php">Mark Submissions</a>
+            </div>
+        </div>
+        <div class="card">
+            <i class="fas fa-tasks"></i>
+            <h3>Assignments</h3>
+            <div class="card-buttons">
+                <a href="admin_create_assignment.php">Create Assignment</a>
+                <a href="admin_assignments_list.php">Manage Assignments</a>
+                <a href="admin_mark_assignments.php">Mark Submissions</a>
+            </div>
+        </div>
+        <div class="card">
+            <i class="fas fa-lightbulb"></i>
+            <h3>Topic Requests</h3>
+            <div class="card-buttons">
+                <a href="admin_topic_requests.php">View Requests</a>
+                <a href="admin_topics_covered.php">Covered Topics</a>
+            </div>
+        </div>
+        <div class="card">
+            <i class="fas fa-chart-line"></i>
+            <h3>Reports</h3>
+            <div class="card-buttons">
+                <a href="admin_attendance_report.php">Attendance Report</a>
+                <a href="admin_discipline_log.php">Discipline Log</a>
+                <a href="admin_class_overview.php">Class Overview</a>
+            </div>
+        </div>
+        <div class="card">
+            <i class="fas fa-cogs"></i>
+            <h3>System</h3>
+            <div class="card-buttons">
+                <a href="admin_backup.php">Backup Database</a>
+                <a href="admin_settings.php">Change Password</a>
+                <a href="admin_notifications_center.php">Notifications Center</a>
+                <a href="admin_feedback.php">Student Feedback</a>
+            </div>
+        </div>
     </div>
 
     <div class="footer">SMART Tutor – Discipline & Integrity</div>

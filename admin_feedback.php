@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 
@@ -36,9 +38,11 @@ $messages = $conn->query("SELECT m.*, u.fullname, u.class_level, u.phone
 ?>
 <!DOCTYPE html>
 <html><head><title>Student Feedback</title><link rel="stylesheet" href="style.css"></head>
-<body><div class="container">
+<body>
     <?php include_once 'includes/header.php'; ?>
-    <h1>📬 Student Feedback & Messages</h1>
+<div class="container">
+    
+    
     <?php if ($messages->num_rows == 0): ?>
         <div class="card"><p>No messages yet.</p></div>
     <?php else: ?>
@@ -53,13 +57,13 @@ $messages = $conn->query("SELECT m.*, u.fullname, u.class_level, u.phone
                 <p><strong>Message:</strong><br><?= nl2br(htmlspecialchars($m['message'])) ?></p>
                 <div>
                     <?php if ($m['status'] == 'unread'): ?>
-                        <a href="?mark_read=<?= $m['id'] ?>" class="btn">Mark as Read</a>
+                        
                     <?php endif; ?>
-                    <a href="?delete=<?= $m['id'] ?>" class="btn btn-danger" onclick="return confirm('Delete this message?')">Delete</a>
-                </div>
+    <div class="card-buttons"><a href="?mark_read=<?= $m['id'] ?>" class="btn">Mark as Read</a><a href="?delete=<?= $m['id'] ?>" class="btn btn-danger" onclick="return confirm('Delete this message?')">Delete</a></div></div>
             </div>
         <?php endwhile; ?>
         </div>
     <?php endif; ?>
-    <div class="footer"><a href="admin_dashboard.php">← Back</a></div>
-</div></body></html>
+    <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+</div>
+</body></html>

@@ -43,7 +43,9 @@ $quizzes = $conn->query("SELECT q.id, q.title, q.description, q.time_limit
 <!DOCTYPE html>
 <html><head><title><?= htmlspecialchars($subject) ?> - SMART Tutor</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class="container"><div class="header"><h1><?= htmlspecialchars($subject) ?></h1><a href="subjects.php">Subjects</a><a href="dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
+    
+<div class="container">
 
 <div class="content-grid">
     <!-- Notes Section -->
@@ -60,5 +62,6 @@ $quizzes = $conn->query("SELECT q.id, q.title, q.description, q.time_limit
     ?><p><strong><?=htmlspecialchars($q['title'])?></strong><br><a href="<?=$link?>"><?=$text?></a></p><?php endwhile; ?><?php else: ?><p>No quizzes yet.</p><?php endif; ?></div>
 </div>
 
-<div class="footer"><a href="subjects.php">← Back to Subjects</a></div>
-</div></body></html>
+<div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
+</div>
+</body></html>

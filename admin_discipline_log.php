@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $log = $conn->query("SELECT d.*, u.fullname, u.class_level FROM discipline_log d JOIN users u ON d.user_id=u.id ORDER BY d.created_at DESC");
@@ -17,11 +19,12 @@ $log = $conn->query("SELECT d.*, u.fullname, u.class_level FROM discipline_log d
 </head><body>
     <?php include_once 'includes/header.php'; ?>
 
-<div class="container">
-<div class="header"><h1>admin_discipline_log</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+    
+
 <div class="content-grid">
-<h1>📜 Discipline Log</h1><table class="data-table" border="1"><tr><th>Date</th><th>Student</th><th>Class</th><th>Action</th><th>Reason</th><th>Suspension End</th></tr><?php while($r=$log->fetch_assoc()):?><tr><td><?=$r['created_at']?></td><td><?=htmlspecialchars($r['fullname'])?></td><td><?=$r['class_level']?></td><td><?=strtoupper($r['action'])?></td><td><?=htmlspecialchars($r['reason'])?></td><td><?=$r['suspension_end']??'-'?></td></tr><?php endwhile;?></table><a href="admin_dashboard.php">Back</a>
+<table class="data-table" border="1"><tr><th>Date</th><th>Student</th><th>Class</th><th>Action</th><th>Reason</th><th>Suspension End</th></tr><?php while($r=$log->fetch_assoc()):?><tr><td><?=$r['created_at']?></td><td><?=htmlspecialchars($r['fullname'])?></td><td><?=$r['class_level']?></td><td><?=strtoupper($r['action'])?></td><td><?=htmlspecialchars($r['reason'])?></td><td><?=$r['suspension_end']??'-'?></td></tr><?php endwhile;?></table>
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

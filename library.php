@@ -10,7 +10,9 @@ $books = $conn->query("SELECT subject, title, file_path FROM books WHERE class_l
 <!DOCTYPE html>
 <html><head><title>Library - Books</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class="container"><div class="header"><h1>📚 Library - <?=$class?> Books</h1><a href="dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
+    
+<div class="container">
 <div class="content-grid">
 <?php
 $current_subject = '';
@@ -26,5 +28,6 @@ if ($current_subject != '') echo "</div>";
 if ($books->num_rows == 0) echo "<div class='card'><p>No books available for your class yet.</p></div>";
 ?>
 </div>
-<div class="footer"><a href="dashboard.php">← Back</a></div>
-</div></body></html>
+<div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
+</div>
+</body></html>

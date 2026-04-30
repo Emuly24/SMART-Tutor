@@ -11,7 +11,10 @@ if (!$note) die("Note not found");
 if (!is_content_unlocked('note', $note_id, $uid)) {
     die("<!DOCTYPE html><html><head><title>Content Locked</title><link rel='stylesheet' href='style.css'></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class='container'><div class='header'><h1>Content Locked</h1><a href='library.php'>Library</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This note is not yet available for your group. Please wait until the admin unlocks it after your group meeting.</div><a href='library.php'>← Back to Library</a></div></body></html>");
+
+    
+<div class='container'><div class='header'><a href='library.php'>Library</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This note is not yet available for your group. Please wait until the admin unlocks it after your group meeting.</div><a href='library.php'>← Back to Library</a></div>
+</body></html>");
 }
 
 // Handle digital submission (text / file) – same as before
@@ -78,7 +81,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. 
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
-<body><div class="container"><div class="header"><h1><?=htmlspecialchars($note['title'])?></h1><a href="library.php">Library</a><a href="logout.php" class="logout">Logout</a></div>
+<body><div class="container">
 <div class="note-container"><?=$note['content']?></div>
 
 <?php
@@ -147,7 +150,8 @@ if ($quiz && is_content_unlocked('quiz', $quiz['id'], $uid)):
 </div>
 <?php endwhile; ?>
 
-<div class="footer"><a href="library.php">← Back to Library</a></div>
+<div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 </div>
 <script>mermaid.initialize({startOnLoad:true});</script>
+
 </body></html>

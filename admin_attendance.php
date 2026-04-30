@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $today = date('Y-m-d');
@@ -34,11 +36,14 @@ while ($row = $r->fetch_assoc()) $existing[$row['user_id']] = $row['status'];
 </head><body>
     <?php include_once 'includes/header.php'; ?>
 
+    
+
 <div class="container">
-<div class="header"><h1>admin_attendance</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>📅 Attendance - <?=$today?></h1><?php if($msg) echo "<p style='color:green'>$msg</p>";?><form method="post"><table class="data-table" border="1"><tr><th>Student</th><th>Class</th><th>Status</th></tr><?php while($s=$students->fetch_assoc()):?><tr><td><?=htmlspecialchars($s['fullname'])?></td><td><?=$s['class_level']?></td><td><select name="status[<?=$s['id']?>]"><option value="present" <?=($existing[$s['id']]??'')=='present'?'selected':''?>>Present</option><option value="late" <?=($existing[$s['id']]??'')=='late'?'selected':''?>>Late</option><option value="absent" <?=($existing[$s['id']]??'')=='absent'?'selected':''?>>Absent</option></select></td></tr><?php endwhile;?></table><button type="submit">Save</button></form><a href="admin_dashboard.php">Back</a>
+<?php if($msg) echo "<p style='color:green'>$msg</p>";?><form method="post"><table class="data-table" border="1"><tr><th>Student</th><th>Class</th><th>Status</th></tr><?php while($s=$students->fetch_assoc()):?><tr><td><?=htmlspecialchars($s['fullname'])?></td><td><?=$s['class_level']?></td><td><select name="status[<?=$s['id']?>]"><option value="present" <?=($existing[$s['id']]??'')=='present'?'selected':''?>>Present</option><option value="late" <?=($existing[$s['id']]??'')=='late'?'selected':''?>>Late</option><option value="absent" <?=($existing[$s['id']]??'')=='absent'?'selected':''?>>Absent</option></select></td></tr><?php endwhile;?></table><button type="submit">Save</button></form>
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

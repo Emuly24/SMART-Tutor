@@ -16,7 +16,9 @@ $notes = $conn->query("SELECT n.id, n.title, n.subject, n.created_at
     ORDER BY n.subject, n.title");
 ?>
 <!DOCTYPE html>
-<html><head><title>Notes</title><link rel="stylesheet" href="style.css"></head><body><div class="container"><div class="header"><h1>📖 Notes - <?=$class?></h1><a href="dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+<html><head><title>Notes</title><link rel="stylesheet" href="style.css"></head><body>
+    <?php include_once 'includes/header.php'; ?>
+<div class="container">
 <div class="content-grid">
 <?php
 $current_subject = '';
@@ -32,5 +34,6 @@ if ($current_subject != '') echo "</div>";
 if ($notes->num_rows == 0) echo "<div class='card'><p>No notes available for your group yet.</p></div>";
 ?>
 </div>
-<div class="footer"><a href="dashboard.php">← Back</a></div>
-</div></body></html>
+<div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
+</div>
+</body></html>

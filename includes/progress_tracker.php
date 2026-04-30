@@ -30,3 +30,8 @@ $current = basename($_SERVER['PHP_SELF']);
     <i class="fas fa-tachometer-alt"></i> Dashboard
   </a>
 </div>
+
+<!-- Progress indicator bar -->
+<div class="progress-indicator">
+  <div class="progress-indicator-fill"></div>
+</div>

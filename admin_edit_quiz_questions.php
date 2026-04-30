@@ -10,8 +10,12 @@ $questions = $conn->query("SELECT * FROM quiz_questions WHERE quiz_id=$quiz_id O
 ?>
 <!DOCTYPE html><html><head><title>Edit Questions</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class="container"><div class="header"><h1>✏️ Edit Questions: <?=htmlspecialchars($quiz['title'])?></h1><a href="admin_manage_quiz.php?note_id=<?=$quiz['note_id']?>">Back</a></div>
+
+    
+<div class="container">
 <?php while($q=$questions->fetch_assoc()): ?>
 <div class="card"><strong>Q<?=$q['sort_order']?>:</strong> <?=nl2br(htmlspecialchars($q['question_text']))?> (<?=$q['points']?> pts)<br><a href="?delete_question=<?=$q['id']?>" onclick="return confirm('Delete?')">Delete</a></div>
 <?php endwhile; ?>
-<p><a href="admin_manage_quiz.php?note_id=<?=$quiz['note_id']?>">Back to Quiz Manager</a></p></div></body></html>
+<p><a href="admin_manage_quiz.php?note_id=<?=$quiz['note_id']?>">Back to Quiz Manager</a></p></div><div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>

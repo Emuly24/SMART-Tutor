@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 if (isset($_GET['update'])) {
@@ -26,7 +28,9 @@ $reports = $conn->query("SELECT r.*, u.fullname, u.class_level FROM student_repo
 <head><title>Student Reports</title><link rel="stylesheet" href="style.css"></head>
 <body>
     <?php include_once 'includes/header.php'; ?>
-<div class="container"><div class="header"><h1>📋 Student Reports</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
+    
+<div class="container">
 <div class="grid">
 <table class="data-table">
 <thead><tr><th>Student</th><th>Class</th><th>Type</th><th>Description</th><th>Incident Date</th><th>Status</th><th>Actions</th></tr></thead>
@@ -55,5 +59,6 @@ $reports = $conn->query("SELECT r.*, u.fullname, u.class_level FROM student_repo
 </tbody>
 </table>
 </div>
-<div class="footer"><a href="admin_dashboard.php">← Back</a></div>
-</div></body></html>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+</div>
+</body></html>

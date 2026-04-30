@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $id = (int)$_GET['id'];
@@ -39,7 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <?php include_once 'includes/header.php'; ?>
-<div class="container"><div class="header"><h1>✏️ Edit Note</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
+    
+<div class="container">
 <div style="padding: 2rem;">
     <form method="post">
         <div class="form-group"><label>Title</label><input type="text" name="title" value="<?=htmlspecialchars($note['title'])?>" required></div>
@@ -52,9 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit">Save Changes</button>
     </form>
 </div>
-<div class="footer"><a href="admin_notes_list.php">← Back to Notes List</a></div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 <script>
     ClassicEditor.create(document.querySelector('#editor'), {}).catch(console.error);
 </script>
+
 </body></html>

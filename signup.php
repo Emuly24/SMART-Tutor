@@ -46,10 +46,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="signup-page">
+    <?php include_once 'includes/header.php'; ?>
+
     <?php include_once 'includes/progress_tracker.php'; ?>
 
 <div class="signup-container">
-    <h1>Create Account</h1>
+    
 
     <?php if($error): ?>
         <div class="error"><?= htmlspecialchars($error) ?></div>
@@ -92,5 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <p>Already have an account? <a href="login.php">Login here</a></p>
     <?php endif; ?>
 </div>
+<div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
+
+
 </body>
 </html>

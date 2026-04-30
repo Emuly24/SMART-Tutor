@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 
@@ -33,7 +35,26 @@ $classes = ['Form 3', 'Form 4'];
     <?php include_once 'includes/header.php'; ?>
 
 <div class="class-overview">
-    <h1>📊 Class Overview</h1>
+
+    <!-- Status Legend -->
+    <div class="status-legend">
+        <div class="status-legend-item">
+            <span class="status-badge status-active" tabindex="0">Active</span> Active Students
+            <div class="tooltip">Active = currently enrolled and attending</div>
+        </div>
+        <div class="status-legend-item">
+            <span class="status-badge status-suspended" tabindex="0">Suspended</span> Suspended Students
+            <div class="tooltip">Suspended = temporarily restricted from classes</div>
+        </div>
+        <div class="status-legend-item">
+            <span class="status-badge status-dismissed" tabindex="0">Dismissed</span> Dismissed Students
+            <div class="tooltip">Dismissed = permanently removed from program</div>
+        </div>
+        <div class="status-legend-item">
+            <span class="status-badge status-pending" tabindex="0">Pending</span> Pending Approval
+            <div class="tooltip">Pending = awaiting admin approval</div>
+        </div>
+    </div>
 
     <!-- Summary Bar -->
     <div class="summary-bar">
@@ -46,7 +67,9 @@ $classes = ['Form 3', 'Form 4'];
     <?php
     foreach ($classes as $c) {
         $cnt = $conn->query("SELECT COUNT(*) FROM users WHERE class_level='$c' AND approved=1 AND status!='dismissed'")->fetch_row()[0];
-        echo "<h2>$c: $cnt / 5 active</h2>";
+        // Add class-specific heading class
+        $headingClass = strtolower(str_replace(' ', '', $c)); // "Form 3" -> "form3"
+        echo "<h2 class='$headingClass'>$c: $cnt / 5 active</h2>";
         echo "<ul class='student-list'>";
         $students = $conn->query("SELECT fullname,status FROM users WHERE class_level='$c' AND approved=1 AND status!='dismissed'");
         while ($s = $students->fetch_assoc()) {
@@ -62,7 +85,22 @@ $classes = ['Form 3', 'Form 4'];
         echo "</ul>";
     }
     ?>
-    <a href="admin_dashboard.php" class="btn-back">← Back</a>
+    
 </div>
+
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Ensure badges and legend items are keyboard accessible
+    document.querySelectorAll('.status-badge').forEach(badge => {
+      badge.setAttribute('tabindex', '0');
+    });
+    document.querySelectorAll('.status-legend-item').forEach(item => {
+      item.setAttribute('tabindex', '0');
+    });
+  });
+</script>
+
 </body>
 </html>

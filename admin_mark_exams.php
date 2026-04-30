@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_answer'])) {
@@ -32,13 +34,16 @@ if ($exam_id && $user_id) {
     $answers = $conn->query("SELECT q.id as qid, q.question_text, q.points, a.id as answer_id, a.answer_text, a.answer_file_path, a.marks_awarded, a.feedback FROM exam_questions q LEFT JOIN exam_answers a ON q.id=a.question_id AND a.exam_id=$exam_id AND a.user_id=$user_id WHERE q.exam_id=$exam_id ORDER BY q.sort_order");
     ?><html><head><title>Mark Exam</title>    <link rel="stylesheet" href="style.css">
 </head><body>
+    <?php include_once 'includes/header.php'; ?>
+
 <div class="container">
-<div class="header"><h1>admin_mark_exams</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>Marking: <?=htmlspecialchars($exam['title'])?> for <?=htmlspecialchars($student['fullname'])?></h1><?php while($a=$answers->fetch_assoc()):?><div><strong><?=nl2br(htmlspecialchars($a['question_text']))?></strong> (<?=$a['points']?> pts)<br><em>Answer:</em> <?=nl2br(htmlspecialchars($a['answer_text']))?><?php if($a['answer_file_path']) echo "<br><a href='admin_download.php?type=exam&file=" . urlencode(basename($a['answer_file_path'])) . "' target='_blank'>View file</a>";?><?php if($a['marks_awarded']!==null):?><p>Marked: <?=$a['marks_awarded']?>/<?=$a['points']?> | Feedback: <?=htmlspecialchars($a['feedback'])?></p><?php else:?><form method="post"><input type="hidden" name="answer_id" value="<?=$a['answer_id']?>"><label>Marks (max <?=$a['points']?>):</label><input type="number" name="marks" min="0" max="<?=$a['points']?>" required><label>Feedback:</label><input type="text" name="feedback"><button type="submit" name="mark_answer">Save Marks</button></form><?php endif;?></div><hr><?php endwhile;?><a href="admin_mark_exams.php?exam_id=<?=$exam_id?>">Back to students</a>
+<?php while($a=$answers->fetch_assoc()):?><div><strong><?=nl2br(htmlspecialchars($a['question_text']))?></strong> (<?=$a['points']?> pts)<br><em>Answer:</em> <?=nl2br(htmlspecialchars($a['answer_text']))?><?php if($a['answer_file_path']) echo "<br><a href='admin_download.php?type=exam&file=" . urlencode(basename($a['answer_file_path'])) . "' target='_blank'>View file</a>";?><?php if($a['marks_awarded']!==null):?><p>Marked: <?=$a['marks_awarded']?>/<?=$a['points']?> | Feedback: <?=htmlspecialchars($a['feedback'])?></p><?php else:?><form method="post"><input type="hidden" name="answer_id" value="<?=$a['answer_id']?>"><label>Marks (max <?=$a['points']?>):</label><input type="number" name="marks" min="0" max="<?=$a['points']?>" required><label>Feedback:</label><input type="text" name="feedback"><button type="submit" name="mark_answer">Save Marks</button></form><?php endif;?></div><hr><?php endwhile;?><a href="admin_mark_exams.php?exam_id=<?=$exam_id?>">Back to students</a>
 </div>
-<div class="footer"><a href="admin_mark_exams.php" class="btn">← Back</a></div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html><?php exit;
 }
 if ($exam_id) {
@@ -47,22 +52,24 @@ if ($exam_id) {
     ?><html><head><title>Submissions</title>    <link rel="stylesheet" href="style.css">
 </head><body>
 <div class="container">
-<div class="header"><h1>admin_mark_exams</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>Submissions for <?=htmlspecialchars($examTitle)?></h1><?php while($s=$students->fetch_assoc()):?><div><a href="admin_mark_exams.php?exam_id=<?=$exam_id?>&user_id=<?=$s['id']?>"><?=htmlspecialchars($s['fullname'])?></a> (Score: <?=$s['total_score']??'pending'?>)</div><?php endwhile;?><a href="admin_mark_exams.php">Back</a>
+<?php while($s=$students->fetch_assoc()):?><div><a href="admin_mark_exams.php?exam_id=<?=$exam_id?>&user_id=<?=$s['id']?>"><?=htmlspecialchars($s['fullname'])?></a> (Score: <?=$s['total_score']??'pending'?>)</div><?php endwhile;?><a href="admin_mark_exams.php">Back</a>
 </div>
-<div class="footer"><a href="admin_mark_exams.php" class="btn">← Back</a></div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html><?php exit;
 }
 $exams = $conn->query("SELECT e.id, e.title, e.subject, (SELECT COUNT(DISTINCT user_id) FROM exam_submissions WHERE exam_id=e.id AND status='submitted') as pending FROM exams e ORDER BY e.created_at DESC");
 ?><html><head><title>Mark Exams</title>    <link rel="stylesheet" href="style.css">
 </head><body>
 <div class="container">
-<div class="header"><h1>admin_mark_exams</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>Select Exam to Mark</h1><?php while($e=$exams->fetch_assoc()):?><div><strong><?=htmlspecialchars($e['title'])?></strong> (<?=$e['subject']?>) - <?php if($e['pending']>0) echo "<a href='admin_mark_exams.php?exam_id={$e['id']}'>View students ($e[pending] pending)</a>"; else echo "No submissions";?></div><?php endwhile;?> 
+<?php while($e=$exams->fetch_assoc()):?><div><strong><?=htmlspecialchars($e['title'])?></strong> (<?=$e['subject']?>) - <?php if($e['pending']>0) echo "<a href='admin_mark_exams.php?exam_id={$e['id']}'>View students ($e[pending] pending)</a>"; else echo "No submissions";?></div><?php endwhile;?> 
 </div>
-<div class="footer"><a href="admin_mark_exams.php" class="btn">← Back</a></div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

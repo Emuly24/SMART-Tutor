@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $msg = '';
@@ -32,11 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['pdf_file'])) {
 ?>
 <!DOCTYPE html><html><head><title>Upload Book</title>    <link rel="stylesheet" href="style.css">
 </head><body>
+    <?php include_once 'includes/header.php'; ?>
+
 <div class="container">
-<div class="header"><h1>admin_upload_book</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>📚 Upload PDF Book</h1><?php if($msg) echo "<p>$msg</p>";?><form method="post" enctype="multipart/form-data"><label>Title</label><input type="text" name="title" required><label>Subject</label><input type="text" name="subject" required><label>Class</label><select name="class_level"><option>Form 3</option><option>Form 4</option></select><label>PDF file</label><input type="file" name="pdf_file" accept="application/pdf" required><button type="submit">Upload</button></form> 
+<?php if($msg) echo "<p>$msg</p>";?><form method="post" enctype="multipart/form-data"><label>Title</label><input type="text" name="title" required><label>Subject</label><input type="text" name="subject" required><label>Class</label><select name="class_level"><option>Form 3</option><option>Form 4</option></select><label>PDF file</label><input type="file" name="pdf_file" accept="application/pdf" required><button type="submit">Upload</button></form> 
 </div>
-<div class="footer"><a href="admin_dashboard.php" class="btn">← Back</a></div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 $id = (int)$_GET['id'];
@@ -47,11 +49,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head><body>
     <?php include_once 'includes/header.php'; ?>
 
+    
+
 <div class="container">
-<div class="header"><h1>admin_edit_assignment</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>✏️ Edit Assignment</h1><form method="post" enctype="multipart/form-data"><label>Title</label><input type="text" name="title" value="<?=htmlspecialchars($assign['title'])?>" required><label>Description</label><textarea name="description" rows="4"><?=htmlspecialchars($assign['description'])?></textarea><?php if($assign['attachment_file_path']):?><p>Current attachment: <a href="admin_download.php?type=assignment&file=<?=urlencode(basename($assign['attachment_file_path']))?>" target="_blank">View</a> <label><input type="checkbox" name="remove_attachment" value="1"> Remove</label></p><?php endif;?><label>Replace/Add Attachment</label><input type="file" name="attachment"><label>Subject</label><input type="text" name="subject" value="<?=$assign['subject']?>"><label>Class</label><select name="class_level"><option value="Form 3" <?=($assign['class_level']=='Form 3')?'selected':''?>>Form 3</option><option value="Form 4" <?=($assign['class_level']=='Form 4')?'selected':''?>>Form 4</option></select><label>Due Date</label><input type="date" name="due_date" value="<?=$assign['due_date']?>"><button type="submit">Save</button></form>
+<form method="post" enctype="multipart/form-data"><label>Title</label><input type="text" name="title" value="<?=htmlspecialchars($assign['title'])?>" required><label>Description</label><textarea name="description" rows="4"><?=htmlspecialchars($assign['description'])?></textarea><?php if($assign['attachment_file_path']):?><p>Current attachment: <a href="admin_download.php?type=assignment&file=<?=urlencode(basename($assign['attachment_file_path']))?>" target="_blank">View</a> <label><input type="checkbox" name="remove_attachment" value="1"> Remove</label></p><?php endif;?><label>Replace/Add Attachment</label><input type="file" name="attachment"><label>Subject</label><input type="text" name="subject" value="<?=$assign['subject']?>"><label>Class</label><select name="class_level"><option value="Form 3" <?=($assign['class_level']=='Form 3')?'selected':''?>>Form 3</option><option value="Form 4" <?=($assign['class_level']=='Form 4')?'selected':''?>>Form 4</option></select><label>Due Date</label><input type="date" name="due_date" value="<?=$assign['due_date']?>"><button type="submit">Save</button></form>
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

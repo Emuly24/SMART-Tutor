@@ -14,17 +14,12 @@ if (!isset($_SESSION['user_id'])) {
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body class="pending-page">
+    <?php include_once 'includes/header.php'; ?>
+
     <?php include_once 'includes/progress_tracker.php'; ?>
 
 <div class="container">
-    <div class="header">
-        <h1><i class="fas fa-hourglass-half"></i> SMART Tutor</h1>
-        <nav>
-            <a href="index.php">Home</a>
-            <a href="dashboard.php">Dashboard</a>
-            <a href="logout.php" class="logout">Logout</a>
-        </nav>
-    </div>
+    
 
     <?php include_once 'progress_tracker.php'; ?>
 
@@ -43,7 +38,9 @@ if (!isset($_SESSION['user_id'])) {
         </div>
     </div>
 
-    <div class="footer">SMART Tutor – Discipline & Integrity</div>
+    <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
 </div>
+
+
 </body>
 </html>

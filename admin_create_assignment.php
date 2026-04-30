@@ -9,6 +9,8 @@ if (!isset($_SESSION['admin_logged'])) {
         exit;
     }
     $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
 }
 $conn = getDB();
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -36,11 +38,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head><body>
     <?php include_once 'includes/header.php'; ?>
 
+    
+
 <div class="container">
-<div class="header"><h1>admin_create_assignment</h1><a href="admin_dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+
 <div class="content-grid">
-<h1>➕ Create Assignment</h1><form method="post" enctype="multipart/form-data"><label>Title</label><input type="text" name="title" required><label>Description</label><textarea name="description" rows="4" required></textarea><label>Attachment (optional)</label><input type="file" name="attachment" accept=".jpg,.png,.pdf,.doc,.txt"><label>Subject</label><input type="text" name="subject" required><label>Class</label><select name="class_level"><option>Form 3</option><option>Form 4</option></select><label>Due Date</label><input type="date" name="due_date" required><button type="submit">Create</button></form><a href="admin_dashboard.php">Back</a>
+<form method="post" enctype="multipart/form-data"><label>Title</label><input type="text" name="title" required><label>Description</label><textarea name="description" rows="4" required></textarea><label>Attachment (optional)</label><input type="file" name="attachment" accept=".jpg,.png,.pdf,.doc,.txt"><label>Subject</label><input type="text" name="subject" required><label>Class</label><select name="class_level"><option>Form 3</option><option>Form 4</option></select><label>Due Date</label><input type="date" name="due_date" required><button type="submit">Create</button></form>
 </div>
-<div class="footer">SMART Tutor – Admin Panel</div>
+<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
+
 </body></html>

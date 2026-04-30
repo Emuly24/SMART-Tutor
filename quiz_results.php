@@ -9,7 +9,11 @@ if (!$quiz) die("Quiz not found.");
 if (!is_content_unlocked('quiz', $quiz_id, $uid)) {
     die("<!DOCTYPE html><html><head><title>Quiz Locked</title><link rel='stylesheet' href='style.css'></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class='container'><div class='header'><h1>Quiz Locked</h1><a href='dashboard.php'>Dashboard</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This quiz is not yet available for your group.</div><a href='dashboard.php'>← Back</a></div></body></html>");
+
+    
+<div class='container'><div class='header'><a href='dashboard.php'>Dashboard</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This quiz is not yet available for your group.</div><a href='dashboard.php'>← Back</a></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>");
 }
 $attempt = $conn->query("SELECT * FROM quiz_attempts WHERE user_id=$uid AND quiz_id=$quiz_id")->fetch_assoc();
 if (!$attempt) die("No attempt found.");
@@ -23,7 +27,7 @@ while($a=$answers->fetch_assoc()){ $total_points+=$a['points']; $earned+=$a['poi
 $percentage = $total_points ? round($earned/$total_points*100) : 0;
 $passed = $percentage >= $quiz['passing_percentage'];
 ?>
-<!DOCTYPE html><html><head><title>Quiz Results</title><link rel="stylesheet" href="style.css"></head><body><div class="container"><div class="header"><h1><?=htmlspecialchars($quiz['title'])?> Results</h1><a href="dashboard.php">Dashboard</a><a href="logout.php" class="logout">Logout</a></div>
+<!DOCTYPE html><html><head><title>Quiz Results</title><link rel="stylesheet" href="style.css"></head><body><div class="container">
 <div class="card"><h3>Your Score: <?=$earned?>/<?=$total_points?> (<?=$percentage?>%)</h3><p><?=$passed ? "✅ Passed" : "❌ Failed"?></p></div>
 <h2>Detailed Answers</h2>
 <div class="content-grid">
@@ -32,4 +36,6 @@ $passed = $percentage >= $quiz['passing_percentage'];
 <?php endwhile; ?>
 </div>
 <a href="view_note.php?id=<?=$quiz['note_id']?>">Back to Note</a>
-</div></body></html>
+</div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>

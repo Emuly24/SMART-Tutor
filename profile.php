@@ -113,8 +113,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html>
 <head><title>My Profile</title><link rel="stylesheet" href="style.css"></head>
 <body>
-<div class="container">
     <?php include_once 'includes/header.php'; ?>
+
+<div class="container">
+    
     
     <?php if ($error): ?><div class="error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
     <?php if ($success): ?><div class="success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
@@ -172,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <h3>Actions</h3>
             <button id="editProfileBtn" class="btn">Edit Profile</button>
             <button id="changePasswordBtn" class="btn">Change Password</button>
-            <a href="logout.php" class="btn" style="background:#e74c3c;">Logout</a>
+            
         </div>
     </div>
 
@@ -207,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
-    <div class="footer"><a href="dashboard.php">← Back to Dashboard</a></div>
+    <div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 </div>
 <script>
     var editModal = document.getElementById('editModal');
@@ -237,5 +239,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (event.target == passModal) passModal.style.display = 'none';
     }
 </script>
+
 </body>
 </html>

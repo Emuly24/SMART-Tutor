@@ -19,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->get_result()->fetch_assoc();
         if ($user && password_verify($pass, $user['password'])) {
             $_SESSION['user_id'] = $user['id'];
+    $_SESSION['role'] = 'student';
+    unset($_SESSION['admin_logged']);
             $_SESSION['fullname'] = $user['fullname'];
             $_SESSION['approved'] = $user['approved'];
             $_SESSION['consent_signed'] = $user['consent_signed'];
@@ -39,30 +41,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="login-page">
+    <?php include_once 'includes/header.php'; ?>
+
     <?php include_once 'includes/progress_tracker.php'; ?>
 
     <div class="login-container">
-        <h2>Welcome Back</h2>
-        <?php if ($error): ?>
-            <div class="error"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
-        <form method="post">
-            <div class="form-group">
-                <label>Phone Number or Email</label>
-                <input type="text" name="login" required>
-            </div>
-            <div class="form-group">
-                <label>Password</label>
-                <input type="password" name="password" required>
-            </div>
-            <button type="submit">Login</button>
-        </form>
-        <p style="text-align:center; margin-top:1rem;">
-            Don't have an account? <a href="signup.php">Sign up here</a>
-        </p>
-        <p style="text-align:center; margin-top:0.5rem;">
-            <a href="forgot_password.php">Forgot password?</a>
-        </p>
+    <h2 class="login-title">Welcome Back</h2>
+
+    <?php if ($error): ?>
+        <div class="error"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+
+    <form method="post">
+        <div class="form-group">
+            <label for="login">Phone Number or Email</label>
+            <input type="text" id="login" name="login" required placeholder="Enter your phone or email">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required placeholder="Enter your password">
+        </div>
+
+        <button type="submit" class="btn btn-login">Login</button>
+    </form>
+
+    <div class="login-links">
+        <a href="signup.php">Don’t have an account? Sign up here</a>
+        <a href="forgot_password.php">Forgot password?</a>
     </div>
+</div>
+
+<div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
+
+
 </body>
 </html>

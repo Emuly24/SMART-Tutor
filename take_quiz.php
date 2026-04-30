@@ -9,7 +9,11 @@ if (!$quiz) die("Quiz not found.");
 if (!is_content_unlocked('quiz', $quiz_id, $uid)) {
     die("<!DOCTYPE html><html><head><title>Quiz Locked</title><link rel='stylesheet' href='style.css'></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class='container'><div class='header'><h1>Quiz Locked</h1><a href='dashboard.php'>Dashboard</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This quiz is not yet available for your group. Please wait until the admin unlocks it.</div><a href='dashboard.php'>← Back to Dashboard</a></div></body></html>");
+
+    
+<div class='container'><div class='header'><a href='dashboard.php'>Dashboard</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This quiz is not yet available for your group. Please wait until the admin unlocks it.</div><a href='dashboard.php'>← Back to Dashboard</a></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>");
 }
 $note = $conn->query("SELECT title FROM notes WHERE id={$quiz['note_id']}")->fetch_assoc();
 
@@ -32,7 +36,7 @@ if ($remaining <= 0) {
     exit;
 }
 ?>
-<!DOCTYPE html><html><head><title>Take Quiz</title><link rel="stylesheet" href="style.css"><script>let remaining=<?=$remaining?>; function timer(){if(remaining<=0){document.getElementById('timer').innerHTML="Submitting..."; window.location='submit_quiz.php?quiz_id=<?=$quiz_id?>';} let mins=Math.floor(remaining/60); let secs=remaining%60; document.getElementById('timer').innerHTML=`Time left: ${mins}m ${secs}s`; remaining--; setTimeout(timer,1000);} window.onload=timer;</script></head><body><div class="container"><div class="header"><h1>📝 <?=htmlspecialchars($quiz['title'])?></h1><div id="timer" style="background:#e74c3c;color:white;padding:5px 10px;border-radius:20px;"></div></div>
+<!DOCTYPE html><html><head><title>Take Quiz</title><link rel="stylesheet" href="style.css"><script>let remaining=<?=$remaining?>; function timer(){if(remaining<=0){document.getElementById('timer').innerHTML="Submitting..."; window.location='submit_quiz.php?quiz_id=<?=$quiz_id?>';} let mins=Math.floor(remaining/60); let secs=remaining%60; document.getElementById('timer').innerHTML=`Time left: ${mins}m ${secs}s`; remaining--; setTimeout(timer,1000);} window.onload=timer;</script></head><body><div class="container"></div>
 <form method="post" action="submit_quiz.php">
 <input type="hidden" name="quiz_id" value="<?=$quiz_id?>">
 <?php while($q=$questions->fetch_assoc()): ?>
@@ -48,4 +52,6 @@ if ($remaining <= 0) {
 <?php endif; ?></div>
 <?php endwhile; ?>
 <button type="submit">Submit Quiz</button>
-</form></div></body></html>
+</form></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
+
+</body></html>
