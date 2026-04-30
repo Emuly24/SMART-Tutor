@@ -16,36 +16,56 @@ $conn = getDB();
 
 // Ensure groups exist (run once if needed)
 $groups_exist = $conn->query("SELECT COUNT(*) FROM groups")->fetch_row()[0];
-if ($groups_exist < 10) {
-    $conn->query("INSERT IGNORE INTO groups (class_level, group_number, max_members, male_limit, female_limit) VALUES
-        ('Form 3', 1, 5, 2, 3),
-        ('Form 3', 2, 5, 2, 3),
-        ('Form 3', 3, 5, 2, 3),
-        ('Form 3', 4, 5, 2, 3),
-        ('Form 3', 5, 5, 2, 3),
-        ('Form 4', 1, 5, 2, 3),
-        ('Form 4', 2, 5, 2, 3),
-        ('Form 4', 3, 5, 2, 3),
-        ('Form 4', 4, 5, 2, 3),
-        ('Form 4', 5, 5, 2, 3)");
+if ($groups_exist < 40) { // 20 sciences + 20 humanities (5 per class per route, Form 3+4)
+    // Insert default groups for sciences and humanities
+    $conn->query("INSERT IGNORE INTO groups (class_level, group_number, max_members, male_limit, female_limit, route) VALUES
+        ('Form 3', 1, 5, 2, 3, 'sciences'),
+        ('Form 3', 2, 5, 2, 3, 'sciences'),
+        ('Form 3', 3, 5, 2, 3, 'sciences'),
+        ('Form 3', 4, 5, 2, 3, 'sciences'),
+        ('Form 3', 5, 5, 2, 3, 'sciences'),
+        ('Form 4', 1, 5, 2, 3, 'sciences'),
+        ('Form 4', 2, 5, 2, 3, 'sciences'),
+        ('Form 4', 3, 5, 2, 3, 'sciences'),
+        ('Form 4', 4, 5, 2, 3, 'sciences'),
+        ('Form 4', 5, 5, 2, 3, 'sciences'),
+        ('Form 3', 1, 5, 2, 3, 'humanities'),
+        ('Form 3', 2, 5, 2, 3, 'humanities'),
+        ('Form 3', 3, 5, 2, 3, 'humanities'),
+        ('Form 3', 4, 5, 2, 3, 'humanities'),
+        ('Form 3', 5, 5, 2, 3, 'humanities'),
+        ('Form 4', 1, 5, 2, 3, 'humanities'),
+        ('Form 4', 2, 5, 2, 3, 'humanities'),
+        ('Form 4', 3, 5, 2, 3, 'humanities'),
+        ('Form 4', 4, 5, 2, 3, 'humanities'),
+        ('Form 4', 5, 5, 2, 3, 'humanities')");
 }
 
 $msg = '';
 if (isset($_POST['app_id'])) {
     $app_id = (int)$_POST['app_id'];
-    $app = $conn->query("SELECT u.id as uid, u.class_level, u.gender FROM applications a JOIN users u ON a.user_id=u.id WHERE a.id=$app_id")->fetch_assoc();
+    $app = $conn->query("SELECT u.id as uid, u.class_level, u.gender, u.route 
+        FROM applications a 
+        JOIN users u ON a.user_id = u.id 
+        WHERE a.id = $app_id")->fetch_assoc();
     if ($_POST['action'] == 'approve') {
         $class = $app['class_level'];
         $gender = $app['gender'];
+        $route = $app['route'];
         if (empty($class)) {
             $msg = "Student class level is missing.";
+        } elseif (empty($route)) {
+            $msg = "Student route (sciences/humanities) not determined.";
         } else {
+            // Find available group for this class, gender, and route
             $available_group = null;
             $groups = $conn->query("SELECT g.id, g.group_number, 
                 (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as current_count,
                 (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id=u.id WHERE gm.group_id = g.id AND u.gender='Male') as male_count,
                 (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id=u.id WHERE gm.group_id = g.id AND u.gender='Female') as female_count
-                FROM groups g WHERE g.class_level = '$class' ORDER BY g.group_number ASC");
+                FROM groups g 
+                WHERE g.class_level = '$class' AND g.route = '$route' 
+                ORDER BY g.group_number ASC");
             
             while ($grp = $groups->fetch_assoc()) {
                 $male_ok = ($gender == 'Male') ? ($grp['male_count'] < 2) : true;
@@ -57,15 +77,17 @@ if (isset($_POST['app_id'])) {
             }
             
             if (!$available_group) {
-                $msg = "No available group for {$class} ({$gender}). All groups are full or gender limit reached.";
+                $msg = "No available group for {$class} ({$route}, {$gender}). All groups are full or gender limit reached.";
             } else {
                 $conn->query("INSERT INTO group_members (user_id, group_id) VALUES ({$app['uid']}, $available_group)");
                 $conn->query("UPDATE applications SET status='approved' WHERE id=$app_id");
                 $conn->query("UPDATE users SET approved=1 WHERE id={$app['uid']}");
-                $msg = "Approved and assigned to group.";
+                
+                // Send motivational notification
                 $app_data = $conn->query("SELECT ambition, university, target_points FROM applications WHERE user_id={$app['uid']}")->fetch_assoc();
                 $motivation = "Congratulations! Your application is approved. Remember your goal: to become {$app_data['ambition']} at {$app_data['university']} with {$app_data['target_points']} points. We believe in you!";
                 $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$app['uid']}, '$motivation')");
+                $msg = "Approved and assigned to group.";
             }
         }
     } else {
@@ -75,30 +97,45 @@ if (isset($_POST['app_id'])) {
     header("Location: admin_approve.php?msg=" . urlencode($msg));
     exit;
 }
-$pending = $conn->query("SELECT a.*, u.fullname, u.phone, u.class_level, u.id as uid, u.gender FROM applications a JOIN users u ON a.user_id=u.id WHERE a.status='pending'");
+$pending = $conn->query("SELECT a.*, u.fullname, u.phone, u.class_level, u.id as uid, u.gender, u.route 
+    FROM applications a 
+    JOIN users u ON a.user_id = u.id 
+    WHERE a.status='pending'");
 $msg = $_GET['msg'] ?? '';
 ?>
 <!DOCTYPE html>
 <html><head><title>Approve Applications</title><link rel="stylesheet" href="style.css"></head><body>
-    <?php include_once 'includes/header.php'; ?>
-
-
-<?php include_once 'includes/progress_tracker.php'; ?>
 <div class="container">
-
-<?php if($msg) echo "<div class='success'>$msg</div>"; while($r=$pending->fetch_assoc()): 
-    $class = $r['class_level'];
-    $groups_info = $conn->query("SELECT g.group_number, 
-        (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as cnt,
-        (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id=u.id WHERE gm.group_id = g.id AND u.gender='Male') as males,
-        (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id=u.id WHERE gm.group_id = g.id AND u.gender='Female') as females
-        FROM groups g WHERE g.class_level = '$class' ORDER BY g.group_number");
+    <?php include_once 'includes/header.php'; ?>
+    <h1>Pending Applications</h1>
+    <?php if($msg) echo "<div class='success'>$msg</div>"; ?>
+    <?php while($r = $pending->fetch_assoc()): 
+        $class = $r['class_level'];
+        $route = $r['route'];
+        // Count current groups for this class and route
+        $groups_info = $conn->query("SELECT g.group_number, 
+            (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as cnt,
+            (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id=u.id WHERE gm.group_id = g.id AND u.gender='Male') as males,
+            (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id=u.id WHERE gm.group_id = g.id AND u.gender='Female') as females
+            FROM groups g WHERE g.class_level = '$class' AND g.route = '$route' ORDER BY g.group_number");
     ?>
-<div class="card"><h3><?=htmlspecialchars($r['fullname'])?></h3><p>Class: <?=$r['class_level']?> | Gender: <?=$r['gender']?> | Phone: <?=$r['phone']?><br>Target Points: <?=$r['target_points']?> | Ambition: <?=htmlspecialchars($r['ambition'])?></p>
-<p><strong>Group status (max 5 per group, 2M/3F):</strong></p><ul><?php while($g=$groups_info->fetch_assoc()):?><li>Group <?=$g['group_number']?>: <?=$g['cnt']?>/5 members (<?=$g['males']?>M / <?=$g['females']?>F)</li><?php endwhile;?></ul>
-<form method="post" style="display:inline"><input type="hidden" name="app_id" value="<?=$r['id']?>"><button type="submit" name="action" value="approve">Approve</button><button type="submit" name="action" value="reject">Reject</button></form></div>
-<?php endwhile; ?>
-<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+        <div class="card">
+            <h3><?= htmlspecialchars($r['fullname']) ?></h3>
+            <p>Class: <?= $r['class_level'] ?> | Gender: <?= $r['gender'] ?> | Route: <?= ucfirst($r['route']) ?> | Phone: <?= $r['phone'] ?><br>
+            Target Points: <?= $r['target_points'] ?> | Ambition: <?= htmlspecialchars($r['ambition']) ?></p>
+            <p><strong>Group status (max 5 per group, 2M/3F):</strong></p>
+            <ul>
+            <?php while($g = $groups_info->fetch_assoc()): ?>
+                <li>Group <?= $g['group_number'] ?>: <?= $g['cnt'] ?>/5 members (<?= $g['males'] ?>M / <?= $g['females'] ?>F)</li>
+            <?php endwhile; ?>
+            </ul>
+            <form method="post" style="display:inline">
+                <input type="hidden" name="app_id" value="<?= $r['id'] ?>">
+                <button type="submit" name="action" value="approve">Approve</button>
+                <button type="submit" name="action" value="reject">Reject</button>
+            </form>
+        </div>
+    <?php endwhile; ?>
+    <div class="footer"><a href="admin_dashboard.php">← Back</a></div>
 </div>
-
 </body></html>

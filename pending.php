@@ -17,12 +17,6 @@ if (!isset($_SESSION['user_id'])) {
     <?php include_once 'includes/header.php'; ?>
 
     <?php include_once 'includes/progress_tracker.php'; ?>
-
-<div class="container">
-    
-
-    <?php include_once 'progress_tracker.php'; ?>
-
     <div class="note-container">
         <div class="card">
             <h2><i class="fas fa-hourglass-half"></i> Application Pending Approval</h2>

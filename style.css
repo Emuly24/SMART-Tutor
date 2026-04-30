@@ -989,3 +989,171 @@ input[type="file"] {
     0% { opacity: 0; transform: translateY(15px); }
     100% { opacity: 1; transform: translateY(0); }
 }
+/* ---------- Application Page ---------- */
+.apply-page {
+    background: var(--page-bg, #f9fafb);
+    font-family: 'Playfair Display', sans-serif;
+}
+
+.apply-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    background: var(--card-bg, #fff);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: var(--card-shadow, 0 4px 12px rgba(0,0,0,0.1));
+}
+
+/* ---------- Messages ---------- */
+.error {
+    background: #fee2e2;
+    color: #b91c1c;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+.success {
+    background: #dcfce7;
+    color: #166534;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+.success a {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+/* ---------- Form Groups ---------- */
+.form-group {
+    margin-bottom: 1.25rem;
+}
+.form-group label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 6px rgba(37,99,235,0.4);
+    outline: none;
+}
+
+/* ---------- Checkbox Group ---------- */
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+}
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--card-alt-bg, #f3f4f6);
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+.checkbox-group label:hover {
+    background: #2563eb;
+    color: #fff;
+}
+.checkbox-group input[type="checkbox"] {
+    accent-color: #2563eb;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+/* ---------- Help Text ---------- */
+.help-text {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+}
+
+/* ---------- Declaration ---------- */
+.declaration {
+    background: #f9fafb;
+    border-left: 4px solid #2563eb;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin: 1.5rem 0;
+    font-size: 0.9rem;
+    color: #374151;
+}
+
+/* ---------- Submission Date ---------- */
+.submission-date {
+    margin-bottom: 1.5rem;
+}
+.submission-date label {
+    font-weight: 600;
+    margin-right: 0.5rem;
+}
+.submission-date input {
+    border: none;
+    background: #f3f4f6;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+}
+
+/* ---------- Buttons ---------- */
+button[type="submit"] {
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+button[type="submit"]:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+}
+
+/* ---------- Back Button ---------- */
+.btn-back {
+    display: inline-block;
+    background: #facc15;
+    color: #111;
+    font-weight: 600;
+    padding: 0.5rem 1.2rem;
+    border-radius: 2rem;
+    text-decoration: none;
+    transition: background 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.btn-back:hover {
+    background: #fbbf24;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+/* ---------- Animations ---------- */
+@keyframes fadeSlideUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+.apply-container, .form-group, .checkbox-group label, button, .btn-back {
+    opacity: 0;
+    animation: fadeSlideUp 0.6s forwards;
+}

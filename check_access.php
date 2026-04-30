@@ -28,7 +28,7 @@ $allowed_public = ['index.php', 'signup.php', 'login.php', 'logout.php'];
 
 // --- NOT APPROVED ---
 if (!$user['approved']) {
-    $allowed = array_merge($allowed_public, ['apply.php', 'profile.php', 'notifications.php']);
+    $allowed = array_merge($allowed_public, ['apply.php', 'profile.php', 'notifications.php', 'pending.php']);
     if (!in_array($current, $allowed)) {
         header("Location: apply.php");
         exit;
