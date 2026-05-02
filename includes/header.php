@@ -3,6 +3,13 @@ require_once __DIR__ . '/../config.php';
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 
+// Helper function to uppercase acronyms inside parentheses (e.g., (must) → (MUST))
+function formatUniversityName($uni) {
+    return preg_replace_callback('/\(([^)]+)\)/', function($matches) {
+        return '(' . strtoupper($matches[1]) . ')';
+    }, $uni);
+}
+
 $role = $_SESSION['role'] ?? (isset($_SESSION['admin_logged']) ? 'admin' : (isset($_SESSION['user_id']) ? 'student' : 'public'));
 $fullname = '';
 $tagline = '';
@@ -15,7 +22,7 @@ if ($role == 'student' && isset($_SESSION['user_id'])) {
         LEFT JOIN applications a ON u.id = a.user_id 
         WHERE u.id = $uid")->fetch_assoc();
     if ($student) {
-        $fullname = $student['fullname'];
+        $fullname = htmlspecialchars($student['fullname']);
         if (!empty($student['ambition']) || !empty($student['university'])) {
             $prefixes = [
                 '✨ Aspiring', '🚀 Future', '🌟 Goal: become', '🎯 Aiming to be',
@@ -24,7 +31,7 @@ if ($role == 'student' && isset($_SESSION['user_id'])) {
             $randomPrefix = $prefixes[array_rand($prefixes)];
             
             $career = !empty($student['ambition']) ? ucwords(strtolower($student['ambition'])) : '';
-            $uni = !empty($student['university']) ? ucwords(strtolower($student['university'])) : '';
+            $uni = !empty($student['university']) ? formatUniversityName(ucwords(strtolower($student['university']))) : '';
             
             if ($career && $uni) {
                 $tagline = "$randomPrefix $career at $uni";
@@ -70,7 +77,6 @@ $page_titles = [
     'apply' => 'Application',
     'signup' => 'Sign Up',
     'login' => 'Login',
-    // Admin pages
     'admin_approve' => 'Approve Applications',
     'admin_students_list' => 'Student List',
     'admin_discipline' => 'Discipline',
@@ -99,6 +105,7 @@ $page_titles = [
     'admin_edit_note' => 'Edit Note',
     'admin_edit_assignment' => 'Edit Assignment',
     'admin_add_questions' => 'Add Exam Questions',
+    'admin_run_pending_exercises' => 'Run Pending Checks'
 ];
 $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $current_file));
 ?>
@@ -128,7 +135,7 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
                 <li><a href="my_group.php">👥 My Group</a></li>   
                 <li><a href="logout.php">🚪 Logout</a></li>
             <?php endif; ?> 
-                  </ul>
+        </ul>
         <div class="menu-overlay"></div>
     </div>
 
@@ -140,10 +147,10 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
 
     <div class="nav-right">
         <?php if ($role != 'public'): ?>
-            <div class="user-info">
-                <span class="user-name"><?= htmlspecialchars($fullname) ?></span>
+            <div class="user-info-stacked">
+                <div class="user-name-stacked"><?= htmlspecialchars($fullname) ?></div>
                 <?php if ($tagline): ?>
-                    <span class="user-tagline"><?= htmlspecialchars($tagline) ?></span>
+                    <div class="user-tagline-stacked"><?= htmlspecialchars($tagline) ?></div>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -154,6 +161,9 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
         <?php endif; ?>
     </div>
 </nav>
+
+<!-- Toast container -->
+<div id="toast" class="toast"></div>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -173,7 +183,7 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
             });
         }
 
-        // Hamburger close on outside click and on overlay click
+        // Hamburger close on outside click and overlay
         const menuToggle = document.getElementById('menu-toggle');
         const overlay = document.querySelector('.menu-overlay');
         if (menuToggle && overlay) {
@@ -193,4 +203,23 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
             });
         }
     });
+
+    // Toast notification system
+    function showToast(message, type = 'success') {
+        let existingToast = document.getElementById('dynamic-toast');
+        if (existingToast) existingToast.remove();
+        const toast = document.createElement('div');
+        toast.id = 'dynamic-toast';
+        toast.className = 'toast toast-' + type;
+        toast.innerHTML = `<span style="display: flex; align-items: center; gap: 0.5rem;">
+            ${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}
+            ${message}
+        </span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
 </script>

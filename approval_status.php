@@ -5,7 +5,7 @@ $conn = getDB();
 $uid = $_SESSION['user_id'];
 
 $user = $conn->query("SELECT approved, consent_signed, class_level, status FROM users WHERE id=$uid")->fetch_assoc();
-$application = $conn->query("SELECT * FROM applications WHERE user_id=$uid")->fetch_assoc();
+$application = $conn->query("SELECT status, admin_notes FROM applications WHERE user_id=$uid")->fetch_assoc();
 ?>
 <!DOCTYPE html>
 <html>
@@ -31,7 +31,7 @@ $application = $conn->query("SELECT * FROM applications WHERE user_id=$uid")->fe
                 <p><strong>❌ Your application has been rejected.</strong></p>
                 <p>Reason: <?= htmlspecialchars($application['admin_notes'] ?? 'No specific reason provided.') ?></p>
                 <p>If you believe this is a mistake, please contact the admin directly.</p>
-                <a href="contact.php" class="btn">Contact Admin</a>
+                <a href="student_message.php" class="btn">Contact Admin</a>
             </div>
         <?php else: ?>
             <div class="warning">

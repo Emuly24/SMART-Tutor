@@ -1,8 +1,9 @@
 <?php
 require_once 'config.php';
 session_start();
+$admin_hash = getAdminHash();
 if (!isset($_SESSION['admin_logged'])) {
-    if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], ADMIN_HASH)) {
+    if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
         header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Access denied';
@@ -40,7 +41,7 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
         <div class="stat card" style="flex:1; min-width:150px;"><i class="fas fa-ban"></i><br><strong><?= $suspensions ?></strong><br>Suspended Students</div>
     </div>
 
-    <!-- Admin action cards (core daily tasks) -->
+    <!-- Admin action cards -->
     <div class="content-grid">
         <div class="card">
             <i class="fas fa-user-check"></i>
@@ -105,6 +106,7 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_settings.php">Change Password</a>
                 <a href="admin_notifications_center.php">Notifications Center</a>
                 <a href="admin_feedback.php">Student Feedback</a>
+                <a href="admin_run_pending_exercises.php">⏰ Run Pending Exercise Checks</a>
             </div>
         </div>
     </div>
