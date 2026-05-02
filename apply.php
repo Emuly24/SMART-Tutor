@@ -88,7 +88,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $conn->query("INSERT INTO applications (user_id, ambition, career_reason, university, why_join, subject_assist, target_points, seriousness_answers) VALUES ($uid, '$ambition', '$career_reason', '$university', '$why_join', '$subjects_assist', $target_points, '$seriousness')");
         }
-        // Redirect to pending page after successful submission
         header("Location: pending.php");
         exit;
     }
@@ -105,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php if ($success): ?>
             <div class="success"><?= htmlspecialchars($success) ?> <a href="dashboard.php">Back to Dashboard</a></div>
         <?php else: ?>
-            <form method="post">
+            <form method="post" id="applyForm">
                 <div class="form-group">
                     <label>Which class are you currently in? *</label>
                     <select name="class_level" required>
@@ -126,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="form-group">
                     <label>Date of Birth *</label>
-                    <input type="date" name="dob" value="<?= htmlspecialchars($user['dob'] ?? '') ?>" placeholder="YYYY-MM-DD" required>
+                    <input type="date" name="dob" value="<?= htmlspecialchars($user['dob'] ?? '') ?>" required>
                 </div>
 
                 <div class="form-group">
@@ -134,23 +133,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="text" name="school" value="<?= htmlspecialchars($user['school'] ?? '') ?>" placeholder="e.g., Ntcheu Secondary School" required>
                 </div>
 
+                <!-- SUBJECTS TAKEN (with Select All / Clear All) -->
                 <div class="form-group">
                     <label>Subjects you are currently taking *</label>
-                    <div class="checkbox-group">
+                    <div style="margin-bottom: 8px;">
+                        <button type="button" class="btn-small" onclick="toggleGroup('subjects_taken', true)">Select All</button>
+                        <button type="button" class="btn-small" onclick="toggleGroup('subjects_taken', false)">Clear All</button>
+                    </div>
+                    <div class="checkbox-group" id="subjects_taken_group">
                         <?php $current_subjects = explode(', ', $user['subjects'] ?? ''); ?>
-                        <?php foreach ($all_subjects as $s): ?>
-                            <label><input type="checkbox" name="subjects_taken[]" value="<?= $s ?>" <?= in_array($s, $current_subjects) ? 'checked' : '' ?>> <?= $s ?></label>
+                        <?php foreach ($all_subjects as $s): 
+                            $checked = in_array($s, $current_subjects);
+                            $id = "subj_" . preg_replace('/[^a-zA-Z0-9]/', '_', $s);
+                        ?>
+                            <input type="checkbox" name="subjects_taken[]" value="<?= $s ?>" id="<?= $id ?>" <?= $checked ? 'checked' : '' ?>>
+                            <label for="<?= $id ?>"><?= $s ?></label>
                         <?php endforeach; ?>
                     </div>
                     <small class="help-text">Select all subjects you are studying at school.</small>
                 </div>
 
+                <!-- SUBJECTS ASSIST (with Select All / Clear All) -->
                 <div class="form-group">
                     <label>Which subjects do you need assistance with? (select all that apply) *</label>
-                    <div class="checkbox-group">
+                    <div style="margin-bottom: 8px;">
+                        <button type="button" class="btn-small" onclick="toggleGroup('subjects_assist', true)">Select All</button>
+                        <button type="button" class="btn-small" onclick="toggleGroup('subjects_assist', false)">Clear All</button>
+                    </div>
+                    <div class="checkbox-group" id="subjects_assist_group">
                         <?php $assist_subjects = explode(', ', $application['subject_assist'] ?? ''); ?>
-                        <?php foreach ($core_subjects as $s): ?>
-                            <label><input type="checkbox" name="subjects_assist[]" value="<?= $s ?>" <?= in_array($s, $assist_subjects) ? 'checked' : '' ?>> <?= $s ?></label>
+                        <?php foreach ($core_subjects as $s):
+                            $checked = in_array($s, $assist_subjects);
+                            $id = "assist_" . preg_replace('/[^a-zA-Z0-9]/', '_', $s);
+                        ?>
+                            <input type="checkbox" name="subjects_assist[]" value="<?= $s ?>" id="<?= $id ?>" <?= $checked ? 'checked' : '' ?>>
+                            <label for="<?= $id ?>"><?= $s ?></label>
                         <?php endforeach; ?>
                     </div>
                     <small class="help-text">Select the subjects you struggle with and want help (English, Mathematics, Biology, Physics, Chemistry).</small>
@@ -190,7 +207,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <div class="form-group">
                     <label>What is your target MSCE points? *</label>
-                    <input type="number" name="target_points" min="0" max="20" value="<?= htmlspecialchars($application['target_points'] ?? '') ?>" placeholder="e.g., 15" required>
+                    <input type="number" name="target_points" id="targetPoints" min="0" max="20" value="<?= htmlspecialchars($application['target_points'] ?? '') ?>" placeholder="e.g., 15" required>
+                    <div id="pointsWarning" class="warning" style="display: none; font-size: 0.8rem;">⚠️ Target points cannot exceed 20.</div>
                 </div>
 
                 <div class="declaration">
@@ -202,23 +220,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="date" value="<?= date('Y-m-d') ?>" readonly>
                 </div>
 
-                <button type="submit">Submit Application</button>
+                <button type="submit" id="submitBtn">Submit Application</button>
             </form>
         <?php endif; ?>
     </div>
     <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
 </body>
 <script>
+    // 1. Custom university toggle
     const uniSelect = document.getElementById('universitySelect');
     const customDiv = document.getElementById('customUniversityDiv');
     function toggleCustomUni() {
-        if (uniSelect.value === 'Other') {
-            customDiv.style.display = 'block';
-        } else {
-            customDiv.style.display = 'none';
-        }
+        customDiv.style.display = uniSelect.value === 'Other' ? 'block' : 'none';
     }
     uniSelect.addEventListener('change', toggleCustomUni);
     toggleCustomUni();
+
+    // 2. Select All / Clear All for checkboxes
+    function toggleGroup(groupName, selectAll) {
+        const group = document.getElementById(groupName + '_group');
+        if (!group) return;
+        const checkboxes = group.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = selectAll);
+    }
+
+    // 3. Real-time validation for target points
+    const targetPoints = document.getElementById('targetPoints');
+    const pointsWarning = document.getElementById('pointsWarning');
+    if (targetPoints) {
+        targetPoints.addEventListener('input', function() {
+            const val = parseInt(this.value);
+            if (val > 20) {
+                pointsWarning.style.display = 'block';
+                this.setCustomValidity('Target points cannot exceed 20.');
+            } else {
+                pointsWarning.style.display = 'none';
+                this.setCustomValidity('');
+            }
+        });
+        if (parseInt(targetPoints.value) > 20) targetPoints.dispatchEvent(new Event('input'));
+    }
+
+    // 4. Confirm before submit
+    const form = document.getElementById('applyForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to submit this application? Once submitted, you cannot edit it until admin responds.')) {
+                e.preventDefault();
+            }
+        });
+    }
 </script>
 </html>

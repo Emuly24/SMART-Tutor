@@ -28,17 +28,23 @@ $allowed_public = ['index.php', 'signup.php', 'login.php', 'logout.php'];
 
 // --- NOT APPROVED ---
 if (!$user['approved']) {
-    // These pages are allowed while waiting for admin approval
-    $allowed = array_merge($allowed_public, [
-        'apply.php',
-        'profile.php',
-        'notifications.php',
-        'pending.php',
-        'approval_status.php'
-    ]);
-    if (!in_array($current, $allowed)) {
-        header("Location: pending.php"); // send to pending page instead of apply
-        exit;
+    // Check if user has already submitted an application
+    $has_application = $conn->query("SELECT id FROM applications WHERE user_id = $user_id")->num_rows > 0;
+    
+    if (!$has_application) {
+        // No application yet → must go to apply.php
+        $allowed = array_merge($allowed_public, ['apply.php', 'profile.php', 'notifications.php']);
+        if (!in_array($current, $allowed)) {
+            header("Location: apply.php");
+            exit;
+        }
+    } else {
+        // Application submitted, waiting for approval
+        $allowed = array_merge($allowed_public, ['apply.php', 'profile.php', 'notifications.php', 'pending.php', 'approval_status.php']);
+        if (!in_array($current, $allowed)) {
+            header("Location: pending.php");
+            exit;
+        }
     }
     return;
 }
@@ -49,7 +55,7 @@ if (!$user['consent_signed']) {
         'consent.php',
         'profile.php',
         'notifications.php',
-        'approval_status.php' // they may still check status
+        'approval_status.php'
     ]);
     if (!in_array($current, $allowed)) {
         header("Location: consent.php");
@@ -66,7 +72,6 @@ if ($user['status'] == 'suspended') {
     } else {
         $conn2 = getDB();
         $conn2->query("UPDATE users SET status='active', suspension_end=NULL WHERE id=$user_id");
-        // update session status as well
         $_SESSION['status'] = 'active';
     }
 }
