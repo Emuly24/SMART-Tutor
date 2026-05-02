@@ -14,33 +14,7 @@ if (!isset($_SESSION['admin_logged'])) {
 }
 $conn = getDB();
 
-// Ensure groups exist (run once if needed)
-$groups_exist = $conn->query("SELECT COUNT(*) FROM groups")->fetch_row()[0];
-if ($groups_exist < 40) { // 20 sciences + 20 humanities (5 per class per route, Form 3+4)
-    // Insert default groups for sciences and humanities
-    $conn->query("INSERT IGNORE INTO groups (class_level, group_number, max_members, male_limit, female_limit, route) VALUES
-        ('Form 3', 1, 5, 2, 3, 'sciences'),
-        ('Form 3', 2, 5, 2, 3, 'sciences'),
-        ('Form 3', 3, 5, 2, 3, 'sciences'),
-        ('Form 3', 4, 5, 2, 3, 'sciences'),
-        ('Form 3', 5, 5, 2, 3, 'sciences'),
-        ('Form 4', 1, 5, 2, 3, 'sciences'),
-        ('Form 4', 2, 5, 2, 3, 'sciences'),
-        ('Form 4', 3, 5, 2, 3, 'sciences'),
-        ('Form 4', 4, 5, 2, 3, 'sciences'),
-        ('Form 4', 5, 5, 2, 3, 'sciences'),
-        ('Form 3', 1, 5, 2, 3, 'humanities'),
-        ('Form 3', 2, 5, 2, 3, 'humanities'),
-        ('Form 3', 3, 5, 2, 3, 'humanities'),
-        ('Form 3', 4, 5, 2, 3, 'humanities'),
-        ('Form 3', 5, 5, 2, 3, 'humanities'),
-        ('Form 4', 1, 5, 2, 3, 'humanities'),
-        ('Form 4', 2, 5, 2, 3, 'humanities'),
-        ('Form 4', 3, 5, 2, 3, 'humanities'),
-        ('Form 4', 4, 5, 2, 3, 'humanities'),
-        ('Form 4', 5, 5, 2, 3, 'humanities')");
-}
-
+// Ensure groups exist (run once if needed) – we already have groups, so optional
 $msg = '';
 if (isset($_POST['app_id'])) {
     $app_id = (int)$_POST['app_id'];
@@ -90,9 +64,11 @@ if (isset($_POST['app_id'])) {
                 $msg = "Approved and assigned to group.";
             }
         }
-    } else {
-        $conn->query("UPDATE applications SET status='rejected' WHERE id=$app_id");
-        $msg = "Rejected.";
+    } else { // REJECT
+        $rejection_reason = trim($_POST['rejection_reason'] ?? 'No specific reason provided.');
+        $conn->query("UPDATE applications SET status='rejected', admin_notes='$rejection_reason' WHERE id=$app_id");
+        // Do not change users.approved (it remains 0)
+        $msg = "Rejected. Reason saved.";
     }
     header("Location: admin_approve.php?msg=" . urlencode($msg));
     exit;
@@ -129,9 +105,13 @@ $msg = $_GET['msg'] ?? '';
                 <li>Group <?= $g['group_number'] ?>: <?= $g['cnt'] ?>/5 members (<?= $g['males'] ?>M / <?= $g['females'] ?>F)</li>
             <?php endwhile; ?>
             </ul>
-            <form method="post" style="display:inline">
+            <form method="post" style="margin-bottom:0">
                 <input type="hidden" name="app_id" value="<?= $r['id'] ?>">
                 <button type="submit" name="action" value="approve">Approve</button>
+                <br><br>
+                <label>Rejection reason (if rejecting):</label>
+                <textarea name="rejection_reason" rows="2" style="width:100%"></textarea>
+                <br>
                 <button type="submit" name="action" value="reject">Reject</button>
             </form>
         </div>

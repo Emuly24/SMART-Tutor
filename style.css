@@ -1157,3 +1157,164 @@ button[type="submit"]:hover {
     opacity: 0;
     animation: fadeSlideUp 0.6s forwards;
 }
+/* ---------- Consent Container ---------- */
+.consent-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    background: var(--card-bg, #fff);
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: var(--card-shadow, 0 4px 12px rgba(0,0,0,0.1));
+    font-family: 'Playfair Display', sans-serif;
+}
+
+/* ---------- Headings ---------- */
+.consent-container h1,
+.consent-container h2,
+.consent-container h3 {
+    margin-bottom: 1rem;
+    font-weight: 700;
+    color: var(--text-color, #111);
+}
+
+/* ---------- Agreement Lists ---------- */
+.agreement-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 1.5rem;
+}
+.agreement-list li {
+    background: var(--card-alt-bg, #f9fafb);
+    margin: 0.4rem 0;
+    padding: 0.6rem 0.8rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.agreement-list li:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* ---------- Consent Form ---------- */
+.consent-form .form-group {
+    margin: 1rem 0;
+}
+.consent-form label {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.consent-form input[type="checkbox"] {
+    accent-color: #2563eb;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* ---------- Signature Section ---------- */
+.signature-section {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: var(--card-alt-bg, #f3f4f6);
+    border-radius: 0.75rem;
+}
+.signature-line {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1rem;
+}
+.signature-line label {
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+.signature-line input {
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 0.9rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.signature-line input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 6px rgba(37,99,235,0.4);
+    outline: none;
+}
+
+/* ---------- Success Card ---------- */
+.success-card {
+    background: #dcfce7;
+    border-left: 5px solid #16a34a;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: var(--card-shadow);
+    animation: fadeSlideUp 0.6s forwards;
+}
+.success-card h2 {
+    color: #166534;
+    margin-bottom: 1rem;
+}
+.student-details {
+    background: #f0fdf4;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    margin-bottom: 1rem;
+}
+.success-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+/* ---------- Buttons ---------- */
+.btn,
+.btn-secondary {
+    display: inline-block;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background 0.3s ease, transform 0.2s ease;
+}
+.btn {
+    background: #2563eb;
+    color: #fff;
+}
+.btn:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+}
+.btn-secondary {
+    background: #facc15;
+    color: #111;
+}
+.btn-secondary:hover {
+    background: #fbbf24;
+    transform: translateY(-2px);
+}
+
+/* ---------- Back Button ---------- */
+.btn-back {
+    display: inline-block;
+    background: #facc15;
+    color: #111;
+    font-weight: 600;
+    padding: 0.5rem 1.2rem;
+    border-radius: 2rem;
+    text-decoration: none;
+    transition: background 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.btn-back:hover {
+    background: #fbbf24;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+}
+
+/* ---------- Animations ---------- */
+@keyframes fadeSlideUp {
+    0% { opacity: 0; transform: translateY(10px); }
+    100% { opacity: 1; transform: translateY(0); }
+}

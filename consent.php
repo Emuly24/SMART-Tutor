@@ -15,6 +15,15 @@ if ($u['consent_signed']) {
     die("Already agreed. <a href='dashboard.php'>Dashboard</a>");
 }
 
+// Generate a signature from the user's name: first letter of surname + '.' + first name
+function generateSignature($fullname) {
+    $parts = explode(' ', $fullname);
+    $surname = end($parts);
+    $firstName = $parts[0];
+    return substr($surname, 0, 1) . '. ' . $firstName;
+}
+$generated_signature = generateSignature($user['fullname']);
+
 $success = false;
 $signed_by = '';
 $signed_date = '';
@@ -44,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
                 <p><strong>Class:</strong> <?= htmlspecialchars($user['class_level']) ?></p>
                 <p><strong>School:</strong> <?= htmlspecialchars($user['school']) ?></p>
                 <p><strong>Signed on:</strong> <?= htmlspecialchars($signed_date) ?></p>
+                <p><strong>Signature:</strong> <?= htmlspecialchars($signed_by) ?></p>
             </div>
             <p>You have successfully agreed to the SMART Tutor group rules. This confirmation serves as your official commitment.</p>
             <div class="success-actions">
@@ -65,16 +75,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
             async function downloadPDF() {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const leftMargin = 20;
+                let y = 20;
+
                 doc.setFontSize(18);
-                doc.text("SMART Tutor Consent Agreement", 20, 20);
+                doc.text("SMART Tutor Consent Agreement", leftMargin, y);
+                y += 10;
+                doc.setLineWidth(0.5);
+                doc.line(leftMargin, y, pageWidth - leftMargin, y);
+                y += 10;
                 doc.setFontSize(12);
-                doc.text("This document certifies that the student named below has read, understood, and agreed to the rules and commitments of the SMART Tutor program.", 20, 35);
-                doc.text("Student Information:", 20, 55);
-                doc.text("Full Name: <?= addslashes($user['fullname']) ?>", 30, 65);
-                doc.text("Class Level: <?= addslashes($user['class_level']) ?>", 30, 75);
-                doc.text("School: <?= addslashes($user['school']) ?>", 30, 85);
-                doc.text("Agreement Date: <?= addslashes($signed_date) ?>", 30, 95);
-                doc.text("The student agrees to:", 20, 115);
+                doc.text("This document certifies that the student named below has read, understood, and agreed to the rules and commitments of the SMART Tutor program.", leftMargin, y);
+                y += 10;
+                doc.text("Student Information:", leftMargin, y);
+                y += 8;
+                doc.text("Full Name: <?= addslashes($user['fullname']) ?>", leftMargin + 10, y);
+                y += 7;
+                doc.text("Class Level: <?= addslashes($user['class_level']) ?>", leftMargin + 10, y);
+                y += 7;
+                doc.text("School: <?= addslashes($user['school']) ?>", leftMargin + 10, y);
+                y += 7;
+                doc.text("Agreement Date: <?= addslashes($signed_date) ?>", leftMargin + 10, y);
+                y += 10;
+                doc.text("The student agrees to:", leftMargin, y);
+                y += 8;
                 const rules = [
                     "Work hard and read extensively to improve knowledge.",
                     "Be punctual and respect the agreed schedule.",
@@ -82,13 +107,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
                     "Not rely solely on past papers but engage fully with materials.",
                     "Never engage in financial or inappropriate exchanges (dismissal)."
                 ];
-                let y = 125;
                 rules.forEach(line => {
-                    doc.text("• " + line, 25, y);
-                    y += 8;
+                    doc.text("• " + line, leftMargin + 5, y);
+                    y += 6;
                 });
-                doc.text("Consequences of Breach:", 20, y + 5);
-                y += 15;
+                y += 5;
+                doc.text("Consequences of Breach:", leftMargin, y);
+                y += 8;
                 const cons = [
                     "Warning for minor violations.",
                     "Extra assignments as corrective measures.",
@@ -96,10 +121,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
                     "Permanent dismissal for serious/repeated violations."
                 ];
                 cons.forEach(line => {
-                    doc.text("• " + line, 25, y);
-                    y += 8;
+                    doc.text("• " + line, leftMargin + 5, y);
+                    y += 6;
                 });
-                doc.text("Signature: ___________________________", 20, y + 15);
+                y += 10;
+                doc.text("Electronic Signature: <?= addslashes($signed_by) ?>", leftMargin, y);
+                y += 8;
+                doc.text("Date: <?= addslashes($signed_date) ?>", leftMargin, y);
+                y += 15;
+                doc.setFontSize(10);
+                doc.text("SMART Tutor – Discipline & Integrity", leftMargin, y);
                 doc.save("Consent_Agreement_<?= preg_replace('/[^a-zA-Z0-9]/','_', $user['fullname']) ?>.pdf");
             }
         </script>
@@ -133,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
                 <h3>Electronic Signature</h3>
                 <div class="signature-line">
                     <label for="signed_by">Signed by (Full Name):</label>
-                    <input type="text" id="signed_by" name="signed_by" placeholder="<?= htmlspecialchars($user['fullname']) ?>" value="<?= htmlspecialchars($user['fullname']) ?>" required>
+                    <input type="text" id="signed_by" name="signed_by" value="<?= htmlspecialchars($generated_signature) ?>" required>
                 </div>
                 <div class="signature-line">
                     <label for="signed_date">Date of Signing:</label>

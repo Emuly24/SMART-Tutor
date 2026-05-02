@@ -28,9 +28,16 @@ $allowed_public = ['index.php', 'signup.php', 'login.php', 'logout.php'];
 
 // --- NOT APPROVED ---
 if (!$user['approved']) {
-    $allowed = array_merge($allowed_public, ['apply.php', 'profile.php', 'notifications.php', 'pending.php']);
+    // These pages are allowed while waiting for admin approval
+    $allowed = array_merge($allowed_public, [
+        'apply.php',
+        'profile.php',
+        'notifications.php',
+        'pending.php',
+        'approval_status.php'
+    ]);
     if (!in_array($current, $allowed)) {
-        header("Location: apply.php");
+        header("Location: pending.php"); // send to pending page instead of apply
         exit;
     }
     return;
@@ -38,7 +45,12 @@ if (!$user['approved']) {
 
 // --- APPROVED BUT CONSENT NOT SIGNED ---
 if (!$user['consent_signed']) {
-    $allowed = array_merge($allowed_public, ['consent.php', 'profile.php', 'notifications.php']);
+    $allowed = array_merge($allowed_public, [
+        'consent.php',
+        'profile.php',
+        'notifications.php',
+        'approval_status.php' // they may still check status
+    ]);
     if (!in_array($current, $allowed)) {
         header("Location: consent.php");
         exit;
@@ -54,6 +66,8 @@ if ($user['status'] == 'suspended') {
     } else {
         $conn2 = getDB();
         $conn2->query("UPDATE users SET status='active', suspension_end=NULL WHERE id=$user_id");
+        // update session status as well
+        $_SESSION['status'] = 'active';
     }
 }
 if ($user['status'] == 'dismissed') {

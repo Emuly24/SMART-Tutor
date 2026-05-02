@@ -7,12 +7,49 @@ $uid = $_SESSION['user_id'];
 // Check if approved – if not, show application link and exit
 $userStatus = $conn->query("SELECT approved, fullname, class_level, status FROM users WHERE id=$uid")->fetch_assoc();
 if (!$userStatus['approved']) {
-    // ... pending approval page (unchanged) ...
-    // (keep the existing pending approval code)
+    ?>
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Pending Approval</title>
+        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    </head>
+    <body>
+    <?php include_once 'includes/header.php'; ?>
+    <?php include_once 'includes/progress_tracker.php'; ?>
+    <div class="container">
+        <div class="content-grid">
+            <div class="card">
+                <h3>Complete Your Application</h3>
+                <p>Your account is not yet approved. Please fill in the application form to join the group.</p>
+                <div class="card-buttons"><a href="apply.php" class="btn">Apply Now</a></div>
+            </div>
+        </div>
+    </div>
+    <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
+    </body>
+    </html>
+    <?php
     exit;
 }
 
-$user = $userStatus;
+$user = $userStatus; // now approved
+
+// Group info (optional – you can keep or move to hamburger menu)
+$group = $conn->query("SELECT g.id as group_id, g.group_number, g.class_level 
+    FROM group_members gm 
+    JOIN groups g ON gm.group_id = g.id 
+    WHERE gm.user_id = $uid")->fetch_assoc();
+
+$fellow_members = [];
+if ($group) {
+    $fellow = $conn->query("SELECT u.fullname, u.phone 
+        FROM group_members gm 
+        JOIN users u ON gm.user_id = u.id 
+        WHERE gm.group_id = {$group['group_id']} AND u.id != $uid");
+    while ($f = $fellow->fetch_assoc()) $fellow_members[] = $f;
+}
 
 // ---- Stats for student dashboard ----
 $total_exercises = $conn->query("SELECT COUNT(*) FROM note_exercises e JOIN notes n ON e.note_id=n.id WHERE n.class_level='{$user['class_level']}'")->fetch_row()[0];
@@ -43,6 +80,20 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
         <span><i class="fas fa-shield-alt"></i> Status: <?= ucfirst($user['status']) ?></span>
     </div>
 
+    <!-- Group Info Card (optional – can be removed if you only show group in hamburger) -->
+    <?php if ($group): ?>
+    <div class="card" style="margin: 0 20px 20px 20px;">
+        <h3><i class="fas fa-users"></i> My Group: <?= htmlspecialchars($group['class_level']) ?> – Group <?= $group['group_number'] ?></h3>
+        <p><strong>Fellow members:</strong></p>
+        <ul>
+        <?php foreach ($fellow_members as $f): ?>
+            <li><?= htmlspecialchars($f['fullname']) ?> (<?= htmlspecialchars($f['phone']) ?>)</li>
+        <?php endforeach; ?>
+        <?php if (empty($fellow_members)) echo "<li>You are the first member of this group.</li>"; ?>
+        </ul>
+    </div>
+    <?php endif; ?>
+
     <!-- Stats Row -->
     <div class="stats-grid">
         <div class="stat-card">
@@ -64,11 +115,11 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
 
     <!-- Progress Bars -->
     <div class="progress-bar">
-        <strong>📚 Exercise Progress:</strong> <?= $done_exercises ?>/<?= $total_exercises ?> completed (<?= round(($done_exercises/$total_exercises)*100) ?>%)<br>
+        <strong>📚 Exercise Progress:</strong> <?= $done_exercises ?>/<?= $total_exercises ?> completed (<?= $total_exercises ? round(($done_exercises/$total_exercises)*100) : 0 ?>%)<br>
         <div class="progress-fill" style="width:<?= $total_exercises ? round(($done_exercises/$total_exercises)*100) : 0 ?>%"></div>
     </div>
     <div class="progress-bar">
-        <strong>📊 Quiz Progress:</strong> <?= $done_quizzes ?>/<?= $total_quizzes ?> completed (<?= round(($done_quizzes/$total_quizzes)*100) ?>%)<br>
+        <strong>📊 Quiz Progress:</strong> <?= $done_quizzes ?>/<?= $total_quizzes ?> completed (<?= $total_quizzes ? round(($done_quizzes/$total_quizzes)*100) : 0 ?>%)<br>
         <div class="progress-fill" style="width:<?= $total_quizzes ? round(($done_quizzes/$total_quizzes)*100) : 0 ?>%"></div>
     </div>
 

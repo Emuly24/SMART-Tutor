@@ -17,11 +17,8 @@ $current = basename($_SERVER['PHP_SELF']);
   <a href="pending.php" class="progress-step <?= $current=='pending.php' ? 'active' : '' ?>" title="Awaiting admin review">
     <i class="fas fa-hourglass-half"></i> Pending Approval
   </a>
-  <a href="admin_approve.php" class="progress-step <?= $current=='admin_approve.php' ? 'active' : '' ?>" title="Admin approval stage">
+  <a href="approval_status.php" class="progress-step <?= $current=='approval_status.php' ? 'active' : '' ?>" title="Check admin's decision">
     <i class="fas fa-user-check"></i> Admin Approval
-  </a>
-  <a href="notifications.php" class="progress-step <?= $current=='notifications.php' ? 'active' : '' ?>" title="Check your notifications">
-    <i class="fas fa-bell"></i> Notification
   </a>
   <a href="consent.php" class="progress-step <?= $current=='consent.php' ? 'active' : '' ?>" title="Sign the consent agreement">
     <i class="fas fa-file-signature"></i> Consent
