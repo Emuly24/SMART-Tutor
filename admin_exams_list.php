@@ -33,4 +33,5 @@ $exams = $conn->query("SELECT e.*, (SELECT COUNT(*) FROM exam_questions WHERE ex
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

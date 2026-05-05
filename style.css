@@ -1,6 +1,5 @@
 /* ============================================
-   SMART TUTOR – ULTIMATE STYLE (16‑in‑1)
-   Fully compatible with your existing markup
+   SMART TUTOR – MASTER STYLE 
    ============================================ */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
@@ -12,7 +11,7 @@
     font-family: 'Inter', sans-serif;
 }
 
-/* ---------- Light Theme ---------- */
+/* ---------- Light Theme (default) ---------- */
 :root {
     --primary-dark: #1e2a3a;
     --primary-medium: #2c3e50;
@@ -56,34 +55,53 @@
     color-scheme: dark;
 }
 
-/* ---------- Global ---------- */
+/* ---------- Global (larger base) ---------- */
+html {
+    font-size: 18px;
+    scroll-behavior: smooth;
+}
 body {
     background: var(--primary-light);
     color: var(--text-color);
-    line-height: 1.6;
+    line-height: 1.5;
     min-height: 100vh;
     padding: 1rem;
     transition: background 0.3s, color 0.3s;
+    font-size: 1rem;
 }
 .container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
 }
-a { text-decoration: none; color: var(--accent); transition: var(--transition); }
-a:hover { color: var(--accent-dark); }
+a {
+    text-decoration: none;
+    color: var(--accent);
+    transition: var(--transition);
+}
+a:hover {
+    color: var(--accent-dark);
+}
 
-/* ========== Typography ========== */
-h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); }
-h2 { font-size: clamp(1.5rem, 4vw, 2rem); margin: 0.5rem 0; }
-h3 { font-size: clamp(1.2rem, 3vw, 1.5rem); }
+/* ========== 1. Typography (fluid) ========== */
+h1 { font-size: clamp(2rem, 6vw, 3rem); margin-bottom: 0.5rem; }
+h2 { font-size: clamp(1.6rem, 5vw, 2.2rem); margin: 0.75rem 0; }
+h3 { font-size: clamp(1.3rem, 4vw, 1.8rem); }
 p { margin-bottom: 0.75rem; }
 .text-muted { color: var(--text-muted); }
 
-/* ========== Layout & Grid ========== */
+/* Gradient headings */
+h1, .hero-section h1 {
+    background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* ========== 2. Layout & Grid ========== */
 .grid, .content-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.5rem;
     margin: 1rem 0;
 }
@@ -100,11 +118,11 @@ p { margin-bottom: 0.75rem; }
     margin: 2rem 0;
 }
 
-/* ========== Cards ========== */
+/* ========== 3. Cards (animated, staggered) ========== */
 .card {
     background: var(--card-bg);
     border-radius: var(--border-radius-card);
-    padding: 1.2rem;
+    padding: 1.5rem;
     box-shadow: var(--card-shadow);
     transition: var(--transition);
     border: 1px solid rgba(0,0,0,0.05);
@@ -114,7 +132,16 @@ p { margin-bottom: 0.75rem; }
 .card:hover {
     transform: translateY(-6px);
     box-shadow: var(--hover-shadow);
+    border-color: rgba(212,175,55,0.3);
 }
+/* Staggered animations */
+.content-grid > .card:nth-child(1) { animation-delay: 0.05s; }
+.content-grid > .card:nth-child(2) { animation-delay: 0.1s; }
+.content-grid > .card:nth-child(3) { animation-delay: 0.15s; }
+.content-grid > .card:nth-child(4) { animation-delay: 0.2s; }
+.content-grid > .card:nth-child(5) { animation-delay: 0.25s; }
+.content-grid > .card:nth-child(6) { animation-delay: 0.3s; }
+
 .card.glass {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
@@ -125,12 +152,17 @@ p { margin-bottom: 0.75rem; }
     box-shadow: var(--neumo-shadow);
     border: none;
 }
-.card i { font-size: 2rem; color: var(--accent); margin-bottom: 0.5rem; display: inline-block; }
-.card h3 { margin-bottom: 0.5rem; }
+.card i {
+    font-size: 2.2rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+    display: inline-block;
+}
+.card h3 { margin-bottom: 0.75rem; }
 .card-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: 0.75rem;
     margin-top: 1rem;
 }
 .card-buttons a, .card-buttons .btn {
@@ -138,26 +170,49 @@ p { margin-bottom: 0.75rem; }
     white-space: nowrap;
 }
 
-/* ========== Buttons (matches all your existing classes) ========== */
+/* ========== 4. Buttons (ripple effect, press scale) ========== */
 button, .btn, input[type="submit"], .btn-primary, .btn-secondary, .btn-danger, .btn-success, .btn-warning, .btn-back, .admin-action-link, .btn-home, .btn-logout, .theme-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
+    padding: 0.7rem 1.4rem;
+    font-size: 1rem;
     font-weight: 600;
     border-radius: var(--border-radius-button);
     border: none;
     cursor: pointer;
-    transition: var(--transition);
+    transition: all 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1);
     background: var(--accent);
     color: #1e293b;
+    position: relative;
+    overflow: hidden;
 }
 button:hover, .btn:hover, input[type="submit"]:hover {
     transform: translateY(-2px);
     filter: brightness(0.95);
 }
+button:active, .btn:active {
+    transform: scale(0.97);
+}
+/* Ripple effect */
+button::after, .btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+    transform: translate(-50%, -50%);
+    transition: width 0.3s, height 0.3s;
+}
+button:active::after, .btn:active::after {
+    width: 200%;
+    height: 200%;
+}
+
 .btn-secondary { background: var(--primary-medium); color: white; }
 .btn-danger { background: var(--error); color: white; }
 .btn-success { background: var(--success); color: white; }
@@ -168,7 +223,8 @@ button:hover, .btn:hover, input[type="submit"]:hover {
 .theme-btn {
     background: rgba(255,255,255,0.15);
     border-radius: 50%;
-    padding: 0.35rem 0.6rem;
+    padding: 0.4rem 0.7rem;
+    font-size: 1.2rem;
 }
 .icon-btn {
     position: relative;
@@ -198,12 +254,13 @@ button:hover, .btn:hover, input[type="submit"]:hover {
     pointer-events: none;
 }
 
-/* ========== Forms (exactly matches your classes) ========== */
+/* ========== 5. Forms ========== */
 .form-group { margin-bottom: 1.2rem; }
 label { font-weight: 600; margin-bottom: 0.3rem; display: block; }
 input, select, textarea {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.8rem 1rem;
+    font-size: 1rem;
     border: 1px solid #cbd5e1;
     border-radius: var(--border-radius-input);
     background: var(--card-bg);
@@ -211,11 +268,13 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(212,175,55,0.2);
+    box-shadow: 0 0 0 4px rgba(212,175,55,0.25);
     outline: none;
 }
 input.valid { border-color: var(--success); }
 input.invalid { border-color: var(--error); }
+
+/* Pill‑button checkboxes */
 .checkbox-group {
     display: flex;
     flex-wrap: wrap;
@@ -223,7 +282,7 @@ input.invalid { border-color: var(--error); }
 }
 .checkbox-group label {
     background: var(--card-alt-bg);
-    padding: 0.4rem 1rem;
+    padding: 0.5rem 1.2rem;
     border-radius: 2rem;
     cursor: pointer;
     transition: var(--transition);
@@ -235,6 +294,8 @@ input.invalid { border-color: var(--error); }
     background: var(--accent);
     color: #1e293b;
 }
+
+/* Toggle switch */
 .toggle-switch {
     position: relative;
     display: inline-block;
@@ -266,11 +327,23 @@ input.invalid { border-color: var(--error); }
 }
 input:checked + .slider { background-color: var(--accent); }
 input:checked + .slider:before { transform: translateX(26px); }
-.help-text { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
-.declaration { background: #f9fafb; border-left: 4px solid var(--info); padding: 1rem; border-radius: 0.5rem; margin: 1.5rem 0; }
+
+.help-text { font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem; }
+.declaration { background: var(--card-alt-bg); border-left: 4px solid var(--info); padding: 1rem; border-radius: 0.5rem; margin: 1.5rem 0; }
 .submission-date { margin-bottom: 1.5rem; }
 
-/* ========== Top Navigation (matches your header.php exactly) ========== */
+/* File input */
+input[type="file"] {
+    padding: 0.5rem;
+    background: var(--card-alt-bg);
+    border: 1px dashed var(--accent);
+    cursor: pointer;
+}
+input[type="file"]:hover {
+    background: rgba(212,175,55,0.1);
+}
+
+/* ========== 6. Navigation ========== */
 .top-nav {
     background: var(--primary-dark);
     color: white;
@@ -325,19 +398,22 @@ input:checked + .slider:before { transform: translateX(26px); }
     display: flex;
     gap: 0.8rem;
     align-items: center;
+    margin-left: auto;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
 }
-.user-info {
+.user-info-stacked, .user-info {
     text-align: center;
     line-height: 1.3;
 }
-.user-name { font-weight: bold; font-size: 0.9rem; }
-.user-tagline { font-size: 0.7rem; opacity: 0.85; }
+.user-name-stacked, .user-name { font-weight: bold; font-size: 0.95rem; }
+.user-tagline-stacked, .user-tagline { font-size: 0.75rem; opacity: 0.85; }
 .breadcrumb {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     margin: 1rem 0;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
 }
 .breadcrumb a { color: var(--accent); }
 .sticky-action {
@@ -355,37 +431,43 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 @media (max-width: 768px) { .sticky-action { display: flex; } }
 
-/* ========== Status Badges (with animations) ========== */
+/* ========== 7. Status Badges ========== */
 .status-badge {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
+    padding: 0.3rem 0.8rem;
     border-radius: 2rem;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 600;
     color: white;
 }
-.status-active { background: var(--success); animation: pulse 2s infinite; }
+.status-active { background: var(--success); animation: softPulse 2s infinite; }
 .status-suspended { background: var(--warning); animation: shake 0.5s ease 3; }
 .status-dismissed { background: var(--error); animation: fadeGlow 2s infinite; }
 .status-pending { background: var(--info); transition: transform 0.2s; }
 .status-pending:hover { transform: scale(1.05); animation: bounce 0.3s ease; }
-@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+
+@keyframes softPulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.02); }
+    100% { opacity: 1; transform: scale(1); }
+}
 @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 @keyframes fadeGlow { 0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.4); } 70% { box-shadow: 0 0 0 6px rgba(220,38,38,0); } 100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); } }
 @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
-/* ========== Progress Tracker ========== */
+/* ========== 8. Progress Tracker (with connector lines) ========== */
 .progress-tracker {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
     margin: 1rem 0;
     position: relative;
+    background: transparent;
 }
 .progress-step {
     flex: 1;
     text-align: center;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     padding: 0.5rem;
     background: rgba(0,0,0,0.05);
     border-radius: 2rem;
@@ -405,6 +487,23 @@ input:checked + .slider:before { transform: translateX(26px); }
     content: "✓";
     margin-left: 0.3rem;
 }
+/* Connector lines (desktop only) */
+.progress-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: -1rem;
+    width: 2rem;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0.3;
+    transform: translateY(-50%);
+}
+@media (max-width: 768px) {
+    .progress-tracker { flex-direction: column; gap: 0.5rem; }
+    .progress-step { width: 100%; }
+    .progress-step:not(:last-child)::after { display: none; }
+}
 .progress-indicator {
     height: 6px;
     background: #e2e8f0;
@@ -418,12 +517,8 @@ input:checked + .slider:before { transform: translateX(26px); }
     width: 0%;
     transition: width 0.4s;
 }
-@media (max-width: 768px) {
-    .progress-tracker { flex-direction: column; gap: 0.5rem; }
-    .progress-step { width: 100%; }
-}
 
-/* ========== Tables ========== */
+/* ========== 9. Tables ========== */
 .data-table {
     width: 100%;
     border-collapse: collapse;
@@ -432,11 +527,16 @@ input:checked + .slider:before { transform: translateX(26px); }
     overflow: hidden;
 }
 .data-table th, .data-table td {
-    padding: 0.75rem;
+    padding: 0.8rem;
     text-align: left;
     border-bottom: 1px solid #e2e8f0;
 }
-.data-table tr:hover { background: rgba(0,0,0,0.03); }
+.data-table tbody tr {
+    transition: background 0.2s;
+}
+.data-table tbody tr:hover {
+    background: rgba(212,175,55,0.08);
+}
 @media (max-width: 768px) {
     .data-table, .data-table thead, .data-table tbody, .data-table tr, .data-table td {
         display: block;
@@ -461,7 +561,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     }
 }
 
-/* ========== Modals ========== */
+/* ========== 10. Modals ========== */
 .modal {
     display: none;
     position: fixed;
@@ -489,9 +589,9 @@ input:checked + .slider:before { transform: translateX(26px); }
 @keyframes slideUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .close { float: right; font-size: 1.5rem; cursor: pointer; }
 
-/* ========== Alerts & Toasts ========== */
+/* ========== 11. Alerts & Toasts ========== */
 .error, .success, .warning, .info {
-    padding: 0.75rem 1rem;
+    padding: 0.8rem 1rem;
     border-radius: 0.5rem;
     margin: 0.75rem 0;
     border-left: 4px solid;
@@ -510,12 +610,14 @@ input:checked + .slider:before { transform: translateX(26px); }
     border-radius: 0.5rem;
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     z-index: 3000;
-    transform: translateX(120%);
-    transition: transform 0.3s;
+    transform: translateX(120%) scale(0.9);
+    transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
-.toast.show { transform: translateX(0); }
+.toast.show {
+    transform: translateX(0) scale(1);
+}
 
-/* ========== Animations ========== */
+/* ========== 12. Animations ========== */
 @keyframes fadeSlideUp {
     0% { opacity: 0; transform: translateY(20px); }
     100% { opacity: 1; transform: translateY(0); }
@@ -531,8 +633,21 @@ input:checked + .slider:before { transform: translateX(26px); }
     border-radius: 0.5rem;
 }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--card-alt-bg);
+    border-top: 4px solid var(--accent);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 20px auto;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
-/* ========== Accessibility ========== */
+/* ========== 13. Accessibility ========== */
 :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
@@ -552,33 +667,40 @@ input:checked + .slider:before { transform: translateX(26px); }
     .status-badge { border: 1px solid; }
 }
 
-/* ========== Responsive Breakpoints ========== */
+/* ========== 14. Responsive Breakpoints ========== */
 @media (max-width: 1024px) {
+    html { font-size: 17px; }
     body { padding: 0.8rem; }
-    .grid, .content-grid { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+    .grid, .content-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    .container { padding: 0 1rem; }
 }
 @media (max-width: 768px) {
+    html { font-size: 16px; }
+    body { padding: 0.5rem; }
     .top-nav { flex-direction: column; align-items: stretch; }
     .nav-right { justify-content: space-between; }
     .card-buttons { overflow-x: auto; flex-wrap: nowrap; }
     button, .btn { width: 100%; }
+    .container, .apply-container { padding: 0 0.5rem; }
+    .user-info-stacked, .user-info { white-space: normal; }
 }
 @media (max-width: 480px) {
-    .card { padding: 0.8rem; }
+    .card { padding: 1rem; }
     .stats-grid { flex-direction: column; }
+    .stat-card { width: 100%; }
 }
 
-/* ========== Print Styles ========== */
+/* ========== 15. Print Styles ========== */
 @media print {
     body { background: white; color: black; padding: 0; }
-    .top-nav, .footer, .btn, .theme-btn, .hamburger, .sticky-action { display: none; }
+    .top-nav, .footer, .btn, .theme-btn, .hamburger, .sticky-action, .back-to-top { display: none; }
     .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
     a { color: black; text-decoration: underline; }
 }
 
-/* ========== Page‑Specific Containers (from your files) ========== */
+/* ========== 16. Page‑Specific Containers ========== */
 .login-container, .signup-container, .apply-container, .consent-container {
-    max-width: 550px;
+    max-width: 600px;
     margin: 2rem auto;
     background: var(--card-bg);
     backdrop-filter: blur(8px);
@@ -586,7 +708,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     border-top: 5px solid var(--accent);
     border-radius: var(--border-radius-card);
 }
-.apply-container { max-width: 800px; }
+.apply-container { max-width: 900px; }
 .profile-header {
     display: flex;
     align-items: center;
@@ -603,7 +725,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 .profile-name h2 { margin: 0; }
 .info-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 1rem;
 }
 .info-card {
@@ -638,7 +760,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 }
 .vmm-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 1rem;
 }
 .vmm-card {
@@ -688,7 +810,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     background: var(--card-alt-bg);
     color: var(--text-color);
     border: none;
-    padding: 0.6rem 1.2rem;
+    padding: 0.7rem 1.4rem;
     border-radius: 2rem;
     font-weight: 600;
 }
@@ -706,7 +828,7 @@ input:checked + .slider:before { transform: translateX(26px); }
     display: inline-block;
     background: var(--accent);
     color: #1e293b;
-    padding: 0.5rem 1.5rem;
+    padding: 0.6rem 1.5rem;
     border-radius: 2rem;
     text-decoration: none;
     font-weight: 600;
@@ -717,34 +839,97 @@ input:checked + .slider:before { transform: translateX(26px); }
 .mb-2 { margin-bottom: 1rem; }
 .p-2 { padding: 1rem; }
 
-/* Stacked student info (name above tagline, centered) */
-.user-info-stacked {
-    text-align: center;
-    line-height: 1.3;
-    white-space: nowrap;
+/* ========== 17. Link hover underline (only non‑button links) ========== */
+a:not(.btn):not(.btn-home):not(.btn-logout):not(.progress-step):not(.menu a):not(.theme-btn) {
+    position: relative;
 }
-.user-name-stacked {
-    font-weight: bold;
-    font-size: 0.9rem;
+a:not(.btn):not(.btn-home):not(.btn-logout):not(.progress-step):not(.menu a):not(.theme-btn)::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0%;
+    height: 2px;
+    background: var(--accent);
+    transition: width 0.25s ease;
 }
-.user-tagline-stacked {
-    font-size: 0.7rem;
-    opacity: 0.85;
+a:not(.btn):not(.btn-home):not(.btn-logout):not(.progress-step):not(.menu a):not(.theme-btn):hover::after {
+    width: 100%;
 }
 
-/* Ensure nav-right items stay inline and do not wrap */
-.nav-right {
+/* ========== 18. Custom scrollbar ========== */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--card-alt-bg);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-dark);
+}
+
+/* ========== 19. Page entrance fade‑in ========== */
+main, .container > *:not(.top-nav) {
+    animation: fadeSlideUp 0.4s ease-out;
+}
+
+/* ========== 20. Back‑to‑top button  ========== */
+.back-to-top {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: var(--accent);
+    color: #1e293b;
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    margin-left: auto;
-    flex-wrap: nowrap;
-    justify-content: flex-end;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 1.5rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 999;
+}
+.back-to-top.show {
+    opacity: 1;
+    visibility: visible;
+}
+.back-to-top:hover {
+    background: var(--accent-dark);
+    transform: scale(1.05);
 }
 
-/* On very small screens, allow the stacked text to wrap */
-@media (max-width: 768px) {
-    .user-info-stacked {
-        white-space: normal;
-    }
+/* ========== 21. Notification badge pulse  ========== */
+.notification-badge {
+    position: relative;
+}
+.notification-badge .badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--error);
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulseRing 1.5s infinite;
+}
+@keyframes pulseRing {
+    0% { transform: scale(0.8); opacity: 0.7; }
+    70% { transform: scale(1.2); opacity: 0; }
+    100% { transform: scale(0.8); opacity: 0; }
 }

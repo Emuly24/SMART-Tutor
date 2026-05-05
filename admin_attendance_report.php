@@ -29,4 +29,5 @@ $students = $conn->query("SELECT id,fullname,class_level FROM users WHERE approv
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

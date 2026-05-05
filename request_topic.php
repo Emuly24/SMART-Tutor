@@ -19,4 +19,5 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 
     
 <div class="container"><div class="form-container"><p><a href="covered_topics.php">View already covered topics</a></p><?php if($msg) echo "<p class='text-center'>$msg</p>"; if($warning) echo "<p class='text-center'>$warning</p>";?><form method="post"><div class="form-group"><label>Subject</label><select name="subject"><?php foreach($subjects as $s) echo "<option value='$s' ".((isset($current[$s])&&$_POST['subject']==$s)?'selected':'').">$s</option>";?></select></div><div class="form-group"><label>Specific Topic</label><textarea name="topic" rows="3"><?=htmlspecialchars($current[$_POST['subject']??'']??'')?></textarea></div><button type="submit" name="check_topic">Check if covered</button><button type="submit" name="submit_request">Submit Request</button></form><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div></div></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

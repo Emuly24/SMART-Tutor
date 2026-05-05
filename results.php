@@ -5,4 +5,5 @@ require_once 'config.php'; require_once 'check_access.php'; $conn=getDB(); $uid=
 
     
 <div class="container"><div class="content-grid"><?php while($r=$submissions->fetch_assoc()):?><div class="card"><h3><?=htmlspecialchars($r['title'])?> (<?=$r['subject']?>)</h3><p>Score: <?=($r['total_score']!==null)?$r['total_score']:'Pending'?></p><a href="exam_results.php?exam_id=<?=$r['id']?>">Details</a></div><?php endwhile;?></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

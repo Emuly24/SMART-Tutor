@@ -240,5 +240,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 </script>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

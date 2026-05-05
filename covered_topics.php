@@ -5,4 +5,5 @@ require_once 'config.php'; require_once 'check_access.php'; $conn=getDB(); $clas
 
     
 <div class="container"><div class="content-grid"><?php if($covered->num_rows==0) echo "<p>None yet.</p>"; else{ while($c=$covered->fetch_assoc()):?><div class="card"><strong><?=htmlspecialchars($c['subject'])?>:</strong> <?=htmlspecialchars($c['topic'])?><br><small>Covered: <?=$c['covered_date']?></small></div><?php endwhile; }?></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

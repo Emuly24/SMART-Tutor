@@ -14,6 +14,7 @@ if (!is_content_unlocked('note', $note_id, $uid)) {
 
     
 <div class='container'><div class='header'><a href='library.php'>Library</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This note is not yet available for your group. Please wait until the admin unlocks it after your group meeting.</div><a href='library.php'>← Back to Library</a></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>");
 }
 
@@ -154,4 +155,5 @@ if ($quiz && is_content_unlocked('quiz', $quiz['id'], $uid)):
 </div>
 <script>mermaid.initialize({startOnLoad:true});</script>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

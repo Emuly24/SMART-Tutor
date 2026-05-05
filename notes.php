@@ -36,4 +36,5 @@ if ($notes->num_rows == 0) echo "<div class='card'><p>No notes available for you
 </div>
 <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
 </div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

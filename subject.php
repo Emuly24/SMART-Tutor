@@ -64,4 +64,5 @@ $quizzes = $conn->query("SELECT q.id, q.title, q.description, q.time_limit
 
 <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
 </div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

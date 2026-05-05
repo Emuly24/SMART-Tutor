@@ -13,6 +13,7 @@ if (!is_content_unlocked('quiz', $quiz_id, $uid)) {
     
 <div class='container'><div class='header'><a href='dashboard.php'>Dashboard</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This quiz is not yet available for your group. Please wait until the admin unlocks it.</div><a href='dashboard.php'>← Back to Dashboard</a></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>");
 }
 $note = $conn->query("SELECT title FROM notes WHERE id={$quiz['note_id']}")->fetch_assoc();
@@ -54,4 +55,5 @@ if ($remaining <= 0) {
 <button type="submit">Submit Quiz</button>
 </form></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

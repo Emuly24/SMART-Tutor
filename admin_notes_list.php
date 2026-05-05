@@ -33,4 +33,5 @@ $notes = $conn->query("SELECT id,title,subject,class_level,created_at FROM notes
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

@@ -12,6 +12,7 @@ if (!is_content_unlocked('exam', $exam_id, $uid)) {
 
     
 <div class='container'><div class='header'><a href='exams.php'>Exams</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This exam is not yet available for your group. Please wait until the admin unlocks it.</div><a href='exams.php'>← Back to Exams</a></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>");
 }
 
@@ -56,4 +57,5 @@ $res = $conn->query("SELECT question_id, answer_text FROM exam_answers WHERE exa
 while ($r = $res->fetch_assoc()) $saved[$r['question_id']] = $r['answer_text'];
 ?>
 <!DOCTYPE html><html><head><title><?=htmlspecialchars($exam['title'])?></title><link rel="stylesheet" href="style.css"><script>let remaining=<?=$remaining?>; function timer(){if(remaining<=0){document.getElementById('timer').innerHTML="Submitting..."; document.getElementById('examForm').submit();} let mins=Math.floor(remaining/60); let secs=remaining%60; document.getElementById('timer').innerHTML=`Time left: ${mins}m ${secs}s`; remaining--; setTimeout(timer,1000);} window.onload=timer;</script></head><body><div class="container"></div><form id="examForm" method="post" enctype="multipart/form-data"><?php $qno=1; while($q=$questions->fetch_assoc()):?><div class="card"><b><?=$qno?>. <?=nl2br(htmlspecialchars($q['question_text']))?></b> (<?=$q['points']?> pts)<br><?php if($q['question_type']!='multiple_choice'):?><textarea name="answers[<?=$q['id']?>]" rows="4" class="form-group"><?=htmlspecialchars($saved[$q['id']]??'')?></textarea><br>OR upload file: <input type="file" name="answer_files[<?=$q['id']?>]" accept=".jpg,.png,.pdf"><?php else: $opts=json_decode($q['options'],true); foreach($opts as $opt):?><label><input type="radio" name="answers[<?=$q['id']?>]" value="<?=htmlspecialchars($opt)?>" <?=(($saved[$q['id']]??'')==$opt)?'checked':''?>> <?=$opt?></label><br><?php endforeach; endif;?></div><?php $qno++; endwhile;?><button type="submit" name="submit_exam" class="btn">Submit Exam</button></form><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

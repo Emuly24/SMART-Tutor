@@ -22,4 +22,5 @@ $assignments = $conn->query("SELECT a.*,
     
 <div class="container"><div class="content-grid"><?php while($a=$assignments->fetch_assoc()):?><div class="card"><h3><?=htmlspecialchars($a['title'])?> (<?=$a['subject']?>)</h3><p><?=nl2br(htmlspecialchars($a['description']))?></p><?php if($a['attachment_file_path']) echo "<p></p>";?><p>Due: <?=$a['due_date']?></p><?php if($a['submitted']):?>Submitted on <?=$a['submitted']?>. Marks: <?=($a['marks']!==null)?$a['marks']:'Pending'?><?php else:?><?php endif;?>
     <div class="card-buttons"><a href='admin_download.php?type=assignment&file=".urlencode(basename($a['attachment_file_path']))."' target='_blank'>📎 Download attachment</a><a href="submit_assignment.php?assignment_id=<?=$a['id']?>">Submit</a></div></div><?php endwhile;?></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

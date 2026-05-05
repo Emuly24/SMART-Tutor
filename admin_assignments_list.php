@@ -35,4 +35,5 @@ $assignments = $conn->query("SELECT * FROM assignments ORDER BY due_date ASC");
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

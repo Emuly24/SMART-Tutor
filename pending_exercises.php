@@ -38,4 +38,5 @@ $pending = $conn->query("SELECT a.promised_at, e.question, n.title as note_title
 <?php endwhile; ?>
 </div></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

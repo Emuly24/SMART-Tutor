@@ -97,5 +97,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
 
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

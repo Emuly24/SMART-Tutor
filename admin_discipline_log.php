@@ -24,4 +24,5 @@ $log = $conn->query("SELECT d.*, u.fullname, u.class_level FROM discipline_log d
 </div>
 <div class="footer">SMART Tutor – Admin Panel</div>
 </div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

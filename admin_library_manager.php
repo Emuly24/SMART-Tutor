@@ -187,4 +187,5 @@ $msg = $_GET['msg'] ?? '';
     </div>
     <div class="footer"><a href="admin_dashboard.php">← Back</a></div>
 </div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

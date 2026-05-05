@@ -46,4 +46,5 @@ while ($row = $r->fetch_assoc()) $existing[$row['user_id']] = $row['status'];
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

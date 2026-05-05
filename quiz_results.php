@@ -13,6 +13,7 @@ if (!is_content_unlocked('quiz', $quiz_id, $uid)) {
     
 <div class='container'><div class='header'><a href='dashboard.php'>Dashboard</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This quiz is not yet available for your group.</div><a href='dashboard.php'>← Back</a></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>");
 }
 $attempt = $conn->query("SELECT * FROM quiz_attempts WHERE user_id=$uid AND quiz_id=$quiz_id")->fetch_assoc();
@@ -38,4 +39,5 @@ $passed = $percentage >= $quiz['passing_percentage'];
 <a href="view_note.php?id=<?=$quiz['note_id']?>">Back to Note</a>
 </div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

@@ -1,7 +1,17 @@
 <?php
 require_once 'config.php';
 session_start();
-$admin_hash = getAdminHash();
+
+// Determine admin hash (supports both old constant and new database function)
+if (function_exists('getAdminHash')) {
+    $admin_hash = getAdminHash();
+} elseif (defined('ADMIN_HASH')) {
+    $admin_hash = ADMIN_HASH;
+} else {
+    // Fallback default (smarttutor@2026)
+    $admin_hash = '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu';
+}
+
 if (!isset($_SESSION['admin_logged'])) {
     if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
         header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
@@ -113,5 +123,6 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
 
     <div class="footer">SMART Tutor – Discipline & Integrity</div>
 </div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

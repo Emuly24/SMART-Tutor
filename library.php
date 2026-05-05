@@ -30,4 +30,5 @@ if ($books->num_rows == 0) echo "<div class='card'><p>No books available for you
 </div>
 <div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 </div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

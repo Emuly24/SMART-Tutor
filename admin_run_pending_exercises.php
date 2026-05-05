@@ -60,5 +60,6 @@ if (empty($output)) $output = "No pending actions.";
             <a href="admin_dashboard.php" class="btn-back">Back to Dashboard</a>
         </div>
     </div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

@@ -38,6 +38,7 @@ if ($aid && $uid) {
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html><?php exit;
 }
 if ($aid) {
@@ -53,6 +54,7 @@ if ($aid) {
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html><?php exit;
 }
 $assignments = $conn->query("SELECT a.*, (SELECT COUNT(*) FROM assignment_submissions WHERE assignment_id=a.id) as subcnt FROM assignments a ORDER BY a.due_date DESC");
@@ -66,4 +68,5 @@ $assignments = $conn->query("SELECT a.*, (SELECT COUNT(*) FROM assignment_submis
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

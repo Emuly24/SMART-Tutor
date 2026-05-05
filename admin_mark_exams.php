@@ -44,6 +44,7 @@ if ($exam_id && $user_id) {
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html><?php exit;
 }
 if ($exam_id) {
@@ -59,6 +60,7 @@ if ($exam_id) {
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html><?php exit;
 }
 $exams = $conn->query("SELECT e.id, e.title, e.subject, (SELECT COUNT(DISTINCT user_id) FROM exam_submissions WHERE exam_id=e.id AND status='submitted') as pending FROM exams e ORDER BY e.created_at DESC");
@@ -72,4 +74,5 @@ $exams = $conn->query("SELECT e.id, e.title, e.subject, (SELECT COUNT(DISTINCT u
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

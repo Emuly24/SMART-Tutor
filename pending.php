@@ -36,5 +36,6 @@ if (!isset($_SESSION['user_id'])) {
 </div>
 
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

@@ -43,5 +43,6 @@ $uid = $_SESSION['user_id'];
     <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

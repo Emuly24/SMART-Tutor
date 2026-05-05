@@ -75,5 +75,6 @@ $approved = $user['approved'];
 </div>
 
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

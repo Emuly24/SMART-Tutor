@@ -1,3 +1,8 @@
+# Force HTTPS (redirect HTTP to HTTPS)
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
 Options -Indexes
 
 <FilesMatch "^(config\.php|update_config\.php)$">

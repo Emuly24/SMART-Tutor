@@ -62,4 +62,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ClassicEditor.create(document.querySelector('#editor'), {}).catch(console.error);
 </script>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

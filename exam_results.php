@@ -5,4 +5,5 @@ require_once 'config.php'; require_once 'check_access.php'; $conn=getDB(); $uid=
 
     
 <div class="container"><div class="content-grid"><?php while($a=$answers->fetch_assoc()):?><div class="card"><strong>Q:</strong> <?=nl2br(htmlspecialchars($a['question_text']))?><br><strong>Your answer:</strong> <?=nl2br(htmlspecialchars($a['answer_text']))?><?php if($a['answer_file_path']) echo "<br><a href='download.php?type=exam&file=" . urlencode(basename($a['answer_file_path'])) . "' target='_blank'>View file</a>"; ?><br><strong>Marks:</strong> <?=($a['marks_awarded']!==null)?$a['marks_awarded'].'/'.$a['points']:'Pending'?><br><?php if($a['feedback']) echo "<strong>Feedback:</strong> ".htmlspecialchars($a['feedback']);?></div><?php endwhile;?></div><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

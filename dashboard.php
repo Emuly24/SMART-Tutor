@@ -28,7 +28,8 @@ if (!$userStatus['approved']) {
         </div>
     </div>
     <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
-    </body>
+    <a href="#" class="back-to-top" id="backToTop">↑</a>
+</body>
     </html>
     <?php
     exit;
@@ -146,5 +147,6 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
     <?php include_once 'includes/vision_mission.php'; ?>
     <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
 </div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

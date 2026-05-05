@@ -15,4 +15,5 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 
     
 <div class="container"><div class="form-container"><?php if($message) echo "<p>$message</p>";?><form method="post"><div class="form-group"><label>Report Type</label><select name="report_type" required><option value="lateness">I was late</option><option value="poor_performance">I am not doing well in class/tests</option><option value="disrespect">I disrespected a fellow student or teacher</option><option value="other">Other issue</option></select></div><div class="form-group"><label>Date of incident</label><input type="date" name="incident_date" value="<?=date('Y-m-d')?>"></div><div class="form-group"><label>Explanation / Description</label><textarea name="description" rows="6" required placeholder="Please explain what happened, why, and what you will do to improve..."></textarea></div><button type="submit">Submit Report</button></form><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div></div></div>
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

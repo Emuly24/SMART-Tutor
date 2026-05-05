@@ -49,4 +49,5 @@ $questions = $conn->query("SELECT * FROM exam_questions WHERE exam_id=$exam_id O
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

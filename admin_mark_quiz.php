@@ -33,4 +33,5 @@ $pending = $conn->query("SELECT a.id as attempt_id, u.fullname, qa.id as answer_
 <?php endwhile; ?>
 </div><div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 
+<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

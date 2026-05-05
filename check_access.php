@@ -68,7 +68,8 @@ if (!$user['consent_signed']) {
 if ($user['status'] == 'suspended') {
     $end = $user['suspension_end'];
     if ($end && $end >= date('Y-m-d')) {
-        die("<!DOCTYPE html><html><head><title>Suspended</title><link rel='stylesheet' href='style.css'></head><body><div class='container'><div class='header'><h1>Account Suspended</h1></div><div class='error'>You are suspended until $end. Contact admin.</div><a href='logout.php'>Logout</a></div></body></html>");
+        die("<!DOCTYPE html><html><head><title>Suspended</title><link rel='stylesheet' href='style.css'></head><body><div class='container'><div class='header'><h1>Account Suspended</h1></div><div class='error'>You are suspended until $end. Contact admin.</div><a href='logout.php'>Logout</a></div><a href="#" class="back-to-top" id="backToTop">↑</a>
+</body></html>");
     } else {
         $conn2 = getDB();
         $conn2->query("UPDATE users SET status='active', suspension_end=NULL WHERE id=$user_id");
@@ -76,7 +77,8 @@ if ($user['status'] == 'suspended') {
     }
 }
 if ($user['status'] == 'dismissed') {
-    die("<!DOCTYPE html><html><head><title>Dismissed</title><link rel='stylesheet' href='style.css'></head><body><div class='container'><div class='header'><h1>Access Denied</h1></div><div class='error'>You have been dismissed.</div><a href='logout.php'>Logout</a></div></body></html>");
+    die("<!DOCTYPE html><html><head><title>Dismissed</title><link rel='stylesheet' href='style.css'></head><body><div class='container'><div class='header'><h1>Access Denied</h1></div><div class='error'>You have been dismissed.</div><a href='logout.php'>Logout</a></div><a href="#" class="back-to-top" id="backToTop">↑</a>
+</body></html>");
 }
 
 // Fully approved and consented – allow all pages
