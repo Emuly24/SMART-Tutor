@@ -21,8 +21,9 @@
     <?php include_once 'includes/vision_mission.php'; ?>
      <div class="join us">
         <h2>Join the SMART Tutor Community</h2>
-        <p>Are you a secondary school student looking for support? SMART Tutor welcomes you. Together, we can create your brighter future.</p>
-    <a href="signup.php" class="btn-hero">Get Started</a>
+        <p>Are you a secondary school student looking for support? SMART Tutor welcomes you. Together, we can create your brighter future.</p>\n
+        <a href="signup.php" class="btn-hero">Get Started</a>
+    </div>
 
     <div class="footer">
         <a href="login.php">Login</a> | <a href="signup.php">Sign Up</a>
