@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 // admin_students_list.php – Fixed filter buttons & pill styling
 require_once 'config.php';
 session_start();

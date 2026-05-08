@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -32,5 +34,6 @@ while ($q = $questions->fetch_assoc()) {
 }
 // Update attempt with score (only objective points so far) and mark as submitted
 $conn->query("UPDATE quiz_attempts SET score=$earned, status='submitted', completed_at=NOW() WHERE id={$attempt['id']}");
+    log_activity($uid, "submit_quiz", "Quiz ID: $quiz_id, Score: $earned/$total_points");
 echo "<script>alert('Quiz submitted! Results: $earned / $total_points (objective only). Short answers will be marked by admin.'); window.location='quiz_results.php?quiz_id=$quiz_id';</script>";
 ?>

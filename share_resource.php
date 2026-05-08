@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -57,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
            $stmt = $conn->prepare("INSERT INTO student_resources (user_id, subject, title, description, file_paths, external_url, resource_type) VALUES (?, ?, ?, ?, ?, ?, ?)");
 $stmt->bind_param("issssss", $uid, $subject, $title, $description, $file_paths_json, $external_url, $type);
             if ($stmt->execute()) {
+    log_activity($uid, "share_resource", "Title: $title, Type: $type");
                 $success = "Resource submitted for review. Thank you!";
             } else {
                 $error = "Database error: " . $conn->error;

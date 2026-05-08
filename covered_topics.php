@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php'; require_once 'check_access.php'; $conn=getDB(); $class=$_SESSION['class_level']; $covered=$conn->query("SELECT subject, topic, covered_date FROM topics_covered WHERE class_level='$class' ORDER BY covered_date DESC"); ?>
 <!DOCTYPE html><html><head><title>Covered Topics</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>

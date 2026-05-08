@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -28,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (empty($text) && !$file) die("Provide text or file.");
     $conn->query("INSERT INTO assignment_submissions (assignment_id, user_id, submission_text, file_path) VALUES ($aid, $uid, '$text', '$file')");
+    log_activity($uid, "submit_assignment", "Assignment ID: $aid");
     echo "<script>alert('Submitted'); window.location='assignments.php';</script>";
     exit;
 }

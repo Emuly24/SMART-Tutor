@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 // admin_download.php - Secure file delivery for admin only
 session_start();
 if (!isset($_SESSION['admin_logged']) || $_SESSION['admin_logged'] !== true) {

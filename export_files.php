@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 // export_files.php - collects all .php, .css, .js files into one text file
 $output = "=== SMART TUTOR FILE EXPORT ===\n\n";
 $exclude = ['export_files.php', 'style.css']; // we'll analyse style.css separately

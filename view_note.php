@@ -1,10 +1,13 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
 $uid = $_SESSION['user_id'];
 $note_id = (int)$_GET['id'];
 $note = $conn->query("SELECT * FROM notes WHERE id=$note_id")->fetch_assoc();
+    log_activity($uid, "view_note", "Note ID: $note_id");
 if (!$note) die("Note not found");
 
 // Check if note is unlocked for this student's group

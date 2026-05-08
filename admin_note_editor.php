@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php';
 session_start();
 
@@ -18,6 +20,7 @@ if (!isset($_SESSION['admin_logged'])) {
 // Core subjects we assist with
 $subjects = ['Mathematics', 'Biology', 'English', 'Physics', 'Chemistry'];
 
+$last_note_id = 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn = getDB();
     $title = $_POST['title'];
@@ -28,11 +31,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $conn->query("INSERT INTO notes (title, subject, class_level, content) VALUES ('$title', '$subject', '$class', '$content')");
     $note_id = $conn->insert_id;
+    $last_note_id = $note_id;
     $conn->query("DELETE FROM note_drafts");
     
-    // If a specific group was selected, automatically unlock this note for that group (and lock for others)
     if ($group_id) {
-        // Lock for all groups of this class and route? Better: insert lock records for all groups, then unlock this one.
+        // Lock for all groups of this class, then unlock the selected one
         $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
         while ($g = $all_groups->fetch_assoc()) {
             $lock = $g['id'] == $group_id ? 0 : 1;
@@ -42,9 +45,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $msg = "Note saved and unlocked for the selected group.";
     } else {
-        $msg = "Note saved. Use Group Content Locks to control access per group.";
+        $msg = "Note saved. Use the lock manager below to control group access.";
     }
-    echo "<script>alert('$msg');</script>";
+    echo "<script>window.noteId = $note_id; alert('$msg');</script>";
 }
 ?>
 <!DOCTYPE html>
@@ -77,6 +80,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .citation-item { padding: 5px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
     .group-selector { margin-bottom: 1rem; padding: 1rem; background: var(--card-alt-bg); border-radius: 0.75rem; }
     .group-selector select { margin-right: 10px; margin-bottom: 5px; }
+    .lock-manager { margin-top: 2rem; padding: 1rem; background: var(--card-alt-bg); border-radius: 0.75rem; display: none; }
+    .lock-manager table { width: 100%; }
+    .lock-manager td, .lock-manager th { padding: 8px; }
+    .lock-toggle { cursor: pointer; background: var(--accent); color: #1e293b; border: none; padding: 4px 12px; border-radius: 20px; }
+    .lock-toggle.locked { background: var(--error); color: white; }
 </style>
 </head>
 <body>
@@ -135,11 +143,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="form-group"><label>Content</label><textarea name="content" id="editor"></textarea></div>
         <button type="submit">Save Note</button>
     </form>
+
+    <!-- Lock Manager (initially hidden, appears after saving a note) -->
+    <div id="lockManager" class="lock-manager">
+        <h3>🔒 Group Access Control for this Note</h3>
+        <p>Toggle lock/unlock for each group. Locked = group cannot see the note. Unlocked = group can see the note.</p>
+        <div id="lockManagerContent"></div>
+    </div>
 </div>
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
-<!-- All modals (same as before) -->
+<!-- All modals -->
 <div id="symbolModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h3>Insert Symbol</h3><div id="symbolList" style="display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;"></div></div></div>
 <div id="citationModal" class="modal"><div class="modal-content"><h3>Add Citation</h3><div class="form-group"><label>Author(s) (Last, First)</label><input type="text" id="apaAuthor"></div><div class="form-group"><label>Year</label><input type="text" id="apaYear"></div><div class="form-group"><label>Title</label><input type="text" id="apaTitle"></div><div class="form-group"><label>Source</label><input type="text" id="apaSource"></div><div class="form-group"><label>DOI (optional)</label><input type="text" id="apaDoi"></div><button id="addCitationBtn" class="btn">Add</button><button id="closeCitationBtn" class="btn-secondary">Cancel</button></div></div>
 <div id="referenceModal" class="modal"><div class="modal-content"><h3>Reference List</h3><div id="referenceListContainer" class="citation-list"></div><button id="insertReferencesBtn" class="btn">Insert List</button><button id="closeReferenceBtn" class="btn-secondary">Close</button></div></div>
@@ -165,28 +180,91 @@ document.addEventListener('DOMContentLoaded', function() {
     const groupSelect = document.getElementById('groupSelect');
     
     function loadGroups() {
-        const classLevel = classSelect.value;
-        const route = routeSelect.value;
-        if (!classLevel || !route) {
-            groupSelect.innerHTML = '<option value="">-- Select route and class first --</option>';
-            return;
-        }
-        fetch(`admin_get_groups.php?class=${encodeURIComponent(classLevel)}&route=${encodeURIComponent(route)}`)
-            .then(res => res.json())
-            .then(data => {
-                groupSelect.innerHTML = '<option value="">-- Any group (use locks later) --</option>';
-                data.forEach(group => {
-                    groupSelect.innerHTML += `<option value="${group.id}">Group ${group.group_number} (${group.current_members}/5 members)</option>`;
-                });
-            })
-            .catch(err => {
-                console.error(err);
-                groupSelect.innerHTML = '<option value="">Error loading groups</option>';
-            });
+    const classLevel = document.getElementById('noteClass').value;
+    const route = document.getElementById('routeSelect').value;
+    const groupSelect = document.getElementById('groupSelect');
+    if (!classLevel || !route) {
+        groupSelect.innerHTML = '<option value="">-- Select route and class first --</option>';
+        return;
     }
+    fetch(`admin_get_groups.php?class=${encodeURIComponent(classLevel)}&route=${encodeURIComponent(route)}`)
+        .then(res => res.json())
+        .then(data => {
+            groupSelect.innerHTML = '<option value="">-- Any group (use locks later) --</option>';
+            data.forEach(group => {
+                groupSelect.innerHTML += `<option value="${group.id}">Group ${group.group_number} (${group.current_members}/5 members, ${group.attendance_rate}% attendance, pending exercises: ${group.pending_exercises}, quiz avg: ${group.avg_quiz_score}%)</option>`;
+            });
+        })
+        .catch(err => {
+            console.error(err);
+            groupSelect.innerHTML = '<option value="">Error loading groups</option>';
+        });
+}
     
     classSelect.addEventListener('change', loadGroups);
     routeSelect.addEventListener('change', loadGroups);
+    loadGroups(); // initial load if both selected
+    
+    // ======================= LOCK MANAGER =======================
+    let currentNoteId = <?= $last_note_id ?>;
+    const lockManagerDiv = document.getElementById('lockManager');
+    const lockManagerContent = document.getElementById('lockManagerContent');
+    
+    function loadLockManager(noteId) {
+        if (!noteId) {
+            lockManagerDiv.style.display = 'none';
+            return;
+        }
+        fetch(`admin_note_lock_api.php?action=get_locks&note_id=${noteId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.locks && data.locks.length) {
+                    let html = '<table class="data-table"><thead><tr><th>Route</th><th>Group</th><th>Status</th><th>Action</th></tr></thead><tbody>';
+                    data.locks.forEach(lock => {
+                        const statusText = lock.is_locked ? '🔒 Locked' : '🔓 Unlocked';
+                        const btnText = lock.is_locked ? 'Unlock' : 'Lock';
+                        html += `<tr>
+                                    <td>${lock.route === 'sciences' ? 'Sciences' : 'Humanities'}</td>
+                                    <td>Group ${lock.group_number}</td>
+                                    <td id="status-${lock.group_id}">${statusText}</td>
+                                    <td><button class="lock-toggle ${lock.is_locked ? 'locked' : ''}" data-note="${noteId}" data-group="${lock.group_id}">${btnText}</button></td>
+                                 </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    lockManagerContent.innerHTML = html;
+                    lockManagerDiv.style.display = 'block';
+                    // Attach event listeners to toggle buttons
+                    document.querySelectorAll('.lock-toggle').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const note = this.dataset.note;
+                            const group = this.dataset.group;
+                            fetch(`admin_note_lock_api.php?action=toggle_lock&note_id=${note}&group_id=${group}`)
+                                .then(res => res.json())
+                                .then(res => {
+                                    if (res.success) {
+                                        const statusSpan = document.getElementById(`status-${group}`);
+                                        const isLocked = res.is_locked;
+                                        statusSpan.innerHTML = isLocked ? '🔒 Locked' : '🔓 Unlocked';
+                                        this.innerHTML = isLocked ? 'Unlock' : 'Lock';
+                                        this.classList.toggle('locked', isLocked);
+                                    } else {
+                                        alert('Error toggling lock');
+                                    }
+                                })
+                                .catch(err => alert('Network error'));
+                        });
+                    });
+                } else {
+                    lockManagerDiv.style.display = 'none';
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                lockManagerDiv.style.display = 'none';
+            });
+    }
+    
+    if (currentNoteId) loadLockManager(currentNoteId);
     
     // ======================= SYMBOL PALETTE =======================
     const symbolPalette = {
@@ -619,7 +697,24 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // ======================= INITIALIZE CKEDITOR =======================
+    // ======================= CKEDITOR INITIALIZATION =======================
+    function insertText(text) {
+        if (editorInstance) {
+            editorInstance.model.change(writer => {
+                writer.insertText(text, editorInstance.model.document.selection.getFirstPosition());
+            });
+        }
+    }
+    function insertHtml(html) {
+        if (editorInstance) {
+            const viewFragment = editorInstance.data.processor.toView(html);
+            const modelFragment = editorInstance.data.toModel(viewFragment);
+            editorInstance.model.change(writer => {
+                writer.insert(modelFragment, editorInstance.model.document.selection.getFirstPosition());
+            });
+        }
+    }
+    
     ClassicEditor
         .create(document.querySelector('#editor'), {
             toolbar: [

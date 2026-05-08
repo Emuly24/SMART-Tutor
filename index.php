@@ -1,4 +1,6 @@
-<?php session_start(); ?>
+<?php
+require_once 'check_remember_me.php';
+ session_start(); ?>
 <!DOCTYPE html>
 <html>
 <head>

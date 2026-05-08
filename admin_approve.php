@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php';
 session_start();
 
@@ -33,24 +35,23 @@ if (isset($_POST['app_id'])) {
         $manual_route = trim($_POST['manual_route'] ?? '');
         if (!empty($manual_route) && in_array($manual_route, ['sciences', 'humanities'])) {
             $route = $manual_route;
-            // Update user's route in database
             $conn->query("UPDATE users SET route = '$route' WHERE id = {$app['uid']}");
         }
         
         if (empty($class)) {
             $msg = "Student class level is missing.";
         } elseif (empty($route)) {
-            $msg = "Student route (sciences/humanities) not determined and no manual route provided.";
+            $msg = "Student route not determined and no manual route provided.";
         } else {
-            // Find available group for the determined route
+            // Balanced group selection: order by current member count ascending (fill smallest groups first)
             $available_group = null;
             $groups = $conn->query("SELECT g.id, g.group_number, 
-                (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as current_count,
-                (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id=u.id WHERE gm.group_id = g.id AND u.gender='Male') as male_count,
-                (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id=u.id WHERE gm.group_id = g.id AND u.gender='Female') as female_count
+                (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as current_count,
+                (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = g.id AND u.gender='Male') as male_count,
+                (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = g.id AND u.gender='Female') as female_count
                 FROM groups g 
                 WHERE g.class_level = '$class' AND g.route = '$route' 
-                ORDER BY g.group_number ASC");
+                ORDER BY current_count ASC, g.group_number ASC");
             while ($grp = $groups->fetch_assoc()) {
                 $male_ok = ($gender == 'Male') ? ($grp['male_count'] < 2) : true;
                 $female_ok = ($gender == 'Female') ? ($grp['female_count'] < 3) : true;
@@ -68,7 +69,7 @@ if (isset($_POST['app_id'])) {
                 $app_data = $conn->query("SELECT ambition, university, target_points FROM applications WHERE user_id={$app['uid']}")->fetch_assoc();
                 $motivation = "Congratulations! Your application is approved. Remember your goal: to become {$app_data['ambition']} at {$app_data['university']} with {$app_data['target_points']} points. We believe in you!";
                 $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$app['uid']}, '$motivation')");
-                $msg = "Approved and assigned to group.";
+                $msg = "Approved and assigned to group (balanced).";
             }
         }
     } else { // REJECT
@@ -86,7 +87,8 @@ $pending = $conn->query("SELECT a.*, u.fullname, u.phone, u.class_level, u.id as
 $msg = $_GET['msg'] ?? '';
 ?>
 <!DOCTYPE html>
-<html><head><title>Approve Applications</title><link rel="stylesheet" href="style.css"></head><body>
+<html><head><title>Approve Applications</title><link rel="stylesheet" href="style.css"></head>
+<body class="admin-page">
 <div class="container">
     <?php include_once 'includes/header.php'; ?>
     <h1>Pending Applications</h1>

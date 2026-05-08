@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php';
 session_start();
 
@@ -84,7 +86,8 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_attendance.php">Mark Attendance</a>
                 <a href="admin_reports.php">Student Reports</a>
                 <a href="admin_testimonials.php">⭐ Manage Testimonials</a>
-                <a href="admin_subject_questions.php">❓ Subject Questions</a>
+                <a href="admin_subject_questions.php">Subject Questions</a>
+                <a href="admin_activity_log.php">📜 Student Activity Log</a>
             </div>
         </div>
         <div class="card">
@@ -95,6 +98,7 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_notes_list.php">Manage Notes</a>
                 <a href="admin_upload_book.php">Upload Book</a>
                 <a href="admin_book_questions.php">📚 Book Questions</a>
+                <a href="admin_bulk_import.php">📤 Bulk Import Notes/Books (CSV)</a>
             </div>
         </div>
         <div class="card">

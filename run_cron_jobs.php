@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 // run_cron_jobs.php – Automated cron job handler (GitHub Actions)
 require_once 'config.php';
 

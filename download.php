@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 // download.php - Secure file delivery for students (and optionally admin)
 require_once 'config.php';
 require_once 'check_access.php'; // student access control

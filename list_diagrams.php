@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 // list_diagrams.php - Admin-only API to get uploaded diagrams
 require_once 'config.php';
 session_start();

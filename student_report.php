@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php'; require_once 'check_access.php'; $conn=getDB(); $user_id=$_SESSION['user_id']; $message='';
 if($_SERVER['REQUEST_METHOD']==='POST'){
     $type=$_POST['report_type']; $description=trim($_POST['description']); $incident_date=$_POST['incident_date']??date('Y-m-d');

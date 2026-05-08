@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 // Ensure getAdminHash() exists (fallback in case config.php doesn't have it)
 if (!function_exists('getAdminHash')) {
     function getAdminHash() {

@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -24,6 +26,7 @@ $start = new DateTime($sub['start_time']);
 $end = (clone $start)->modify("+{$exam['duration_minutes']} minutes");
 if (new DateTime() > $end) {
     $conn->query("UPDATE exam_submissions SET status='submitted', end_time=NOW() WHERE exam_id=$exam_id AND user_id=$uid");
+    log_activity($uid, "submit_exam", "Exam ID: $exam_id");
     die("Time's up. Submitted. <a href='exam_results.php?exam_id=$exam_id'>View results</a>");
 }
 $remaining = $end->getTimestamp() - time();
@@ -49,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_exam'])) {
         }
     }
     $conn->query("UPDATE exam_submissions SET status='submitted', end_time=NOW() WHERE exam_id=$exam_id AND user_id=$uid");
+    log_activity($uid, "submit_exam", "Exam ID: $exam_id");
     echo "<script>alert('Exam submitted'); window.location='exams.php';</script>";
     exit;
 }

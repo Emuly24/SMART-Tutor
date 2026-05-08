@@ -1,4 +1,6 @@
 <?php
+require_once 'check_remember_me.php';
+
 require_once 'config.php'; require_once 'check_access.php'; $conn=getDB(); $uid=$_SESSION['user_id']; $exam_id=(int)$_GET['exam_id']; $exam=$conn->query("SELECT title FROM exams WHERE id=$exam_id")->fetch_assoc(); if(!$exam) die("Invalid exam"); $answers=$conn->query("SELECT q.question_text, a.answer_text, a.answer_file_path, a.marks_awarded, q.points, a.feedback FROM exam_questions q LEFT JOIN exam_answers a ON q.id=a.question_id AND a.exam_id=$exam_id AND a.user_id=$uid WHERE q.exam_id=$exam_id ORDER BY q.sort_order"); ?>
 <!DOCTYPE html><html><head><title><?=htmlspecialchars($exam['title'])?> Results</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
