@@ -5,7 +5,7 @@ $conn = getDB();
 $uid = $_SESSION['user_id'];
 
 // Fetch group info
-$group = $conn->query("SELECT g.id as group_id, g.group_number, g.class_level 
+$group = $conn->query("SELECT g.id as group_id, g.group_number, g.class_level, g.route
     FROM group_members gm 
     JOIN groups g ON gm.group_id = g.id 
     WHERE gm.user_id = $uid")->fetch_assoc();
@@ -17,6 +17,13 @@ if ($group) {
         JOIN users u ON gm.user_id = u.id 
         WHERE gm.group_id = {$group['group_id']} AND u.id != $uid");
     while ($f = $fellow->fetch_assoc()) $fellow_members[] = $f;
+}
+
+// Get today's meeting start time for this group
+$today = date('Y-m-d');
+$meeting = null;
+if ($group) {
+    $meeting = $conn->query("SELECT start_time FROM group_meetings WHERE group_id = {$group['group_id']} AND meeting_date = '$today'")->fetch_assoc();
 }
 ?>
 <!DOCTYPE html>
@@ -33,6 +40,26 @@ if ($group) {
     
     <div class="card" style="margin: 20px;">
         <h3><i class="fas fa-users"></i> My Group: <?= htmlspecialchars($group['class_level'] ?? 'Not assigned') ?> – Group <?= $group['group_number'] ?? '—' ?></h3>
+        <p><strong>Route:</strong> <?= ucfirst($group['route'] ?? 'Not set') ?></p>
+        
+        <?php if ($meeting): ?>
+            <div style="background: #f0f7ff; padding: 10px; border-radius: 8px; margin: 10px 0;">
+                <p><strong>⏰ Today's Meeting:</strong> Starts at <?= date('h:i A', strtotime($meeting['start_time'])) ?></p>
+                <?php
+                // Check if attendance already marked for today
+                $att = $conn->query("SELECT status, remarks FROM attendance WHERE user_id = $uid AND date = '$today'")->fetch_assoc();
+                if ($att && $att['status'] == 'late' && empty($att['remarks'])): ?>
+                    <p class="warning">You were marked late. Please <a href="attendance.php">submit your reason here</a>.</p>
+                <?php elseif ($att && $att['status'] == 'late' && !empty($att['remarks'])): ?>
+                    <p class="info">You were late. Your reason has been recorded.</p>
+                <?php elseif ($att && $att['status'] == 'on_time'): ?>
+                    <p class="success">✅ You were on time today. Thank you!</p>
+                <?php endif; ?>
+            </div>
+        <?php else: ?>
+            <p>No meeting scheduled for today.</p>
+        <?php endif; ?>
+        
         <p><strong>Fellow members:</strong></p>
         <ul>
         <?php if ($group && count($fellow_members) > 0): ?>
@@ -50,5 +77,4 @@ if ($group) {
     <div class="footer"><a href="dashboard.php" class="btn-back">← Back to Dashboard</a></div>
 </div>
 <a href="#" class="back-to-top" id="backToTop">↑</a>
-</body>
-</html>
+</body></html>

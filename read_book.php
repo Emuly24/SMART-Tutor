@@ -109,6 +109,40 @@ $saved_page = $progress ? (int)$progress['last_page'] : 1;
         <div id="pdf-canvas-container"></div>
     </div>
 </div>
+<div class="card review-section" style="margin-top: 20px;">
+    <h3>Rate & Review this Book</h3>
+    <form id="reviewForm">
+        <input type="hidden" name="book_id" value="<?= $book_id ?>">
+        <div class="form-group">
+            <label>Rating (1‑5 stars)</label>
+            <select name="rating" required>
+                <option value="5">⭐⭐⭐⭐⭐ (5)</option>
+                <option value="4">⭐⭐⭐⭐ (4)</option>
+                <option value="3">⭐⭐⭐ (3)</option>
+                <option value="2">⭐⭐ (2)</option>
+                <option value="1">⭐ (1)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Review (optional)</label>
+            <textarea name="review" rows="3"></textarea>
+        </div>
+        <button type="submit" class="btn">Submit Review</button>
+    </form>
+    <div id="reviewMessage"></div>
+</div>
+<script>
+document.getElementById('reviewForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    fetch('submit_book_review.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById('reviewMessage').innerHTML = data.message;
+            if (data.success) this.reset();
+        });
+});
+</script>
 
 <div id="askBtn" class="ask-btn" style="display: none;">❓ Ask about selected text</div>
 <div id="questionModal" class="question-modal">

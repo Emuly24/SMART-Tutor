@@ -79,6 +79,7 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
             <div class="card-buttons">
                 <a href="admin_approve.php">Approve Applications</a>
                 <a href="admin_students_list.php">Student List</a>
+                <a href="admin_reassign_group.php">🔄 Reassign Student Group</a>
                 <a href="admin_discipline.php">Discipline</a>
                 <a href="admin_attendance.php">Mark Attendance</a>
                 <a href="admin_reports.php">Student Reports</a>
@@ -118,17 +119,20 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
             <i class="fas fa-lightbulb"></i>
             <h3>Topic Requests</h3>
             <div class="card-buttons">
-                <a href="admin_topic_requests.php">View Requests</a>
+                <a href="admin_topic_requests.php">View Requested Topics</a>
                 <a href="admin_topics_covered.php">Covered Topics</a>
+                <a href="admin_delete_covered_topics.php">🗑️ Delete Covered Topics</a>
+                <a href="admin_export_covered_form.php">📎 Export Covered Topics</a>
             </div>
         </div>
         <div class="card">
             <i class="fas fa-chart-line"></i>
-            <h3>Reports</h3>
+            <h3>Class Management</h3>
             <div class="card-buttons">
                 <a href="admin_attendance_report.php">Attendance Report</a>
                 <a href="admin_discipline_log.php">Discipline Log</a>
                 <a href="admin_class_overview.php">Class Overview</a>
+                <a href="admin_resources.php">📚 Student Resource Submissions</a>
             </div>
         </div>
         <div class="card">

@@ -122,8 +122,7 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
                 <li><a href="admin_settings.php">⚙️ Settings</a></li>
                 <li><a href="admin_notifications_center.php">🔔 Notifications Center</a></li>
                 <li><a href="admin_feedback.php">💬 Student Feedback</a></li>
-                <li><a href="admin_delete_covered_topics.php">🗑️ Delete Covered Topics</a></li>
-                <li><a href="admin_export_covered_form.php">📎 Export Covered Topics</a></li>
+                <li><a href="admin_set_meeting.php">⏰ Set Group Meeting Time</a></li>
                 <li><a href="logout.php">🚪 Logout</a></li>
             <?php else: ?>
                 <li><a href="profile.php">👤 My Profile</a></li>
@@ -133,6 +132,7 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
                 <li><a href="request_topic.php">💡 Request Topic</a></li>
                 <li><a href="covered_topics.php">📜 Covered Topics</a></li>
                 <li><a href="my_group.php">👥 My Group</a></li>   
+                <li><a href="upload_resource.php">📤 Share a Learning Resource</a></li>
                 <li><a href="logout.php">🚪 Logout</a></li>
             <?php endif; ?> 
         </ul>

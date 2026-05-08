@@ -21,6 +21,8 @@ $borrowedRes = $conn->query("SELECT book_id FROM borrowed_books WHERE user_id = 
 while ($row = $borrowedRes->fetch_assoc()) {
     $borrowed[] = $row['book_id'];
 }
+$avg_rating = $conn->query("SELECT AVG(rating) as avg FROM book_reviews WHERE book_id = {$b['id']}")->fetch_assoc()['avg'];
+if ($avg_rating) echo "<br><small>⭐ " . round($avg_rating,1) . "/5</small>";
 ?>
 <!DOCTYPE html>
 <html><head><title>Library - Books</title><link rel="stylesheet" href="style.css"></head><body>
@@ -51,6 +53,7 @@ while ($row = $borrowedRes->fetch_assoc()) {
             <div class="book-item" style="border-bottom:1px solid #eee; padding:0.5rem 0;">
                 <strong><?= htmlspecialchars($b['title']) ?></strong>
                 <div class="card-buttons" style="margin-top:0.5rem;">
+                    
                     <?php if ($is_borrowed): ?>
                         <a href="read_book.php?id=<?= $b['id'] ?>" class="btn" target="_blank">📖 Read Online</a>
                         <a href="return_book.php?id=<?= $b['id'] ?>" class="btn-warning" onclick="return confirm('Return this book?')">↩️ Return</a>

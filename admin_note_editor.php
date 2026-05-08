@@ -1,8 +1,10 @@
 <?php
 require_once 'config.php';
 session_start();
+
+$admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN_HASH') ? ADMIN_HASH : '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu');
 if (!isset($_SESSION['admin_logged'])) {
-    if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], ADMIN_HASH)) {
+    if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
         header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Access denied';
@@ -12,15 +14,37 @@ if (!isset($_SESSION['admin_logged'])) {
     $_SESSION['role'] = 'admin';
     unset($_SESSION['user_id']);
 }
+
+// Core subjects we assist with
+$subjects = ['Mathematics', 'Biology', 'English', 'Physics', 'Chemistry'];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn = getDB();
     $title = $_POST['title'];
     $subject = $_POST['subject'];
     $class = $_POST['class_level'];
     $content = $_POST['content'];
+    $group_id = isset($_POST['group_id']) && $_POST['group_id'] ? (int)$_POST['group_id'] : 0;
+    
     $conn->query("INSERT INTO notes (title, subject, class_level, content) VALUES ('$title', '$subject', '$class', '$content')");
+    $note_id = $conn->insert_id;
     $conn->query("DELETE FROM note_drafts");
-    echo "<script>alert('Note saved');</script>";
+    
+    // If a specific group was selected, automatically unlock this note for that group (and lock for others)
+    if ($group_id) {
+        // Lock for all groups of this class and route? Better: insert lock records for all groups, then unlock this one.
+        $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
+        while ($g = $all_groups->fetch_assoc()) {
+            $lock = $g['id'] == $group_id ? 0 : 1;
+            $conn->query("INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) 
+                          VALUES ({$g['id']}, 'note', $note_id, $lock)
+                          ON DUPLICATE KEY UPDATE is_locked = $lock");
+        }
+        $msg = "Note saved and unlocked for the selected group.";
+    } else {
+        $msg = "Note saved. Use Group Content Locks to control access per group.";
+    }
+    echo "<script>alert('$msg');</script>";
 }
 ?>
 <!DOCTYPE html>
@@ -51,6 +75,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .image-controls input { width: 100%; }
     .citation-list { background: #f5f5f5; padding: 10px; border-radius: 8px; margin: 10px 0; max-height: 200px; overflow-y: auto; }
     .citation-item { padding: 5px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
+    .group-selector { margin-bottom: 1rem; padding: 1rem; background: var(--card-alt-bg); border-radius: 0.75rem; }
+    .group-selector select { margin-right: 10px; margin-bottom: 5px; }
 </style>
 </head>
 <body>
@@ -59,8 +85,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div style="padding: 2rem;">
     <form method="post" id="noteForm">
         <div class="form-group"><label>Title</label><input type="text" id="noteTitle" name="title" required></div>
-        <div class="form-group"><label>Subject</label><input type="text" id="noteSubject" name="subject" required></div>
-        <div class="form-group"><label>Class</label><select id="noteClass" name="class_level"><option>Form 3</option><option>Form 4</option></select></div>
+        <div class="form-group"><label>Subject</label>
+            <select name="subject" required>
+                <option value="">-- Select Subject --</option>
+                <?php foreach ($subjects as $sub): ?>
+                    <option value="<?= htmlspecialchars($sub) ?>"><?= htmlspecialchars($sub) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group"><label>Class</label>
+            <select id="noteClass" name="class_level" required>
+                <option>Form 3</option><option>Form 4</option>
+            </select>
+        </div>
+        
+        <!-- Group selection (optional) -->
+        <div class="group-selector">
+            <h4>🎯 Assign to specific group (optional)</h4>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <select id="routeSelect" style="min-width: 120px;">
+                    <option value="">-- Route --</option>
+                    <option value="sciences">Sciences</option>
+                    <option value="humanities">Humanities</option>
+                </select>
+                <select id="groupSelect" name="group_id" style="min-width: 150px;">
+                    <option value="">-- Any group (use locks later) --</option>
+                </select>
+            </div>
+            <small class="help-text">If you select a group, this note will be instantly unlocked for that group and locked for others.</small>
+        </div>
+
         <div class="toolbar-extras">
             <button type="button" id="symbolBtn">Ω Symbols</button>
             <button type="button" id="fileUploadBtn">📎 Attach File</button>
@@ -105,23 +159,35 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentEditedImage = null;
     let cropper = null;
 
-    function insertText(text) {
-        if (editorInstance) {
-            editorInstance.model.change(writer => {
-                writer.insertText(text, editorInstance.model.document.selection.getFirstPosition());
-            });
+    // ======================= GROUP LOADER =======================
+    const classSelect = document.getElementById('noteClass');
+    const routeSelect = document.getElementById('routeSelect');
+    const groupSelect = document.getElementById('groupSelect');
+    
+    function loadGroups() {
+        const classLevel = classSelect.value;
+        const route = routeSelect.value;
+        if (!classLevel || !route) {
+            groupSelect.innerHTML = '<option value="">-- Select route and class first --</option>';
+            return;
         }
-    }
-    function insertHtml(html) {
-        if (editorInstance) {
-            const viewFragment = editorInstance.data.processor.toView(html);
-            const modelFragment = editorInstance.data.toModel(viewFragment);
-            editorInstance.model.change(writer => {
-                writer.insert(modelFragment, editorInstance.model.document.selection.getFirstPosition());
+        fetch(`admin_get_groups.php?class=${encodeURIComponent(classLevel)}&route=${encodeURIComponent(route)}`)
+            .then(res => res.json())
+            .then(data => {
+                groupSelect.innerHTML = '<option value="">-- Any group (use locks later) --</option>';
+                data.forEach(group => {
+                    groupSelect.innerHTML += `<option value="${group.id}">Group ${group.group_number} (${group.current_members}/5 members)</option>`;
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                groupSelect.innerHTML = '<option value="">Error loading groups</option>';
             });
-        }
     }
-
+    
+    classSelect.addEventListener('change', loadGroups);
+    routeSelect.addEventListener('change', loadGroups);
+    
     // ======================= SYMBOL PALETTE =======================
     const symbolPalette = {
         "Greek": ["α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","σ","τ","υ","φ","χ","ψ","ω","Α","Β","Γ","Δ","Ε","Ζ","Η","Θ","Ι","Κ","Λ","Μ","Ν","Ξ","Ο","Π","Ρ","Σ","Τ","Υ","Φ","Χ","Ψ","Ω"],

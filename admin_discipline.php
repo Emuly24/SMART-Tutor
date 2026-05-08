@@ -23,9 +23,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $reason = $_POST['reason'];
     $sus_end = $_POST['suspension_end'] ?? null;
     $conn->query("INSERT INTO discipline_log (user_id,action,reason,suspension_end,admin_notes) VALUES ($uid,'$action','$reason','$sus_end','{$_POST['admin_notes']}')");
-    if ($action == 'suspension') $conn->query("UPDATE users SET status='suspended', suspension_end='$sus_end' WHERE id=$uid");
-    elseif ($action == 'dismissal') $conn->query("UPDATE users SET status='dismissed', suspension_end=NULL WHERE id=$uid");
-    else $conn->query("UPDATE users SET status='active', suspension_end=NULL WHERE id=$uid");
+    if ($action == 'suspension') {
+    $conn->query("UPDATE users SET status='suspended', suspension_end='$sus_end' WHERE id=$uid");
+} elseif ($action == 'dismissal') {
+    $conn->query("UPDATE users SET status='dismissed', suspension_end=NULL WHERE id=$uid");
+    // Remove student from any group
+    $conn->query("DELETE FROM group_members WHERE user_id = $uid");
+} else {
+    $conn->query("UPDATE users SET status='active', suspension_end=NULL WHERE id=$uid");
+}
     header("Location: admin_discipline.php?user_id=$uid");
     exit;
 }

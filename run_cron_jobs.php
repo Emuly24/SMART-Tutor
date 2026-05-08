@@ -48,6 +48,16 @@ $overdue = $conn->query("SELECT DISTINCT u.id, u.fullname, u.email FROM borrowed
 while ($r = $overdue->fetch_assoc()) {
     $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$r['id']}, 'Reminder: Your borrowed book is due tomorrow. Please return it on time.')");
 }
+// --- Overdue borrowed books ---
+$overdue_books = $conn->query("SELECT b.user_id, u.fullname, b.book_title, b.due_date 
+    FROM borrowed_books b 
+    JOIN users u ON b.user_id = u.id 
+    WHERE b.returned_at IS NULL AND b.due_date < CURDATE()");
+while ($book = $overdue_books->fetch_assoc()) {
+    $msg = "Reminder: The book \"{$book['book_title']}\" is overdue (due {$book['due_date']}). Please return it as soon as possible.";
+    $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$book['user_id']}, '$msg')");
+    $output[] = "Overdue reminder sent to {$book['fullname']} for '{$book['book_title']}'.";
+}
 
 $log = date('Y-m-d H:i:s') . " - " . (empty($output) ? "No pending actions." : implode(", ", $output));
 file_put_contents(__DIR__ . '/cron_log.txt', $log . PHP_EOL, FILE_APPEND);

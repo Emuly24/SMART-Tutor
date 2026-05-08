@@ -62,31 +62,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Determine route based on subjects they need assistance with
+    // Determine route – prioritize humanities, then sciences, with neutral subjects ignored
 $route = null;
-$science_assist = ['Physics', 'Chemistry', 'Biology', 'Mathematics'];
-$humanities_assist = ['English', 'History', 'Bible Knowledge', 'Social Studies', 'Life Skills', 'Chichewa', 'Geography', 'Agriculture'];
+$has_humanities_subjects = (strpos($subjects_taken, 'History') !== false || strpos($subjects_taken, 'Bible Knowledge') !== false || strpos($subjects_taken, 'Social Studies') !== false || strpos($subjects_taken, 'Life Skills') !== false);
+$has_science_subjects = (strpos($subjects_taken, 'Physics') !== false && strpos($subjects_taken, 'Chemistry') !== false);
 
-$has_science_need = false;
-$has_humanities_need = false;
-foreach ($science_assist as $subj) {
-    if (strpos($subjects_assist, $subj) !== false) { $has_science_need = true; break; }
-}
-foreach ($humanities_assist as $subj) {
-    if (strpos($subjects_assist, $subj) !== false) { $has_humanities_need = true; break; }
-}
-
-if ($has_science_need && !$has_humanities_need) {
-    $route = 'sciences';
-} elseif ($has_humanities_need && !$has_science_need) {
+if ($has_humanities_subjects && !$has_science_subjects) {
     $route = 'humanities';
-} elseif ($has_science_need && $has_humanities_need) {
-    // Both – default to sciences (can be changed by admin later)
+} elseif ($has_science_subjects && !$has_humanities_subjects) {
+    $route = 'sciences';
+} elseif ($has_humanities_subjects && $has_science_subjects) {
+    // Mixed – default to sciences (admin can override later)
     $route = 'sciences';
 } else {
-    // No subjects selected for assistance – fallback based on subjects taken
-    $has_science_taken = (strpos($subjects_taken, 'Physics') !== false || strpos($subjects_taken, 'Chemistry') !== false || strpos($subjects_taken, 'Biology') !== false);
-    $route = $has_science_taken ? 'sciences' : 'humanities';
+    // Only neutral subjects (Math, English, Biology, etc.) – default to sciences
+    $route = 'sciences';
 }
     
     if (empty($class_level) || empty($gender) || empty($school) || empty($dob) || empty($subjects_taken) || empty($subjects_assist) || empty($ambition) || empty($career_reason) || empty($university) || empty($why_join)) {

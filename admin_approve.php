@@ -23,15 +23,26 @@ if (isset($_POST['app_id'])) {
         FROM applications a 
         JOIN users u ON a.user_id = u.id 
         WHERE a.id = $app_id")->fetch_assoc();
+    
     if ($_POST['action'] == 'approve') {
         $class = $app['class_level'];
         $gender = $app['gender'];
         $route = $app['route'];
+        
+        // Check if admin selected a manual route
+        $manual_route = trim($_POST['manual_route'] ?? '');
+        if (!empty($manual_route) && in_array($manual_route, ['sciences', 'humanities'])) {
+            $route = $manual_route;
+            // Update user's route in database
+            $conn->query("UPDATE users SET route = '$route' WHERE id = {$app['uid']}");
+        }
+        
         if (empty($class)) {
             $msg = "Student class level is missing.";
         } elseif (empty($route)) {
-            $msg = "Student route (sciences/humanities) not determined.";
+            $msg = "Student route (sciences/humanities) not determined and no manual route provided.";
         } else {
+            // Find available group for the determined route
             $available_group = null;
             $groups = $conn->query("SELECT g.id, g.group_number, 
                 (SELECT COUNT(*) FROM group_members gm WHERE gm.group_id = g.id) as current_count,
@@ -60,7 +71,7 @@ if (isset($_POST['app_id'])) {
                 $msg = "Approved and assigned to group.";
             }
         }
-    } else {
+    } else { // REJECT
         $rejection_reason = trim($_POST['rejection_reason'] ?? 'No specific reason provided.');
         $conn->query("UPDATE applications SET status='rejected', admin_notes='$rejection_reason' WHERE id=$app_id");
         $msg = "Rejected. Reason saved.";
@@ -104,6 +115,14 @@ $msg = $_GET['msg'] ?? '';
                 </ul>
                 <form method="post">
                     <input type="hidden" name="app_id" value="<?= $r['id'] ?>">
+                    <div class="form-group">
+                        <label>Override Route (optional)</label>
+                        <select name="manual_route">
+                            <option value="">-- Auto (current: <?= ucfirst($r['route'] ?? 'not set') ?>) --</option>
+                            <option value="sciences">Sciences</option>
+                            <option value="humanities">Humanities</option>
+                        </select>
+                    </div>
                     <button type="submit" name="action" value="approve" class="btn-success">Approve</button>
                     <br><br>
                     <label>Rejection reason (if rejecting):</label>
