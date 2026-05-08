@@ -222,4 +222,13 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
             setTimeout(() => toast.remove(), 300);
         }, 3000);
     }
+setTimeout(function() {
+    document.querySelectorAll('.card').forEach(function(card) {
+        if (getComputedStyle(card).opacity === '0') {
+            card.style.opacity = '1';
+            card.style.animation = 'none';
+            card.style.transform = 'none';
+        }
+    });
+}, 600);
 </script>

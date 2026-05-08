@@ -878,7 +878,13 @@ input[type="file"]:hover {
     .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; }
     a { color: black; text-decoration: underline; }
 }
-
+/* Disable animations on admin pages (prevents disappearing content) */
+body.admin-page .card,
+body.admin-page .container > *:not(.top-nav) {
+    opacity: 1 !important;
+    animation: none !important;
+    transform: none !important;
+}
 /* ========== 16. Page‑Specific Containers ========== */
 .login-container, .signup-container, .apply-container, .consent-container {
     max-width: 600px;

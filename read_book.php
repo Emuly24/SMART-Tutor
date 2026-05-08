@@ -1,35 +1,56 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
 $uid = $_SESSION['user_id'];
 $book_id = (int)$_GET['id'];
+$book = $conn->query("SELECT id, title, subject, file_path FROM books WHERE id = $book_id")->fetch_assoc();
+if (!$book) die("Book not found.");
+$book_title = htmlspecialchars($book['title']);
 
-// Check if the book is borrowed by this user and not returned
-$borrowed = $conn->query("SELECT * FROM borrowed_books WHERE user_id = $uid AND book_id = $book_id AND returned_at IS NULL");
-if ($borrowed->num_rows == 0) {
-    die("You have not borrowed this book. Please borrow it first from the library.");
+// Handle AJAX actions (save/load annotations)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
+    header('Content-Type: application/json');
+    $action = $_GET['action'];
+    $page = (int)($_POST['page'] ?? 0);
+    if ($action === 'save_annotation') {
+        $type = $_POST['type']; // highlight, underline, sticky
+        $content = trim($_POST['content'] ?? '');
+        $position = $_POST['position'] ?? '';
+        $stmt = $conn->prepare("INSERT INTO book_annotations (user_id, book_id, page_number, annotation_type, content, position) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("iiisss", $uid, $book_id, $page, $type, $content, $position);
+        $stmt->execute();
+        echo json_encode(['success' => true, 'id' => $conn->insert_id]);
+        exit;
+    } elseif ($action === 'load_annotations') {
+        $stmt = $conn->prepare("SELECT id, annotation_type, content, position FROM book_annotations WHERE user_id = ? AND book_id = ? AND page_number = ?");
+        $stmt->bind_param("iii", $uid, $book_id, $page);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $annotations = [];
+        while ($row = $result->fetch_assoc()) {
+            $annotations[] = $row;
+        }
+        echo json_encode(['success' => true, 'annotations' => $annotations]);
+        exit;
+    } elseif ($action === 'delete_annotation') {
+        $id = (int)$_POST['id'];
+        $conn->query("DELETE FROM book_annotations WHERE id = $id AND user_id = $uid");
+        echo json_encode(['success' => true]);
+        exit;
+    }
+    exit;
 }
-$book = $borrowed->fetch_assoc();
-$book_title = htmlspecialchars($book['book_title']);
-$file_path = $book['file_path'];
-
-// Get saved progress
-$progress = $conn->query("SELECT last_page FROM reading_progress WHERE user_id = $uid AND book_id = $book_id")->fetch_assoc();
-$saved_page = $progress ? (int)$progress['last_page'] : 1;
 ?>
 <!DOCTYPE html>
 <html><head>
     <title><?= $book_title ?> - SMART Tutor Reader</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf_viewer.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <style>
-        /* ... (same as before) ... */
-        body {
-            background: var(--primary-light);
-        }
+        body { background: var(--primary-light); }
         .reader-header {
             background: var(--primary-dark);
             color: white;
@@ -40,17 +61,16 @@ $saved_page = $progress ? (int)$progress['last_page'] : 1;
             justify-content: space-between;
             align-items: center;
         }
-        .reader-header h2 { margin: 0; font-size: 1.2rem; }
-        .pdf-controls {
-            background: var(--card-alt-bg);
-            padding: 10px;
-            border-radius: 2rem;
-            margin-bottom: 20px;
+        .annotation-toolbar {
             display: flex;
-            gap: 15px;
-            justify-content: center;
-            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            background: var(--card-alt-bg);
+            padding: 8px;
+            border-radius: 8px;
         }
+        .annotation-toolbar button { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
         #viewer-container {
             background: #525659;
             padding: 20px;
@@ -58,49 +78,74 @@ $saved_page = $progress ? (int)$progress['last_page'] : 1;
             display: flex;
             flex-direction: column;
             align-items: center;
+            position: relative;
+        }
+        .pdf-controls {
+            background: rgba(0,0,0,0.7);
+            padding: 8px;
+            border-radius: 2rem;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            color: white;
         }
         canvas {
             box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             background: white;
             border-radius: 4px;
         }
-        .ask-btn {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: var(--accent);
-            color: #1e293b;
-            border-radius: 50px;
-            padding: 10px 20px;
-            cursor: pointer;
-            z-index: 2000;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            font-weight: bold;
+        .textLayer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.2;
+            line-height: 1;
         }
-        .ask-btn:hover { background: var(--accent-dark); }
-        .question-modal {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--card-bg);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-            width: 320px;
-            padding: 15px;
-            z-index: 2000;
-            display: none;
-            border-left: 5px solid var(--accent);
+        .textLayer ::selection {
+            background: rgba(212,175,55,0.4);
         }
-        .question-modal textarea { width: 100%; margin: 10px 0; }
+        .highlight {
+            background-color: rgba(255,255,0,0.5);
+        }
+        .underline {
+            border-bottom: 2px solid red;
+        }
+        .sticky-note {
+            position: absolute;
+            background: #ffc;
+            padding: 4px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: move;
+            z-index: 100;
+            font-size: 0.7rem;
+            max-width: 150px;
+        }
+        .tool-active { background: var(--accent-dark) !important; color: white !important; }
+        #stickyDialog textarea { width: 100%; margin-bottom: 10px; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 </head>
 <body>
 <div class="container">
     <div class="reader-header">
         <h2><i class="fas fa-book-open"></i> <?= $book_title ?></h2>
-        <div>
-            <span class="badge" style="background: var(--accent); color:#1e293b;">Borrowed until: <?= date('d M Y', strtotime($book['due_date'])) ?></span>
-        </div>
+        <a href="library.php" class="btn-back">← Back to Library</a>
+    </div>
+    <div class="annotation-toolbar" id="toolbar">
+        <button id="highlightBtn" class="btn-secondary">🟡 Highlight</button>
+        <button id="underlineBtn" class="btn-secondary">📝 Underline</button>
+        <button id="stickyBtn" class="btn-secondary">📌 Sticky Note</button>
+        <button id="eraseBtn" class="btn-secondary">🗑️ Erase</button>
+        <button id="saveAnnotationsBtn" class="btn-success">💾 Save All</button>
+        <button id="loadAnnotationsBtn" class="btn-info">📂 Load</button>
     </div>
     <div id="viewer-container">
         <div class="pdf-controls">
@@ -108,90 +153,40 @@ $saved_page = $progress ? (int)$progress['last_page'] : 1;
             <span>Page <span id="page_num">1</span> / <span id="page_count">?</span></span>
             <button id="next" class="btn-secondary">Next ▶</button>
         </div>
-        <div id="pdf-canvas-container"></div>
+        <div id="canvas-container" style="position: relative;">
+            <canvas id="pdf-canvas"></canvas>
+            <div id="text-layer" class="textLayer"></div>
+        </div>
     </div>
 </div>
-<div class="card review-section" style="margin-top: 20px;">
-    <h3>Rate & Review this Book</h3>
-    <form id="reviewForm">
-        <input type="hidden" name="book_id" value="<?= $book_id ?>">
-        <div class="form-group">
-            <label>Rating (1‑5 stars)</label>
-            <select name="rating" required>
-                <option value="5">⭐⭐⭐⭐⭐ (5)</option>
-                <option value="4">⭐⭐⭐⭐ (4)</option>
-                <option value="3">⭐⭐⭐ (3)</option>
-                <option value="2">⭐⭐ (2)</option>
-                <option value="1">⭐ (1)</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>Review (optional)</label>
-            <textarea name="review" rows="3"></textarea>
-        </div>
-        <button type="submit" class="btn">Submit Review</button>
-    </form>
-    <div id="reviewMessage"></div>
-</div>
-<script>
-document.getElementById('reviewForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    fetch('submit_book_review.php', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById('reviewMessage').innerHTML = data.message;
-            if (data.success) this.reset();
-        });
-});
-</script>
 
-<div id="askBtn" class="ask-btn" style="display: none;">❓ Ask about selected text</div>
-<div id="questionModal" class="question-modal">
-    <h4>Ask a question</h4>
-    <div><strong>Selected text:</strong> <span id="selectedText"></span></div>
-    <textarea id="questionText" rows="3" placeholder="Write your question here..."></textarea>
-    <button id="submitQuestion" class="btn">Submit Question</button>
-    <button id="closeModal" class="btn-secondary">Cancel</button>
+<div id="stickyDialog" title="Add Sticky Note" style="display:none;">
+    <textarea id="stickyText" rows="3" cols="30" placeholder="Enter your note..."></textarea>
 </div>
 
 <script>
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    let pdfDoc = null,
-        pageNum = 1,
-        pageRendering = false,
-        pageNumPending = null,
-        scale = 1.5,
-        canvasContainer = document.getElementById('pdf-canvas-container');
+    let pdfDoc = null, pageNum = 1, pageRendering = false, pageNumPending = null, scale = 1.5;
+    let canvas = document.getElementById('pdf-canvas');
+    let ctx = canvas.getContext('2d');
     let currentPage = null;
+    let currentTool = 'highlight';
+    let currentAnnotations = [];
+    let stickyCounter = 0;
     const bookId = <?= $book_id ?>;
-    const savedPage = <?= $saved_page ?>;
+    const userId = <?= $uid ?>;
 
-    function saveCurrentPage() {
-        fetch('save_reading_progress.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'book_id=' + bookId + '&page=' + pageNum
-        }).catch(err => console.log('Save failed', err));
-    }
-
+    // Helper: render page
     function renderPage(num) {
         pageRendering = true;
         pdfDoc.getPage(num).then(function(page) {
             currentPage = page;
             const viewport = page.getViewport({ scale: scale });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
             canvas.height = viewport.height;
             canvas.width = viewport.width;
             canvas.style.width = '100%';
             canvas.style.height = 'auto';
-            canvasContainer.innerHTML = '';
-            canvasContainer.appendChild(canvas);
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport
-            };
+            const renderContext = { canvasContext: ctx, viewport: viewport };
             const renderTask = page.render(renderContext);
             renderTask.promise.then(function() {
                 pageRendering = false;
@@ -200,114 +195,140 @@ document.getElementById('reviewForm').addEventListener('submit', function(e) {
                     pageNumPending = null;
                 }
             });
+            // Get text content for selection
+            page.getTextContent().then(function(textContent) {
+                const textLayerDiv = document.getElementById('text-layer');
+                textLayerDiv.style.width = viewport.width + 'px';
+                textLayerDiv.style.height = viewport.height + 'px';
+                pdfjsLib.renderTextLayer({
+                    textContent: textContent,
+                    container: textLayerDiv,
+                    viewport: viewport,
+                    textDivs: []
+                });
+            });
         });
         document.getElementById('page_num').textContent = num;
-        // Save progress after render
-        saveCurrentPage();
     }
 
     function queueRenderPage(num) {
-        if (pageRendering) {
-            pageNumPending = num;
-        } else {
-            renderPage(num);
-        }
+        if (pageRendering) { pageNumPending = num; } else { renderPage(num); }
     }
+    function onPrevPage() { if (pageNum <= 1) return; pageNum--; queueRenderPage(pageNum); }
+    function onNextPage() { if (pageNum >= pdfDoc.numPages) return; pageNum++; queueRenderPage(pageNum); }
 
-    function onPrevPage() {
-        if (pageNum <= 1) return;
-        pageNum--;
-        queueRenderPage(pageNum);
-    }
-
-    function onNextPage() {
-        if (pageNum >= pdfDoc.numPages) return;
-        pageNum++;
-        queueRenderPage(pageNum);
-    }
-
-    const url = "<?= $file_path ?>";
+    // Load PDF
+    const url = "<?= $book['file_path'] ?>";
     pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
         pdfDoc = pdfDoc_;
         document.getElementById('page_count').textContent = pdfDoc.numPages;
-        // Start at saved page if valid and not beyond total pages
-        let startPage = savedPage;
-        if (startPage < 1) startPage = 1;
-        if (startPage > pdfDoc.numPages) startPage = 1;
-        pageNum = startPage;
         renderPage(pageNum);
     });
-
     document.getElementById('prev').addEventListener('click', onPrevPage);
     document.getElementById('next').addEventListener('click', onNextPage);
 
-    // Save progress before page unload (e.g., close tab)
-    window.addEventListener('beforeunload', function() {
-        saveCurrentPage();
-    });
+    // Tool selection
+    document.getElementById('highlightBtn').addEventListener('click', () => { currentTool = 'highlight'; setActiveTool('highlightBtn'); });
+    document.getElementById('underlineBtn').addEventListener('click', () => { currentTool = 'underline'; setActiveTool('underlineBtn'); });
+    document.getElementById('stickyBtn').addEventListener('click', () => { currentTool = 'sticky'; setActiveTool('stickyBtn'); });
+    document.getElementById('eraseBtn').addEventListener('click', () => { currentTool = 'erase'; setActiveTool('eraseBtn'); });
+    function setActiveTool(activeId) {
+        ['highlightBtn','underlineBtn','stickyBtn','eraseBtn'].forEach(id => {
+            document.getElementById(id).classList.remove('tool-active');
+        });
+        document.getElementById(activeId).classList.add('tool-active');
+    }
 
-    // Text selection & questions (same as before)
-    let selectedText = '';
-    const askBtn = document.getElementById('askBtn');
-    const modal = document.getElementById('questionModal');
-    const selectedTextSpan = document.getElementById('selectedText');
-    const questionTextarea = document.getElementById('questionText');
-    
+    // Handle text selection (highlight/underline)
     document.addEventListener('mouseup', function() {
+        if (currentTool !== 'highlight' && currentTool !== 'underline') return;
         const selection = window.getSelection();
         const text = selection.toString().trim();
-        if (text.length > 0) {
-            selectedText = text;
-            selectedTextSpan.textContent = selectedText.substring(0, 150);
-            askBtn.style.display = 'flex';
-        } else {
-            askBtn.style.display = 'none';
-            modal.style.display = 'none';
-        }
+        if (!text) return;
+        const range = selection.getRangeAt(0);
+        const rect = range.getBoundingClientRect();
+        const containerRect = document.getElementById('canvas-container').getBoundingClientRect();
+        const relativeTop = rect.top - containerRect.top;
+        const relativeLeft = rect.left - containerRect.left;
+        const position = JSON.stringify({
+            x: relativeLeft, y: relativeTop, width: rect.width, height: rect.height
+        });
+        saveAnnotation(currentTool, text, position);
+        selection.removeAllRanges();
     });
 
-    askBtn.addEventListener('click', function() {
-        modal.style.display = 'block';
-    });
-
-    document.getElementById('closeModal').addEventListener('click', function() {
-        modal.style.display = 'none';
-        questionTextarea.value = '';
-    });
-
-    document.getElementById('submitQuestion').addEventListener('click', function() {
-        const question = questionTextarea.value.trim();
-        if (question === '') {
-            alert('Please write your question.');
-            return;
-        }
-        fetch('book_questions.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                book_id: <?= $book_id ?>,
-                book_title: '<?= addslashes($book_title) ?>',
-                page: pageNum,
-                selected_text: selectedText,
-                question: question
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                alert('Your question has been submitted to the admin.');
-                modal.style.display = 'none';
-                questionTextarea.value = '';
-                selectedText = '';
-                askBtn.style.display = 'none';
-            } else {
-                alert('Error: ' + data.error);
+    // Sticky note: click on canvas
+    $('#canvas-container').on('click', function(e) {
+        if (currentTool !== 'sticky') return;
+        const offset = $(this).offset();
+        const x = e.pageX - offset.left;
+        const y = e.pageY - offset.top;
+        $('#stickyDialog').dialog({
+            modal: true,
+            buttons: {
+                "Save": function() {
+                    const note = $('#stickyText').val();
+                    if (note) {
+                        const position = JSON.stringify({ x: x, y: y });
+                        saveAnnotation('sticky', note, position);
+                    }
+                    $(this).dialog("close");
+                },
+                "Cancel": function() { $(this).dialog("close"); }
             }
-        })
-        .catch(err => {
-            alert('Network error. Please try again.');
         });
     });
+
+    function saveAnnotation(type, content, position) {
+        $.post(`?action=save_annotation`, { page: pageNum, type: type, content: content, position: position }, function(res) {
+            if (res.success) {
+                showToast('Annotation saved', 'success');
+                if (type === 'sticky') addStickyNote(res.id, content, JSON.parse(position));
+            }
+        }, 'json').fail(() => showToast('Error saving', 'error'));
+    }
+
+    function addStickyNote(id, text, pos) {
+        const div = $('<div>').addClass('sticky-note').text(text).attr('data-id', id);
+        div.css({ left: pos.x, top: pos.y });
+        div.draggable({ containment: '#canvas-container', stop: function() {
+            const newPos = { x: $(this).position().left, y: $(this).position().top };
+            $.post(`?action=save_annotation`, { id: id, position: JSON.stringify(newPos) });
+        }});
+        div.append($('<button>×</button>').css({ float: 'right', background: 'red', color: 'white', border: 'none', cursor: 'pointer' }).click(function(e) {
+            e.stopPropagation();
+            deleteAnnotation(id, div);
+        }));
+        $('#canvas-container').append(div);
+    }
+
+    function deleteAnnotation(id, element) {
+        $.post(`?action=delete_annotation`, { id: id }, function(res) {
+            if (res.success) { element.remove(); showToast('Deleted', 'success'); }
+        }, 'json');
+    }
+
+    // Load annotations
+    $('#loadAnnotationsBtn').click(function() {
+        $.post(`?action=load_annotations`, { page: pageNum }, function(res) {
+            if (res.success && res.annotations) {
+                // Remove existing sticky notes from DOM
+                $('.sticky-note').remove();
+                res.annotations.forEach(ann => {
+                    if (ann.annotation_type === 'sticky' && ann.position) {
+                        addStickyNote(ann.id, ann.content, JSON.parse(ann.position));
+                    }
+                    // For highlights/underlines, we could re-apply on text layer; for simplicity we rely on stored data
+                });
+                showToast('Annotations loaded', 'success');
+            }
+        }, 'json');
+    });
+
+    // Save all annotations (already saved individually, but you can implement bulk)
+    $('#saveAnnotationsBtn').click(() => showToast('Annotations already saved individually', 'info'));
+
+    function showToast(msg, type) { /* using your existing toast function */ if(window.showToast) showToast(msg, type); else alert(msg); }
 </script>
 <div class="footer"><a href="library.php" class="btn-back">← Back to Library</a></div>
 <a href="#" class="back-to-top" id="backToTop">↑</a>

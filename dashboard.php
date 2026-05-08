@@ -1,6 +1,5 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -32,7 +31,7 @@ if (!$userStatus['approved']) {
     <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
     <a href="#" class="back-to-top" id="backToTop">↑</a>
     <?php include_once 'includes/testimonial_prompt.php'; ?>
-</body>
+    </body>
     </html>
     <?php
     exit;
@@ -162,6 +161,7 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
         </div>
     <?php endif; ?>
 
+    <!-- Main Learning Cards (First Row) -->
     <div class="content-grid">
         <div class="card"><i class="fas fa-book"></i><h3>Books (PDF)</h3><div class="card-buttons"><a href="library.php">View Books</a></div></div>
         <div class="card"><i class="fas fa-folder-open"></i><h3>Subjects</h3><div class="card-buttons"><a href="subjects.php">Browse Subjects</a></div></div>
@@ -169,6 +169,46 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
         <div class="card"><i class="fas fa-chart-line"></i><h3>Results</h3><div class="card-buttons"><a href="results.php">Check Results</a></div></div>
         <div class="card"><i class="fas fa-tasks"></i><h3>Assignments</h3><div class="card-buttons"><a href="assignments.php">Submit</a></div></div>
         <div class="card"><i class="fas fa-calendar-check"></i><h3>Attendance</h3><div class="card-buttons"><a href="attendance.php">View</a></div></div>
+    </div>
+
+    <!-- Additional Features Row (new cards) -->
+    <div class="content-grid">
+        <div class="card">
+            <i class="fas fa-share-alt"></i>
+            <h3>Share Resource</h3>
+            <p>Upload a book, past paper, or useful note.</p>
+            <div class="card-buttons"><a href="share_resource.php">📤 Share Resource</a></div>
+        </div>
+        <div class="card">
+            <i class="fas fa-list-alt"></i>
+            <h3>My Resources</h3>
+            <p>Track your submitted resources.</p>
+            <div class="card-buttons"><a href="my_resources.php">📋 View My Resources</a></div>
+        </div>
+        <div class="card">
+            <i class="fas fa-brain"></i>
+            <h3>Self‑Assessment Quiz</h3>
+            <p>Test your knowledge with instant feedback.</p>
+            <div class="card-buttons"><a href="select_subject_quiz.php">📝 Take Self‑Quiz</a></div>
+        </div>
+        <div class="card">
+            <i class="fas fa-file-signature"></i>
+            <h3>My Consent</h3>
+            <p>View or download your signed agreement.</p>
+            <div class="card-buttons"><a href="view_consent.php">📄 View Consent</a></div>
+        </div>
+        <div class="card">
+            <i class="fas fa-star"></i>
+            <h3>Testimonial</h3>
+            <p>Share your experience with SMART Tutor.</p>
+            <div class="card-buttons"><a href="submit_testimonial.php">✍️ Write Testimonial</a></div>
+        </div>
+        <div class="card">
+            <i class="fas fa-users"></i>
+            <h3>My Group</h3>
+            <p>See group members and meeting times.</p>
+            <div class="card-buttons"><a href="my_group.php">👥 View Group</a></div>
+        </div>
     </div>
 
     <?php include_once 'includes/vision_mission.php'; ?>
