@@ -5,8 +5,15 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// === Already logged in handler ===
+<?php
+// === Already logged in ===
 if (isset($_SESSION['user_id'])) {
+    $conn = getDB();
+    $uid = (int)$_SESSION['user_id'];
+    $result = $conn->query("SELECT fullname FROM users WHERE id = $uid");
+    $user = $result->fetch_assoc();
+    $fullname = $user['fullname'] ?? '';
+    $first_name = trim(explode(' ', $fullname)[0]);
     ?>
     <!DOCTYPE html>
     <html><head><title>Already Logged In</title><link rel="stylesheet" href="style.css"></head>
@@ -16,7 +23,7 @@ if (isset($_SESSION['user_id'])) {
     <div class="container">
         <div class="card">
             <h2>You are already logged in</h2>
-            <p>You are currently logged in as <strong><?= htmlspecialchars($_SESSION['fullname'] ?? '') ?></strong>.</p>
+            <p>You are currently logged in as <strong><?= htmlspecialchars($first_name) ?></strong>.</p>
             <p>Do you want to log out and sign in with a different account?</p>
             <div class="card-buttons">
                 <a href="dashboard.php" class="btn">Go to Dashboard</a>
@@ -28,7 +35,7 @@ if (isset($_SESSION['user_id'])) {
     <?php
     exit;
 }
-
+?>
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $login = $_POST['login'];
@@ -105,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label class="distinct-checkbox">
                     <input type="checkbox" name="remember" value="1">
-                    <span>Remember Me (30 days)</span>
+                    <span>Remember Me</span>
                 </label>
             </div>
             <button type="submit" class="btn btn-login">Login</button>
