@@ -17,43 +17,53 @@ if (!isset($_SESSION['admin_logged'])) {
     $_SESSION['role'] = 'admin';
     unset($_SESSION['user_id']);
 }
+
 $conn = getDB();
 $today = date('Y-m-d');
 $msg = '';
 $error_details = [];
-
-// Get today's meeting start times per group
-$meetings = [];
-$meeting_res = $conn->query("SELECT group_id, start_time FROM group_meetings WHERE meeting_date = '$today'");
-while ($m = $meeting_res->fetch_assoc()) {
-    $meetings[$m['group_id']] = $m['start_time'];
-}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $success_count = 0;
     $error_count = 0;
     $errors = [];
     
-    foreach ($_POST['status'] as $uid => $stat) {
-        // Skip if no status selected (empty string)
-        if (empty($stat)) continue;
+   foreach ($_POST['status'] as $uid => $stat) {
+    if (empty($stat)) continue;
+    
+    $uid = (int)$uid;
+    $group = $conn->query("SELECT group_id FROM group_members WHERE user_id = $uid")->fetch_assoc();
+    $group_id = $group['group_id'] ?? 0;
+    $arrival_time = null;
+    
+    if ($stat == 'late' && isset($_POST['arrival_time'][$uid])) {
+        $arrival_time = $_POST['arrival_time'][$uid];
+        $arrival_time = $conn->real_escape_string($arrival_time);
+    }
+    
+    // ---- NEW: Fetch the student's class level ----
+    $class_result = $conn->query("SELECT class_level FROM users WHERE id = $uid");
+    $class_row = $class_result->fetch_assoc();
+    $class_level = $class_row['class_level'] ?? '';
+    $class_level = $conn->real_escape_string($class_level);
+    // -------------------------------------------------
+    
+    // Get existing status for this user today (if any)
+    $existing_result = $conn->query("SELECT status FROM attendance WHERE user_id = $uid AND date = '$today'");
+    $existing = $existing_result->fetch_assoc();
+    $existing_status = $existing['status'] ?? null;
+    
+    // ---- UPDATED INSERT: Includes class_level ----
+    $sql = "INSERT INTO attendance (user_id, class_level, date, status, arrival_time, marked_by_admin) 
+            VALUES ($uid, '$class_level', '$today', '$stat', " . ($arrival_time ? "'$arrival_time'" : "NULL") . ", 1)
+            ON DUPLICATE KEY UPDATE status='$stat', arrival_time = VALUES(arrival_time)";
+    // -------------------------------------------------
+    
+    if ($conn->query($sql)) {
+        $success_count++;
         
-        $group = $conn->query("SELECT group_id FROM group_members WHERE user_id = $uid")->fetch_assoc();
-        $group_id = $group['group_id'] ?? 0;
-        $arrival_time = null;
-        
-        // If status is 'late', capture arrival time
-        if ($stat == 'late' && isset($_POST['arrival_time'][$uid])) {
-            $arrival_time = $_POST['arrival_time'][$uid];
-        }
-        
-        // Insert or update attendance
-        $sql = "INSERT INTO attendance (user_id, date, status, arrival_time, marked_by_admin) 
-                VALUES ($uid, '$today', '$stat', " . ($arrival_time ? "'$arrival_time'" : "NULL") . ", 1)
-                ON DUPLICATE KEY UPDATE status='$stat', arrival_time = VALUES(arrival_time)";
-        if ($conn->query($sql)) {
-            $success_count++;
-            // Send notification message
+        // --- Send notification ONLY if status has CHANGED ----
+        if ($stat !== $existing_status) {
             $student = $conn->query("SELECT fullname FROM users WHERE id = $uid")->fetch_assoc();
             if ($stat == 'late') {
                 $msg_text = "You were late today, {$student['fullname']}. Please submit a reason from your attendance page.";
@@ -62,20 +72,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 continue; // no message for absent
             }
+            $msg_text = $conn->real_escape_string($msg_text);
             if (!$conn->query("INSERT INTO admin_messages (user_id, message) VALUES ($uid, '$msg_text')")) {
                 $errors[] = "Warning: Attendance saved for {$student['fullname']} but message could not be sent.";
             }
-        } else {
-            $error_count++;
-            $student = $conn->query("SELECT fullname FROM users WHERE id = $uid")->fetch_assoc();
-            $errors[] = "Failed to save attendance for {$student['fullname']}.";
         }
-    }
-    
-    if ($error_count == 0) {
-        $msg = "✅ Attendance saved and notifications sent to $success_count student(s).";
     } else {
-        $msg = "⚠️ Saved attendance for $success_count student(s), but $error_count error(s) occurred:<br>" . implode("<br>", $errors);
+        $error_count++;
+        $student = $conn->query("SELECT fullname FROM users WHERE id = $uid")->fetch_assoc();
+        $errors[] = "Failed to save attendance for {$student['fullname']}.";
     }
 }
 

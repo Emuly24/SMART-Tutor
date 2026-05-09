@@ -1,9 +1,7 @@
 <?php
 require_once 'check_remember_me.php';
 require_once 'config.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 $admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN_HASH') ? ADMIN_HASH : '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu');
 if (!isset($_SESSION['admin_logged'])) {
@@ -19,191 +17,170 @@ if (!isset($_SESSION['admin_logged'])) {
 }
 
 $conn = getDB();
+
+// Ensure columns exist
+$conn->query("ALTER TABLE admin_messages ADD COLUMN IF NOT EXISTS recipient_type VARCHAR(20) DEFAULT 'student'");
+$conn->query("ALTER TABLE admin_messages ADD COLUMN IF NOT EXISTS recipient_info TEXT DEFAULT ''");
+$conn->query("ALTER TABLE admin_messages ADD COLUMN IF NOT EXISTS is_system TINYINT(1) DEFAULT 0");
+
 $success_msg = $error_msg = '';
 
-// ==================== HANDLE ACTIONS ====================
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // --- Send Message (Students / Groups / Classes) ---
-    if (isset($_POST['send_message'])) {
+// ==================== AJAX HANDLERS ====================
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
+    header('Content-Type: application/json');
+    $ajax = $_POST['ajax'];
+
+    // --- Delete message ---
+    if ($ajax === 'delete_message') {
+        $id = (int)$_POST['id'];
+        $conn->query("DELETE FROM admin_messages WHERE id = $id");
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    // --- Edit message ---
+    if ($ajax === 'edit_message') {
+        $id = (int)$_POST['id'];
+        $new_msg = trim($_POST['message']);
+        $conn->query("UPDATE admin_messages SET message = '$new_msg' WHERE id = $id");
+        echo json_encode(['success' => true]);
+        exit;
+    }
+
+    // --- Send message (with duplicate check) ---
+    if ($ajax === 'send_message') {
         $message_template = trim($_POST['message']);
-        $template_id = (int)($_POST['template_id'] ?? 0);
-        $recipient_type = $_POST['recipient_type'] ?? 'students'; // students, groups, classes
+        $recipient_type = $_POST['recipient_type'] ?? 'students';
         $user_ids = [];
 
-        // If a template is selected, load its content
-        if ($template_id > 0) {
-            $temp = $conn->query("SELECT message FROM message_templates WHERE id=$template_id")->fetch_assoc();
-            if ($temp) $message_template = $temp['message'];
-        }
-
         if (empty($message_template)) {
-            $error_msg = "Please write a message.";
-        } else {
-            // --- Determine recipient user IDs based on type ---
-            if ($recipient_type === 'students') {
-                $user_ids = $_POST['user_ids'] ?? [];
-            } elseif ($recipient_type === 'groups') {
-                $group_ids = $_POST['group_ids'] ?? [];
-                foreach ($group_ids as $gid) {
-                    $members = $conn->query("SELECT user_id FROM group_members WHERE group_id = $gid");
-                    while ($m = $members->fetch_assoc()) {
-                        $user_ids[] = $m['user_id'];
-                    }
-                }
-            } elseif ($recipient_type === 'classes') {
-                $class_levels = $_POST['class_levels'] ?? [];
-                $route = $_POST['class_route'] ?? '';
-                foreach ($class_levels as $class) {
-                    $sql = "SELECT id FROM users WHERE approved=1 AND class_level='$class'";
-                    if ($route) $sql .= " AND route='$route'";
-                    $students = $conn->query($sql);
-                    while ($s = $students->fetch_assoc()) {
-                        $user_ids[] = $s['id'];
-                    }
+            echo json_encode(['success' => false, 'error' => 'Message is empty']);
+            exit;
+        }
+
+        // Collect recipients based on type
+        if ($recipient_type === 'students') {
+            $user_ids = $_POST['user_ids'] ?? [];
+        } elseif ($recipient_type === 'groups') {
+            $group_ids = $_POST['group_ids'] ?? [];
+            foreach ($group_ids as $gid) {
+                $members = $conn->query("SELECT user_id FROM group_members WHERE group_id = $gid");
+                while ($m = $members->fetch_assoc()) {
+                    $user_ids[] = $m['user_id'];
                 }
             }
-
-            // Remove duplicates
-            $user_ids = array_unique($user_ids);
-
-            if (empty($user_ids)) {
-                $error_msg = "No recipients selected.";
-            } else {
-                $sent_count = 0;
-                foreach ($user_ids as $uid) {
-                    $uid = (int)$uid;
-                    $student = $conn->query("
-                        SELECT u.fullname, u.class_level, u.route, 
-                               (SELECT group_number FROM group_members gm 
-                                JOIN groups g ON gm.group_id = g.id 
-                                WHERE gm.user_id = u.id) as group_number
-                        FROM users u 
-                        WHERE u.id = $uid
-                    ")->fetch_assoc();
-                    if (!$student) continue;
-
-                    $replacements = [
-                        '{student}' => $student['fullname'],
-                        '{class}' => $student['class_level'],
-                        '{route}' => ucfirst($student['route'] ?? 'Not set'),
-                        '{group}' => $student['group_number'] ?? 'No group',
-                        '{date}' => date('d M Y'),
-                        '{time}' => date('h:i A'),
-                    ];
-
-                    $personalised_message = str_replace(
-                        array_keys($replacements),
-                        array_values($replacements),
-                        $message_template
-                    );
-
-                    $personalised_message = $conn->real_escape_string($personalised_message);
-                    $conn->query("INSERT INTO admin_messages (user_id, message, recipient_type, recipient_info) VALUES ($uid, '$personalised_message', '$recipient_type', '')");
-                    $sent_count++;
+        } elseif ($recipient_type === 'classes') {
+            $class_levels = $_POST['class_levels'] ?? [];
+            $route = $_POST['class_route'] ?? '';
+            foreach ($class_levels as $class) {
+                $sql = "SELECT id FROM users WHERE approved=1 AND class_level='$class'";
+                if ($route) $sql .= " AND route='$route'";
+                $students = $conn->query($sql);
+                while ($s = $students->fetch_assoc()) {
+                    $user_ids[] = $s['id'];
                 }
-                $success_msg = "✅ Message(s) sent to $sent_count student(s).";
             }
         }
-    }
 
-    // --- Mark Feedback Read ---
-    if (isset($_POST['mark_feedback_read'])) {
-        $id = (int)$_POST['id'];
-        $conn->query("UPDATE student_messages SET status='read' WHERE id=$id");
-        $success_msg = "✅ Feedback marked as read.";
-    }
-
-    // --- Answer Subject Question ---
-    if (isset($_POST['answer_question'])) {
-        $qid = (int)$_POST['question_id'];
-        $answer = trim($_POST['answer']);
-        $conn->query("UPDATE subject_questions SET answer='$answer', status='answered', answered_at=NOW() WHERE id=$qid");
-        $q = $conn->query("SELECT user_id, subject FROM subject_questions WHERE id=$qid")->fetch_assoc();
-        if ($q) {
-            $msg = "Your question in {$q['subject']} has been answered. Please check the subject page.";
-            $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$q['user_id']}, '$msg')");
+        $user_ids = array_unique($user_ids);
+        if (empty($user_ids)) {
+            echo json_encode(['success' => false, 'error' => 'No recipients selected']);
+            exit;
         }
-        $success_msg = "✅ Answer submitted and student notified.";
-    }
 
-    // --- Update Report ---
-    if (isset($_POST['update_report'])) {
-        $id = (int)$_POST['report_id'];
-        $status = $_POST['status'];
-        $response = trim($_POST['admin_response'] ?? '');
-        $conn->query("UPDATE student_reports SET status='$status', admin_response='$response' WHERE id=$id");
-        $success_msg = "✅ Report updated.";
-    }
+        $sent_count = 0;
+        $skipped_count = 0;
 
-    // --- Acknowledge Topic Request ---
-    if (isset($_POST['acknowledge_request'])) {
-        $id = (int)$_POST['id'];
-        $req = $conn->query("SELECT user_id, subject, topic FROM topic_requests WHERE id=$id")->fetch_assoc();
-        if ($req) {
-            $msg = "Thank you for requesting topic \"{$req['topic']}\" in {$req['subject']}. We will do our best to cover it.";
-            $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$req['user_id']}, '$msg')");
+        foreach ($user_ids as $uid) {
+            $uid = (int)$uid;
+            $student = $conn->query("
+                SELECT u.fullname, u.gender, u.class_level, u.route,
+                       (SELECT group_number FROM group_members gm 
+                        JOIN groups g ON gm.group_id = g.id 
+                        WHERE gm.user_id = u.id) as group_number
+                FROM users u WHERE u.id = $uid
+            ")->fetch_assoc();
+            if (!$student) continue;
+
+            // Generate title and first name
+            $fullname_parts = explode(' ', trim($student['fullname']));
+            $first_name = $fullname_parts[0];
+            $surname = end($fullname_parts);
+            $title = ($student['gender'] ?? 'Male') === 'Male' ? 'Mr' : 'Miss';
+            $student_name_display = "$title $surname";
+
+            $replacements = [
+                '{student}' => $student_name_display,
+                '{fullname}' => $student['fullname'],
+                '{first_name}' => $first_name,
+                '{surname}' => $surname,
+                '{title}' => $title,
+                '{class}' => $student['class_level'],
+                '{route}' => ucfirst($student['route'] ?? 'Not set'),
+                '{group}' => $student['group_number'] ?? 'No group',
+                '{date}' => date('d M Y'),
+                '{time}' => date('h:i A'),
+            ];
+
+            $personalised_message = str_replace(
+                array_keys($replacements),
+                array_values($replacements),
+                $message_template
+            );
+            $personalised_message = $conn->real_escape_string($personalised_message);
+
+            // --- Duplicate check: same message sent to same user within 1 hour ---
+            $dup_check = $conn->query("
+                SELECT id FROM admin_messages 
+                WHERE user_id = $uid AND message = '$personalised_message' 
+                AND sent_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+            ");
+            if ($dup_check->num_rows > 0) {
+                $skipped_count++;
+                continue;
+            }
+
+            $conn->query("INSERT INTO admin_messages (user_id, message, recipient_type) 
+                         VALUES ($uid, '$personalised_message', '$recipient_type')");
+            $sent_count++;
         }
-        $success_msg = "✅ Request acknowledged.";
-    }
 
-    // --- Mark Topic Covered ---
-    if (isset($_POST['mark_covered'])) {
-        $id = (int)$_POST['id'];
-        $req = $conn->query("SELECT user_id, subject, topic, class_level FROM topic_requests WHERE id=$id")->fetch_assoc();
-        if ($req) {
-            $conn->query("INSERT INTO topics_covered (subject, topic, class_level, covered_date) VALUES ('{$req['subject']}', '{$req['topic']}', '{$req['class_level']}', CURDATE())");
-            $conn->query("DELETE FROM topic_requests WHERE id=$id");
-            $success_msg = "✅ Topic marked as covered.";
-        }
+        echo json_encode([
+            'success' => true,
+            'sent' => $sent_count,
+            'skipped' => $skipped_count,
+            'total' => count($user_ids)
+        ]);
+        exit;
     }
 }
 
 // ==================== FETCH DATA ====================
-// 1. Sent Messages
-$sent = $conn->query("SELECT m.id, m.message, m.sent_at, m.read_at, u.fullname, m.recipient_type 
+$sent = $conn->query("
+    SELECT m.id, m.message, m.sent_at, m.read_at, u.fullname, m.recipient_type 
     FROM admin_messages m 
     JOIN users u ON m.user_id = u.id 
-    ORDER BY m.sent_at DESC LIMIT 100");
+    ORDER BY m.sent_at DESC LIMIT 100
+");
 
-// 2. Feedback
 $feedback = $conn->query("SELECT m.id, m.subject, m.message, m.created_at, m.status, u.fullname 
-    FROM student_messages m 
-    JOIN users u ON m.user_id = u.id 
-    ORDER BY m.created_at DESC");
+    FROM student_messages m JOIN users u ON m.user_id = u.id ORDER BY m.created_at DESC");
 
-// 3. Reports
 $reports = $conn->query("SELECT r.id, r.report_type, r.description, r.incident_date, r.created_at, r.status, r.admin_response, u.fullname, u.class_level 
-    FROM student_reports r 
-    JOIN users u ON r.user_id = u.id 
-    ORDER BY r.created_at DESC");
+    FROM student_reports r JOIN users u ON r.user_id = u.id ORDER BY r.created_at DESC");
 
-// 4. Questions
 $questions = $conn->query("SELECT q.id, q.subject, q.question, q.answer, q.status, q.created_at, q.answered_at, u.fullname 
-    FROM subject_questions q 
-    JOIN users u ON q.user_id = u.id 
-    ORDER BY q.created_at DESC");
+    FROM subject_questions q JOIN users u ON q.user_id = u.id ORDER BY q.created_at DESC");
 
-// 5. Topic Requests
 $requests = $conn->query("SELECT r.id, r.subject, r.topic, r.created_at, u.fullname, u.class_level 
-    FROM topic_requests r 
-    JOIN users u ON r.user_id = u.id 
-    ORDER BY r.created_at DESC");
+    FROM topic_requests r JOIN users u ON r.user_id = u.id ORDER BY r.created_at DESC");
 
-// 6. Testimonials
 $testimonials = $conn->query("SELECT t.id, t.fullname, t.class_level, t.testimonial, t.rating, t.status, t.created_at 
-    FROM testimonials t 
-    ORDER BY t.created_at DESC");
+    FROM testimonials t ORDER BY t.created_at DESC");
 
-// 7. Templates (for the form)
 $templates = $conn->query("SELECT id, title FROM message_templates ORDER BY id");
-
-// 8. Students (for student select)
 $students = $conn->query("SELECT id, fullname FROM users WHERE approved=1 ORDER BY fullname");
-
-// 9. Groups (for group select)
 $groups = $conn->query("SELECT id, class_level, group_number, route FROM groups ORDER BY class_level, route, group_number");
-
-// 10. Class levels (for class select)
 $class_levels = ['Form 3', 'Form 4'];
 ?>
 <!DOCTYPE html>
@@ -216,27 +193,42 @@ $class_levels = ['Form 3', 'Form 4'];
         .tab { display: none; }
         .tab.active { display: block; }
         .tab-header { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
-        .tab-btn { padding: 0.6rem 1.2rem; background: var(--card-alt-bg); border: none; border-radius: 2rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .tab-btn { padding: 0.6rem 1.2rem; background: var(--card-alt-bg); border: none; border-radius: 2rem; cursor: pointer; font-weight: 500; transition: 0.2s; color: var(--text-color); }
         .tab-btn.active { background: var(--accent); color: #1e293b; font-weight: 600; }
         .tab-btn:hover { transform: scale(1.02); }
         .badge { background: var(--error); color: white; border-radius: 50%; padding: 0.1rem 0.4rem; font-size: 0.7rem; vertical-align: middle; }
-        .item-card { border: 1px solid var(--card-alt-bg); padding: 1rem; border-radius: 0.5rem; margin-bottom: 1rem; }
+        
+        .message-item { border: 1px solid var(--card-alt-bg); padding: 1rem; border-radius: 0.8rem; margin-bottom: 1rem; background: var(--card-bg); transition: 0.2s; }
+        .message-item:hover { border-color: var(--accent); }
+        .message-item.unread { border-left: 4px solid var(--info); background: rgba(37, 99, 235, 0.05); }
+        .message-item.read { border-left: 4px solid var(--success); }
+        
+        .recipient-tag { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; background: var(--card-alt-bg); color: var(--text-muted); }
         .status-badge { padding: 0.2rem 0.6rem; border-radius: 1rem; font-size: 0.7rem; }
         .status-unread { background: var(--info); color: white; }
         .status-read { background: var(--success); color: white; }
         .status-pending { background: var(--warning); color: white; }
-        .action-btn { padding: 0.3rem 0.8rem; border-radius: 2rem; text-decoration: none; font-size: 0.8rem; }
-        .recipient-type { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 0.5rem; font-size: 0.7rem; background: var(--card-alt-bg); }
+        
+        .action-btn { padding: 0.2rem 0.6rem; border-radius: 1.5rem; border: none; font-size: 0.75rem; cursor: pointer; transition: 0.2s; }
+        .action-btn:hover { transform: scale(1.05); }
+        .btn-sm-edit { background: var(--info); color: white; }
+        .btn-sm-delete { background: var(--error); color: white; }
+
         .compose-subtab { display: none; margin-top: 1rem; }
         .compose-subtab.active { display: block; }
-        .subtab-btn { background: transparent; border: none; padding: 0.5rem 1rem; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500; }
+        .subtab-btn { background: transparent; border: none; padding: 0.5rem 1rem; border-bottom: 2px solid transparent; cursor: pointer; font-weight: 500; color: var(--text-muted); }
         .subtab-btn.active { border-bottom-color: var(--accent); color: var(--accent); }
+        
+        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--primary-dark); color: white; padding: 0.8rem 1.2rem; border-radius: 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999; transform: translateX(120%); transition: transform 0.3s; }
+        .toast.show { transform: translateX(0); }
+        
+        .edit-textarea { width: 100%; min-height: 60px; padding: 0.5rem; border: 1px solid var(--accent); border-radius: 0.5rem; margin: 0.5rem 0; resize: vertical; }
     </style>
 </head>
 <body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
-        <h1><i class="fas fa-bell"></i> Admin Notifications Center</h1>
+        <h1><i class="fas fa-bell" style="color: var(--accent);"></i> Admin Notifications Center</h1>
         
         <?php if ($success_msg): ?>
             <div class="success"><?= htmlspecialchars($success_msg) ?></div>
@@ -255,26 +247,39 @@ $class_levels = ['Form 3', 'Form 4'];
             <button class="tab-btn" data-tab="tab-send">✏️ Compose</button>
         </div>
 
-        <!-- ======= TAB: Outgoing (Sent Messages) ======= -->
+        <!-- ======= TAB: Outgoing ======= -->
         <div id="tab-outgoing" class="tab active">
             <h3>Sent Messages</h3>
             <p>All messages sent to students via this system.</p>
             <?php if ($sent->num_rows == 0): ?>
-                <p>No messages sent yet.</p>
+                <div class="card"><p>No messages sent yet.</p></div>
             <?php else: ?>
                 <?php while($m = $sent->fetch_assoc()): ?>
-                    <div class="item-card <?= $m['read_at'] ? 'status-read' : 'status-unread' ?>">
-                        <strong><?= htmlspecialchars($m['fullname']) ?></strong>
-                        <span class="status-badge <?= $m['read_at'] ? 'status-read' : 'status-unread' ?>"><?= $m['read_at'] ? 'Read' : 'Unread' ?></span>
-                        <span class="recipient-type"><?= ucfirst($m['recipient_type'] ?? 'student') ?></span>
-                        <p><?= nl2br(htmlspecialchars($m['message'])) ?></p>
+                    <div class="message-item <?= $m['read_at'] ? 'read' : 'unread' ?>" id="msg-<?= $m['id'] ?>">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem;">
+                            <div>
+                                <strong><?= htmlspecialchars($m['fullname']) ?></strong>
+                                <span class="status-badge <?= $m['read_at'] ? 'status-read' : 'status-unread' ?>"><?= $m['read_at'] ? 'Read' : 'Unread' ?></span>
+                                <span class="recipient-tag"><?= ucfirst($m['recipient_type'] ?? 'student') ?></span>
+                            </div>
+                            <div style="display:flex; gap:0.3rem;">
+                                <button class="action-btn btn-sm-edit" onclick="editMessage(<?= $m['id'] ?>)">✏️</button>
+                                <button class="action-btn btn-sm-delete" onclick="deleteMessage(<?= $m['id'] ?>)">🗑️</button>
+                            </div>
+                        </div>
+                        <div id="msg-content-<?= $m['id'] ?>"><?= nl2br(htmlspecialchars($m['message'])) ?></div>
+                        <div id="msg-edit-<?= $m['id'] ?>" style="display:none;">
+                            <textarea class="edit-textarea" id="edit-text-<?= $m['id'] ?>"><?= htmlspecialchars($m['message']) ?></textarea>
+                            <button class="btn-sm-edit" onclick="saveEdit(<?= $m['id'] ?>)">Save</button>
+                            <button class="btn-secondary" onclick="cancelEdit(<?= $m['id'] ?>)">Cancel</button>
+                        </div>
                         <small class="text-muted">Sent: <?= $m['sent_at'] ?></small>
                     </div>
                 <?php endwhile; ?>
             <?php endif; ?>
         </div>
 
-        <!-- ======= TAB: Feedback (Student Messages) ======= -->
+         <!-- ======= TAB: Feedback (Student Messages) ======= -->
         <div id="tab-feedback" class="tab">
             <h3>Student Feedback</h3>
             <p>Messages sent by students to the admin.</p>
@@ -405,6 +410,7 @@ $class_levels = ['Form 3', 'Form 4'];
             <?php endif; ?>
         </div>
 
+
         <!-- ======= TAB: Compose ======= -->
         <div id="tab-send" class="tab">
             <h3>Compose Message</h3>
@@ -419,7 +425,7 @@ $class_levels = ['Form 3', 'Form 4'];
 
                 <!-- Subtab: Students -->
                 <div id="subtab-students" class="compose-subtab active">
-                    <form method="post">
+                    <form id="sendFormStudents">
                         <input type="hidden" name="recipient_type" value="students">
                         <div class="form-group">
                             <label>Select Students</label>
@@ -442,15 +448,15 @@ $class_levels = ['Form 3', 'Form 4'];
                         </div>
                         <div class="form-group">
                             <label>Message</label>
-                            <textarea id="messageInput" name="message" rows="6" required placeholder="Type your message. Use {student}, {class}, {route}, {group}, {date}, {time} to personalise."></textarea>
+                            <textarea id="messageInput" name="message" rows="6" required placeholder="Type your message. Use {first_name}, {surname}, {title}, {student}, {fullname}, {class}, {route}, {group}, {date}, {time} to personalise."></textarea>
                         </div>
-                        <button type="submit" name="send_message" class="btn">Send to Selected Students</button>
+                        <button type="submit" class="btn">Send to Selected Students</button>
                     </form>
                 </div>
 
                 <!-- Subtab: Groups -->
                 <div id="subtab-groups" class="compose-subtab">
-                    <form method="post">
+                    <form id="sendFormGroups">
                         <input type="hidden" name="recipient_type" value="groups">
                         <div class="form-group">
                             <label>Select Groups</label>
@@ -473,15 +479,15 @@ $class_levels = ['Form 3', 'Form 4'];
                         </div>
                         <div class="form-group">
                             <label>Message</label>
-                            <textarea id="messageInputGroup" name="message" rows="6" required placeholder="Type your message. Use {student}, {class}, {route}, {group}, {date}, {time} to personalise."></textarea>
+                            <textarea id="messageInputGroup" name="message" rows="6" required placeholder="Type your message."></textarea>
                         </div>
-                        <button type="submit" name="send_message" class="btn">Send to Selected Groups</button>
+                        <button type="submit" class="btn">Send to Selected Groups</button>
                     </form>
                 </div>
 
                 <!-- Subtab: Classes -->
                 <div id="subtab-classes" class="compose-subtab">
-                    <form method="post">
+                    <form id="sendFormClasses">
                         <input type="hidden" name="recipient_type" value="classes">
                         <div class="form-group">
                             <label>Select Classes</label>
@@ -511,9 +517,9 @@ $class_levels = ['Form 3', 'Form 4'];
                         </div>
                         <div class="form-group">
                             <label>Message</label>
-                            <textarea id="messageInputClass" name="message" rows="6" required placeholder="Type your message. Use {student}, {class}, {route}, {group}, {date}, {time} to personalise."></textarea>
+                            <textarea id="messageInputClass" name="message" rows="6" required placeholder="Type your message."></textarea>
                         </div>
-                        <button type="submit" name="send_message" class="btn">Send to Selected Classes</button>
+                        <button type="submit" class="btn">Send to Selected Classes</button>
                     </form>
                 </div>
             </div>
@@ -528,8 +534,11 @@ $class_levels = ['Form 3', 'Form 4'];
     </div>
     <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
     <a href="#" class="back-to-top" id="backToTop">↑</a>
+
+    <div id="toast" class="toast"></div>
+
     <script>
-        // --- Main Tab Switching ---
+        // --- Tab Switching ---
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabs = document.querySelectorAll('.tab');
         tabBtns.forEach(btn => {
@@ -573,7 +582,7 @@ $class_levels = ['Form 3', 'Form 4'];
             });
         }
 
-        // --- Template pre-fill for Students tab ---
+        // --- Template pre-fill for Students ---
         const templateSelect = document.getElementById('templateSelect');
         const messageInput = document.getElementById('messageInput');
         if (templateSelect) {
@@ -587,7 +596,7 @@ $class_levels = ['Form 3', 'Form 4'];
             });
         }
 
-        // --- Template pre-fill for Groups tab ---
+        // --- Template pre-fill for Groups ---
         const templateSelectGroup = document.getElementById('templateSelectGroup');
         const messageInputGroup = document.getElementById('messageInputGroup');
         if (templateSelectGroup) {
@@ -601,7 +610,7 @@ $class_levels = ['Form 3', 'Form 4'];
             });
         }
 
-        // --- Template pre-fill for Classes tab ---
+        // --- Template pre-fill for Classes ---
         const templateSelectClass = document.getElementById('templateSelectClass');
         const messageInputClass = document.getElementById('messageInputClass');
         if (templateSelectClass) {
@@ -613,6 +622,87 @@ $class_levels = ['Form 3', 'Form 4'];
                     .then(text => { messageInputClass.value = text; })
                     .catch(err => console.error(err));
             });
+        }
+
+        // --- Send via AJAX ---
+        document.querySelectorAll('#sendFormStudents, #sendFormGroups, #sendFormClasses').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                formData.append('ajax', 'send_message');
+
+                fetch(location.href, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(`✅ Sent to ${data.sent} student(s). ${data.skipped > 0 ? data.skipped + ' duplicate(s) skipped.' : ''}`);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showToast('❌ ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => showToast('❌ Network error'));
+            });
+        });
+
+        // --- Edit message ---
+        function editMessage(id) {
+            document.getElementById('msg-content-' + id).style.display = 'none';
+            document.getElementById('msg-edit-' + id).style.display = 'block';
+        }
+
+        function cancelEdit(id) {
+            document.getElementById('msg-content-' + id).style.display = 'block';
+            document.getElementById('msg-edit-' + id).style.display = 'none';
+        }
+
+        function saveEdit(id) {
+            const newMsg = document.getElementById('edit-text-' + id).value;
+            fetch(location.href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `ajax=edit_message&id=${id}&message=${encodeURIComponent(newMsg)}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('msg-content-' + id).innerHTML = newMsg.replace(/\n/g, '<br>');
+                    cancelEdit(id);
+                    showToast('✅ Message updated.');
+                } else {
+                    showToast('❌ Update failed.');
+                }
+            });
+        }
+
+        // --- Delete message ---
+        function deleteMessage(id) {
+            if (!confirm('Delete this message?')) return;
+            fetch(location.href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `ajax=delete_message&id=${id}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('msg-' + id).remove();
+                    showToast('🗑️ Message deleted.');
+                } else {
+                    showToast('❌ Delete failed.');
+                }
+            });
+        }
+
+        // --- Toast ---
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
         }
     </script>
 </body>
