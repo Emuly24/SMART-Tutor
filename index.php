@@ -24,7 +24,11 @@ require_once 'check_remember_me.php';
 
     <!-- Single Get Started button after V/M/G -->
     <div class="get-started-wrapper" style="text-align: center; margin: 2rem 0;">
-        <button id="mainGetStartedBtn" class="btn-hero">Get Started</button>
+        <?php if (!isset($_SESSION['user_id'])): ?>
+            <button id="mainGetStartedBtn" class="btn-hero">Get Started</button>
+        <?php else: ?>
+            <a href="dashboard.php" class="btn-hero">Go to Dashboard</a>
+        <?php endif; ?>
     </div>
 
     <!-- Testimonials Section (hidden by default, shown only if testimonials exist) -->
@@ -34,7 +38,11 @@ require_once 'check_remember_me.php';
     </div>
 
     <div class="footer">
-        <a href="login.php">Login</a> | <a href="signup.php">Sign Up</a>
+        <?php if (!isset($_SESSION['user_id'])): ?>
+            <a href="login.php">Login</a> | <a href="signup.php">Sign Up</a>
+        <?php else: ?>
+            <a href="dashboard.php">Dashboard</a> | <a href="logout.php">Logout</a>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -128,9 +136,9 @@ require_once 'check_remember_me.php';
     const closeBtn = document.getElementById('closeModalBtn');
 
     function openModal() { modal.style.display = 'flex'; }
-    getStartedBtn.addEventListener('click', openModal);
-    closeSpan.addEventListener('click', () => modal.style.display = 'none');
-    closeBtn.addEventListener('click', () => modal.style.display = 'none');
+    if (getStartedBtn) getStartedBtn.addEventListener('click', openModal);
+    if (closeSpan) closeSpan.addEventListener('click', () => modal.style.display = 'none');
+    if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 
     // Load testimonials on page load

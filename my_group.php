@@ -1,6 +1,5 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -48,7 +47,6 @@ if ($group) {
             <div style="background: #f0f7ff; padding: 10px; border-radius: 8px; margin: 10px 0;">
                 <p><strong>⏰ Today's Meeting:</strong> Starts at <?= date('h:i A', strtotime($meeting['start_time'])) ?></p>
                 <?php
-                // Check if attendance already marked for today
                 $att = $conn->query("SELECT status, remarks FROM attendance WHERE user_id = $uid AND date = '$today'")->fetch_assoc();
                 if ($att && $att['status'] == 'late' && empty($att['remarks'])): ?>
                     <p class="warning">You were marked late. Please <a href="attendance.php">submit your reason here</a>.</p>
@@ -66,7 +64,12 @@ if ($group) {
         <ul>
         <?php if ($group && count($fellow_members) > 0): ?>
             <?php foreach ($fellow_members as $f): ?>
-                <li><?= htmlspecialchars($f['fullname']) ?> (<?= htmlspecialchars($f['phone']) ?>)</li>
+                <li>
+                    <?= htmlspecialchars($f['fullname']) ?>
+                    <a href="tel:<?= htmlspecialchars($f['phone']) ?>" class="btn-call" style="margin-left: 10px; background: #28a745; color: white; padding: 3px 8px; border-radius: 20px; text-decoration: none; font-size: 0.7rem;">
+                        📞 Call
+                    </a>
+                </li>
             <?php endforeach; ?>
         <?php elseif ($group): ?>
             <li>You are the first member of this group.</li>

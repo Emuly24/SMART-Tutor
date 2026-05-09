@@ -45,13 +45,13 @@ if (isset($_POST['app_id'])) {
         } else {
             // Balanced group selection: order by current member count ascending (fill smallest groups first)
             $available_group = null;
-            $groups = $conn->query("SELECT g.id, g.group_number, 
-                (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as current_count,
-                (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = g.id AND u.gender='Male') as male_count,
-                (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = g.id AND u.gender='Female') as female_count
-                FROM groups g 
-                WHERE g.class_level = '$class' AND g.route = '$route' 
-                ORDER BY current_count ASC, g.group_number ASC");
+           $groups = $conn->query("SELECT g.id, g.group_number, 
+            (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as current_count,
+            (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = g.id AND u.gender='Male') as male_count,
+            (SELECT COUNT(*) FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = g.id AND u.gender='Female') as female_count
+            FROM groups g 
+            WHERE g.class_level = '$class' AND g.route = '$route' 
+            ORDER BY g.group_number ASC");
             while ($grp = $groups->fetch_assoc()) {
                 $male_ok = ($gender == 'Male') ? ($grp['male_count'] < 2) : true;
                 $female_ok = ($gender == 'Female') ? ($grp['female_count'] < 3) : true;

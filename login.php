@@ -3,10 +3,32 @@ require_once 'check_remember_me.php';
 
 require_once 'config.php';
 session_start();
+
+// === CHANGE START: Show options instead of redirect ===
 if (isset($_SESSION['user_id'])) {
-    header("Location: dashboard.php");
+    ?>
+    <!DOCTYPE html>
+    <html><head><title>Already Logged In</title><link rel="stylesheet" href="style.css"></head>
+    <body>
+    <?php include_once 'includes/header.php'; ?>
+    <?php include_once 'includes/progress_tracker.php'; ?>
+    <div class="container">
+        <div class="card">
+            <h2>You are already logged in</h2>
+            <p>You are currently logged in as <strong><?= htmlspecialchars($_SESSION['fullname'] ?? '') ?></strong>.</p>
+            <p>Do you want to log out and sign in with a different account?</p>
+            <div class="card-buttons">
+                <a href="dashboard.php" class="btn">Go to Dashboard</a>
+                <a href="logout.php" class="btn-danger">Logout</a>
+            </div>
+        </div>
+    </div>
+    </body></html>
+    <?php
     exit;
 }
+// === CHANGE END ===
+
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $login = $_POST['login'];
@@ -74,7 +96,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="password" id="password" name="password" required placeholder="Enter your password">
             </div>
             <div class="form-group">
-                <label><input type="checkbox" name="remember" value="1"> Remember Me (stay logged in for 30 days)</label>
+                <label class="distinct-checkbox">
+                <input type="checkbox" name="remember" value="1">
+                <span>Remember Me</span>
+            </label>
             </div>
             <button type="submit" class="btn btn-login">Login</button>
         </form>

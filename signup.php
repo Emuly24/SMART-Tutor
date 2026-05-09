@@ -3,7 +3,44 @@ require_once 'check_remember_me.php';
 
 require_once 'config.php';
 session_start();
-if (isset($_SESSION['user_id'])) { header("Location: dashboard.php"); exit; }
+
+// === CHANGE START: Show options instead of redirect ===
+if (isset($_SESSION['user_id'])) {
+    // Handle account deletion request
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
+        $uid = $_SESSION['user_id'];
+        $conn = getDB();
+        $conn->query("DELETE FROM users WHERE id = $uid");
+        session_destroy();
+        header("Location: signup.php?msg=deleted");
+        exit;
+    }
+    ?>
+    <!DOCTYPE html>
+    <html><head><title>Already Signed Up</title><link rel="stylesheet" href="style.css"></head>
+    <body>
+    <?php include_once 'includes/header.php'; ?>
+    <?php include_once 'includes/progress_tracker.php'; ?>
+    <div class="container">
+        <div class="card">
+            <h2>You already have an account</h2>
+            <p>You are currently logged in as <strong><?= htmlspecialchars($_SESSION['fullname'] ?? '') ?></strong>.</p>
+            <p>Would you like to delete this account and start over? (This action is permanent and cannot be undone.)</p>
+            <p>If this is your friend using your phone, please log out and let them sign up.</p>
+            <div class="card-buttons">
+                <form method="post" style="display:inline;">
+                    <button type="submit" name="delete_account" class="btn-danger" onclick="return confirm('Delete your account permanently? All your data will be lost.')">Delete My Account</button>
+                </form>
+                <a href="dashboard.php" class="btn">Go to Dashboard</a>
+                <a href="logout.php" class="btn-secondary">Logout</a>
+            </div>
+        </div>
+    </div>
+    </body></html>
+    <?php
+    exit;
+}
+// === CHANGE END ===
 
 $error = $success = '';
 

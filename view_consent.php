@@ -1,79 +1,43 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
-session_start();
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
-    exit;
-}
+require_once 'check_access.php';
 $conn = getDB();
 $uid = $_SESSION['user_id'];
-$user = $conn->query("SELECT fullname, class_level, school FROM users WHERE id=$uid")->fetch_assoc();
+
+$user = $conn->query("SELECT fullname, class_level, school, consent_signed, consent_signed_at FROM users WHERE id=$uid")->fetch_assoc();
 if (!$user) die("User not found.");
 
-$u = $conn->query("SELECT consent_signed FROM users WHERE id=$uid")->fetch_assoc();
-// === CHANGE START: Show agreement card instead of die() ===
-if ($u['consent_signed']) {
-    // Already signed – show the agreement card with download options
-    $signed_date = $conn->query("SELECT consent_signed_at FROM users WHERE id=$uid")->fetch_assoc()['consent_signed_at'];
-    $success = false; // not a fresh signature
-} else {
-    $success = false;
+if (!$user['consent_signed']) {
+    // Not signed yet – redirect to consent form
+    header("Location: consent.php");
+    exit;
 }
-// === CHANGE END ===
 
+$signed_date = date('Y-m-d', strtotime($user['consent_signed_at']));
+// Generate signature (same as in consent.php)
 function generateSignature($fullname) {
     $parts = explode(' ', $fullname);
     $surname = end($parts);
     $firstName = $parts[0];
     return substr($surname, 0, 1) . '. ' . $firstName;
 }
-$generated_signature = generateSignature($user['fullname']);
-
-$success = false;
-$signed_by = '';
-$signed_date = '';
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
-    $signed_by = trim($_POST['signed_by']);
-    $signed_date = $_POST['signed_date'];
-    $conn->query("UPDATE users SET consent_signed=1, consent_signed_at=NOW() WHERE id=$uid");
-    $success = true;
-}
+$signed_by = generateSignature($user['fullname']);
 ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Consent Form</title>
+    <title>My Consent Agreement – SMART Tutor</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 <?php include_once 'includes/header.php'; ?>
 <?php include_once 'includes/progress_tracker.php'; ?>
-<div class="consent-container">
-    <?php if ($u['consent_signed'] && !$success): ?>
-        <!-- Already signed – show agreement and download options -->
-        <div class="success-card" id="successCard">
+<div class="container">
+    <div class="consent-container">
+        <div class="success-card" id="consentCard">
             <h2><i class="fas fa-check-circle"></i> Your Signed Consent Agreement</h2>
-            <div class="student-details">
-                <p><strong>Student:</strong> <?= htmlspecialchars($user['fullname']) ?></p>
-                <p><strong>Class:</strong> <?= htmlspecialchars($user['class_level']) ?></p>
-                <p><strong>School:</strong> <?= htmlspecialchars($user['school']) ?></p>
-                <p><strong>Signed on:</strong> <?= date('Y-m-d', strtotime($signed_date)) ?></p>
-                <p><strong>Signature:</strong> <?= htmlspecialchars($generated_signature) ?></p>
-            </div>
-            <p>You have already agreed to the SMART Tutor group rules. You can download or print a copy below.</p>
-            <div class="success-actions">
-                <a href="dashboard.php" class="btn">Go to Dashboard</a>
-                <button onclick="printConsent()" class="btn-secondary">🖨️ Print Copy</button>
-                <button onclick="downloadPDF()" class="btn-secondary">📄 Download PDF</button>
-            </div>
-        </div>
-    <?php elseif ($success): ?>
-        <!-- Just signed -->
-        <div class="success-card" id="successCard">
-            <h2><i class="fas fa-check-circle"></i> Agreement Confirmed</h2>
             <div class="student-details">
                 <p><strong>Student:</strong> <?= htmlspecialchars($user['fullname']) ?></p>
                 <p><strong>Class:</strong> <?= htmlspecialchars($user['class_level']) ?></p>
@@ -88,59 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
                 <button onclick="downloadPDF()" class="btn-secondary">📄 Download PDF</button>
             </div>
         </div>
-    <?php else: ?>
-        <!-- Not signed yet – show form -->
-        <h1><i class="fas fa-file-signature"></i> SMART Tutor Consent Agreement</h1>
-        <p>Dear <strong><?= htmlspecialchars($user['fullname']) ?></strong>, please read the following terms carefully. By signing this document, you commit to the rules below.</p>
-
-        <h2>Commitments</h2>
-        <ul class="agreement-list">
-            <li>I will work hard and read extensively to improve my knowledge.</li>
-            <li>I will be punctual for all sessions and respect the agreed schedule.</li>
-            <li>I will respect my class teacher and peers at all times.</li>
-            <li>I will not rely only on past papers but will engage fully with all learning materials.</li>
-            <li>I will not engage in any financial or inappropriate exchanges. I understand this leads to dismissal.</li>
-        </ul>
-
-        <h2>Consequences of Breach</h2>
-        <ul class="agreement-list">
-            <li>A warning may be issued for minor violations.</li>
-            <li>Extra assignments may be given as corrective measures.</li>
-            <li>Suspension may occur, during which my content access will be locked.</li>
-            <li>Permanent dismissal will result from serious or repeated violations.</li>
-        </ul>
-
-        <form method="post" class="consent-form">
-            <div class="form-group">
-                <label class="distinct-checkbox">
-                    <input type="checkbox" name="agree" required>
-                    <span>I hereby agree to abide by all rules and commitments stated above.</span>
-                </label>
-            </div>
-
-            <div class="signature-section">
-                <h3>Electronic Signature</h3>
-                <div class="signature-line">
-                    <label for="signed_by">Signed by (Full Name):</label>
-                    <input type="text" id="signed_by" name="signed_by" value="<?= htmlspecialchars($generated_signature) ?>" required>
-                </div>
-                <div class="signature-line">
-                    <label for="signed_date">Date of Signing:</label>
-                    <input type="date" id="signed_date" name="signed_date" value="<?= date('Y-m-d') ?>" required>
-                </div>
-            </div>
-
-            <button type="submit" class="btn">Accept & Continue</button>
-        </form>
-    <?php endif; ?>
+    </div>
 </div>
 <div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
 <a href="#" class="back-to-top" id="backToTop">↑</a>
-<?php include_once 'includes/testimonial_prompt.php'; ?>
-</body>
 <script>
     function printConsent() {
-        const content = document.getElementById('successCard').innerHTML;
+        const content = document.getElementById('consentCard').innerHTML;
         const printWindow = window.open('', '', 'height=600,width=800');
         printWindow.document.write('<html><head><title>Consent Agreement – SMART Tutor</title><style>body{font-family:Arial,sans-serif;padding:20px;} .student-details{background:#f5f5f5;padding:10px;margin:15px 0;}</style></head><body>');
         printWindow.document.write(content);
@@ -157,9 +75,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
         let y = 20;
 
         // Header with SMART Tutor colors
-        doc.setFillColor(30, 42, 58);
+        doc.setFillColor(30, 42, 58); // dark blue
         doc.rect(0, 0, pageWidth, 40, 'F');
-        doc.setTextColor(212, 175, 55);
+        doc.setTextColor(212, 175, 55); // gold
         doc.setFontSize(18);
         doc.text("SMART Tutor Consent Agreement", leftMargin, 25);
         doc.setTextColor(255, 255, 255);
@@ -233,4 +151,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
         doc.save("Consent_Agreement_<?= preg_replace('/[^a-zA-Z0-9]/','_', $user['fullname']) ?>.pdf");
     }
 </script>
+</body>
 </html>

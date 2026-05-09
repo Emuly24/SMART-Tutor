@@ -1,19 +1,37 @@
 <?php
-require_once 'check_remember_me.php';
-
-require_once 'config.php';
-require_once 'check_access.php';
-$conn = getDB();
-$uid = $_SESSION['user_id'];
-
-$user = $conn->query("SELECT approved, class_level, gender, school, dob, subjects, route FROM users WHERE id=$uid")->fetch_assoc();
+// ... after $user = ... fetch_assoc() ...
 if ($user['approved']) {
     header("Location: dashboard.php");
     exit;
 }
 
-$application = $conn->query("SELECT * FROM applications WHERE user_id=$uid")->fetch_assoc();
+// === CHANGE START: Check if already has an application ===
+$has_app = $conn->query("SELECT id FROM applications WHERE user_id=$uid")->num_rows > 0;
+if ($has_app) {
+    ?>
+    <!DOCTYPE html>
+    <html><head><title>Already Applied</title><link rel="stylesheet" href="style.css"></head>
+    <body>
+    <?php include_once 'includes/header.php'; ?>
+    <?php include_once 'includes/progress_tracker.php'; ?>
+    <div class="container">
+        <div class="card">
+            <h2>You have already submitted an application</h2>
+            <p>Your application is currently under review. Please wait for the admin to respond.</p>
+            <p>If this is your friend using your phone, please log out and let them create their own account.</p>
+            <div class="card-buttons">
+                <a href="dashboard.php" class="btn">Go to Dashboard</a>
+                <a href="logout.php" class="btn-danger">Logout</a>
+            </div>
+        </div>
+    </div>
+    </body></html>
+    <?php
+    exit;
+}
+// === CHANGE END ===
 
+$application = $conn->query("SELECT * FROM applications WHERE user_id=$uid")->fetch_assoc();
 $error = $success = '';
 
 // Load universities from database
@@ -65,21 +83,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Determine route – prioritize humanities, then sciences, with neutral subjects ignored
-$route = null;
-$has_humanities_subjects = (strpos($subjects_taken, 'History') !== false || strpos($subjects_taken, 'Bible Knowledge') !== false || strpos($subjects_taken, 'Social Studies') !== false || strpos($subjects_taken, 'Life Skills') !== false);
-$has_science_subjects = (strpos($subjects_taken, 'Physics') !== false && strpos($subjects_taken, 'Chemistry') !== false);
+    $route = null;
+    $has_humanities_subjects = (strpos($subjects_taken, 'History') !== false || strpos($subjects_taken, 'Bible Knowledge') !== false || strpos($subjects_taken, 'Social Studies') !== false || strpos($subjects_taken, 'Life Skills') !== false);
+    $has_science_subjects = (strpos($subjects_taken, 'Physics') !== false && strpos($subjects_taken, 'Chemistry') !== false);
 
-if ($has_humanities_subjects && !$has_science_subjects) {
-    $route = 'humanities';
-} elseif ($has_science_subjects && !$has_humanities_subjects) {
-    $route = 'sciences';
-} elseif ($has_humanities_subjects && $has_science_subjects) {
-    // Mixed – default to sciences (admin can override later)
-    $route = 'sciences';
-} else {
-    // Only neutral subjects (Math, English, Biology, etc.) – default to sciences
-    $route = 'sciences';
-}
+    if ($has_humanities_subjects && !$has_science_subjects) {
+        $route = 'humanities';
+    } elseif ($has_science_subjects && !$has_humanities_subjects) {
+        $route = 'sciences';
+    } elseif ($has_humanities_subjects && $has_science_subjects) {
+        // Mixed – default to sciences (admin can override later)
+        $route = 'sciences';
+    } else {
+        // Only neutral subjects (Math, English, Biology, etc.) – default to sciences
+        $route = 'sciences';
+    }
     
     if (empty($class_level) || empty($gender) || empty($school) || empty($dob) || empty($subjects_taken) || empty($subjects_assist) || empty($ambition) || empty($career_reason) || empty($university) || empty($why_join)) {
         $error = "Please fill all required fields.";
@@ -90,8 +108,21 @@ if ($has_humanities_subjects && !$has_science_subjects) {
         
         $seriousness = json_encode(['agree' => true]);
         if ($application) {
-            $conn->query("UPDATE applications SET ambition='$ambition', career_reason='$career_reason', university='$university', why_join='$why_join', subject_assist='$subjects_assist', target_points=$target_points, seriousness_answers='$seriousness', status='pending' WHERE user_id=$uid");
+            // UPDATE existing application (including re-submission after rejection)
+            $conn->query("UPDATE applications SET 
+                ambition='$ambition', 
+                career_reason='$career_reason', 
+                university='$university', 
+                why_join='$why_join', 
+                subject_assist='$subjects_assist', 
+                target_points=$target_points, 
+                seriousness_answers='$seriousness', 
+                status='pending', 
+                submitted_at = NOW(),
+                admin_notes = NULL 
+                WHERE user_id=$uid");
         } else {
+            // INSERT new application
             $conn->query("INSERT INTO applications (user_id, ambition, career_reason, university, why_join, subject_assist, target_points, seriousness_answers) VALUES ($uid, '$ambition', '$career_reason', '$university', '$why_join', '$subjects_assist', $target_points, '$seriousness')");
         }
         header("Location: pending.php");

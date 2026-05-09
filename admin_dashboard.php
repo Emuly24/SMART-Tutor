@@ -1,16 +1,14 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 session_start();
 
-// Determine admin hash (supports both old constant and new database function)
+// Determine admin hash
 if (function_exists('getAdminHash')) {
     $admin_hash = getAdminHash();
 } elseif (defined('ADMIN_HASH')) {
     $admin_hash = ADMIN_HASH;
 } else {
-    // Fallback default (smarttutor@2026)
     $admin_hash = '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu';
 }
 
@@ -40,11 +38,11 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-<body>
+<body class="admin-page">
 <div class="container">
     <?php include_once 'includes/header.php'; ?>
 
-    <!-- Stats cards (no inline style) -->
+    <!-- Stats cards -->
     <div class="stats-container">
         <div class="stat-card-item">
             <i class="fas fa-users"></i>
@@ -75,6 +73,7 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
 
     <!-- Admin action cards -->
     <div class="content-grid">
+        <!-- Student Management Card -->
         <div class="card">
             <i class="fas fa-user-check"></i>
             <h3>Student Management</h3>
@@ -86,10 +85,13 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_attendance.php">Mark Attendance</a>
                 <a href="admin_reports.php">Student Reports</a>
                 <a href="admin_testimonials.php">⭐ Manage Testimonials</a>
-                <a href="admin_subject_questions.php">Subject Questions</a>
+                <a href="admin_subject_questions.php">❓ Subject Questions</a>
                 <a href="admin_activity_log.php">📜 Student Activity Log</a>
+                <a href="admin_purge_records.php">🗑️ Purge Dismissed/Rejected Records</a>
             </div>
         </div>
+
+        <!-- Content Card -->
         <div class="card">
             <i class="fas fa-book"></i>
             <h3>Content</h3>
@@ -99,8 +101,11 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_upload_book.php">Upload Book</a>
                 <a href="admin_book_questions.php">📚 Book Questions</a>
                 <a href="admin_bulk_import.php">📤 Bulk Import Notes/Books (CSV)</a>
+                <a href="admin_resources.php">📂 Student Resource Submissions</a>
             </div>
         </div>
+
+        <!-- Exams Card -->
         <div class="card">
             <i class="fas fa-pen-alt"></i>
             <h3>Exams</h3>
@@ -110,6 +115,8 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_mark_exams.php">Mark Submissions</a>
             </div>
         </div>
+
+        <!-- Assignments Card -->
         <div class="card">
             <i class="fas fa-tasks"></i>
             <h3>Assignments</h3>
@@ -119,6 +126,8 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_mark_assignments.php">Mark Submissions</a>
             </div>
         </div>
+
+        <!-- Topic Requests Card -->
         <div class="card">
             <i class="fas fa-lightbulb"></i>
             <h3>Topic Requests</h3>
@@ -129,6 +138,8 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_export_covered_form.php">📎 Export Covered Topics</a>
             </div>
         </div>
+
+        <!-- Class Management Card -->
         <div class="card">
             <i class="fas fa-chart-line"></i>
             <h3>Class Management</h3>
@@ -136,9 +147,23 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
                 <a href="admin_attendance_report.php">Attendance Report</a>
                 <a href="admin_discipline_log.php">Discipline Log</a>
                 <a href="admin_class_overview.php">Class Overview</a>
-                <a href="admin_resources.php">📚 Student Resource Submissions</a>
+                <a href="admin_group_insights.php">📊 Group Insights Dashboard</a>
+                <a href="admin_set_meeting.php">⏰ Set Group Meeting Time</a>
+                <a href="admin_group_locks.php">🔒 Group Content Locks</a>
             </div>
         </div>
+
+        <!-- Run Checks Card -->
+        <div class="card">
+            <i class="fas fa-play-circle"></i>
+            <h3>Automated Checks</h3>
+            <div class="card-buttons">
+                <a href="admin_run_pending_exercises.php">⏰ Run Pending Exercise Checks (Manual)</a>
+                <a href="run_cron_jobs.php?token=admin">🤖 Run Cron Jobs (Manual Trigger)</a>
+            </div>
+        </div>
+
+        <!-- System Card -->
         <div class="card">
             <i class="fas fa-cogs"></i>
             <h3>System</h3>
