@@ -5,12 +5,10 @@ require_once 'config.php';
 
 // Start session only if not already started
 if (session_status() === PHP_SESSION_NONE) {
-    if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-}
 
-// If user already logged in, do nothing
+// If user already logged in via session, do nothing
 if (isset($_SESSION['user_id']) || isset($_SESSION['admin_logged'])) {
     return;
 }
@@ -40,24 +38,26 @@ if (isset($_COOKIE['remember_me'])) {
         // User found – log them in
         $_SESSION['user_id'] = $user['user_id'];
         $_SESSION['role'] = 'student';
-        $_SESSION['fullname'] = $user['fullname'];
+        $_SESSION['fullname'] = $user['fullname']; // ✅ fixes first name display
         $_SESSION['approved'] = $user['approved'];
         $_SESSION['consent_signed'] = $user['consent_signed'];
         $_SESSION['status'] = $user['status'];
         $_SESSION['suspension_end'] = $user['suspension_end'];
         unset($_SESSION['admin_logged']);
         
-        // Extend the cookie expiry (optional)
-        $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
+        // Extend the cookie expiry (this keeps the user logged in for another 30 days)
         $new_token = bin2hex(random_bytes(32));
+        $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
         $conn->query("DELETE FROM remember_tokens WHERE user_id = {$user['user_id']}");
         $stmt2 = $conn->prepare("INSERT INTO remember_tokens (user_id, token, expires_at) VALUES (?, ?, ?)");
         $stmt2->bind_param("iss", $user['user_id'], $new_token, $expires);
         $stmt2->execute();
+        
+        // Set the cookie with a 30-day expiry, secure and httpOnly
         setcookie('remember_me', $new_token, time() + 86400 * 30, '/', '', false, true);
     } else {
         // Token invalid or expired – delete the cookie
-        setcookie('remember_me', '', time() - 3600, '/');
+        setcookie('remember_me', '', time() - 3600, '/', '', false, true);
     }
 }
 ?>

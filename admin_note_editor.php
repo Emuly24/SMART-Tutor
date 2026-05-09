@@ -307,24 +307,31 @@ document.addEventListener('DOMContentLoaded', function() {
         "✨ Punctuation & Special": ["•","·","…","—","–","™","®","©","℗","∅","⊘","⌀","⌂","⌚","⌛","⏰","⏱","⏲","⌨","✉","✍","✎","✏","✐","✑","✒","⚒","⚔","⚖","⚗","⚙","⚛","⚜","⛰","⛪","⛲","⛳","⛵","⛺","⛽","✈","⚓","⛴","⛵","✌","✋","✊","👊","✌","🍀","☘","🌿","🌱","🌿"],
         "💰 Currency": ["$","€","£","¥","₱","₹","₽","₩","₪","₫","₦","₨","₸","₺","₮","₲","₴","₵","₧","₣","₡","₭","₼","₾","₽","₪","₩","¥"]
     };
-    const symbolModal = document.getElementById('symbolModal');
-    const symbolList = document.getElementById('symbolList');
-    if (symbolList) {
-        for (const [cat, syms] of Object.entries(symbolPalette)) {
-            const header = document.createElement('div'); header.innerHTML = `<strong>${cat}</strong><hr>`;
-            symbolList.appendChild(header);
-            syms.forEach(sym => {
-                const btn = document.createElement('button');
-                btn.textContent = sym;
-                btn.style.padding = '6px 12px';
-                btn.style.borderRadius = '12px';
-                btn.style.border = '1px solid #ccc';
-                btn.style.cursor = 'pointer';
-                btn.onclick = () => { insertText(sym); symbolModal.style.display = 'none'; };
-                symbolList.appendChild(btn);
-            });
-        }
+    // ======================= SYMBOL PALETTE (Robust) =======================
+const symbolModal = document.getElementById('symbolModal');
+const symbolBtn = document.getElementById('symbolBtn');
+
+if (symbolModal && symbolBtn) {
+    // 1. Open the modal
+    symbolBtn.onclick = function() {
+        symbolModal.style.display = 'flex';
+    };
+
+    // 2. Close when clicking the 'X'
+    const closeSymbol = symbolModal.querySelector('.close');
+    if (closeSymbol) {
+        closeSymbol.onclick = function() {
+            symbolModal.style.display = 'none';
+        };
     }
+
+    // 3. Close when clicking outside the modal content
+    window.addEventListener('click', function(event) {
+        if (event.target === symbolModal) {
+            symbolModal.style.display = 'none';
+        }
+    });
+}
     document.getElementById('symbolBtn').onclick = () => symbolModal.style.display = 'flex';
 
     // ---------- FILE UPLOAD ----------

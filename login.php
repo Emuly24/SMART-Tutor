@@ -45,15 +45,16 @@ if (isset($_SESSION['user_id'])) {
             <p>You are currently logged in as <strong><?= htmlspecialchars($first_name) ?></strong>.</p>
             <p>Do you want to log out and sign in with a different account?</p>
             <div class="card-buttons" style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
-            <a href="dashboard.php" class="btn">Go to Dashboard</a>
-            <a href="logout.php" class="btn-danger">Logout</a>
-        </div>
+                <a href="dashboard.php" class="btn">Go to Dashboard</a>
+                <a href="logout.php" class="btn-danger">Logout</a>
+            </div>
         </div>
     </div>
     </body></html>
     <?php
     exit;
 }
+
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $login = $_POST['login'];
@@ -91,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['suspension_end'] = $user['suspension_end'];
             }
 
-            // --- Remember Me ---
+            // --- Remember Me (Ensure cookie is set correctly) ---
             if ($remember) {
                 $token = bin2hex(random_bytes(32));
                 $expires = date('Y-m-d H:i:s', strtotime('+30 days'));

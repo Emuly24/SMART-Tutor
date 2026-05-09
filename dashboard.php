@@ -1,16 +1,15 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 require_once 'check_remember_me.php';
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
 $uid = $_SESSION['user_id'];
 
-// Check if approved – if not, show application link and exit
+// Fetch user data (approved, fullname, class_level, status)
 $userStatus = $conn->query("SELECT approved, fullname, class_level, status FROM users WHERE id=$uid")->fetch_assoc();
-if (!$userStatus['approved']) {
+
+// If user is not approved, show the "Complete Your Application" page
+if (!$userStatus || !$userStatus['approved']) {
     ?>
     <!DOCTYPE html>
     <html>
@@ -40,6 +39,7 @@ if (!$userStatus['approved']) {
     exit;
 }
 
+// Safe: user is approved and $userStatus is valid
 $user = $userStatus;
 
 // Group info
@@ -63,9 +63,9 @@ $done_exercises = $conn->query("SELECT COUNT(DISTINCT a.exercise_id) FROM exerci
 $total_quizzes = $conn->query("SELECT COUNT(*) FROM quizzes q JOIN notes n ON q.note_id=n.id WHERE n.class_level='{$user['class_level']}'")->fetch_row()[0];
 $done_quizzes = $conn->query("SELECT COUNT(*) FROM quiz_attempts a JOIN quizzes q ON a.quiz_id=q.id JOIN notes n ON q.note_id=n.id WHERE a.user_id=$uid AND n.class_level='{$user['class_level']}' AND (a.status='submitted' OR a.status='marked')")->fetch_row()[0];
 $att_stats = $conn->query("SELECT COUNT(*) as total, SUM(CASE WHEN status='present' THEN 1 ELSE 0 END) as present, SUM(CASE WHEN status='late' THEN 1 ELSE 0 END) as late FROM attendance WHERE user_id=$uid AND date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)")->fetch_assoc();
-$att_total = $att_stats['total'];
-$att_present = $att_stats['present'];
-$att_late = $att_stats['late'];
+$att_total = $att_stats['total'] ?? 0;
+$att_present = $att_stats['present'] ?? 0;
+$att_late = $att_stats['late'] ?? 0;
 $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) * 100) : 0;
 ?>
 <!DOCTYPE html>
@@ -144,18 +144,18 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
     </div>
 
     <div class="profile-info">
-        <span><i class="fas fa-user"></i> <?= htmlspecialchars($user['fullname']) ?></span>
-        <span><i class="fas fa-chalkboard"></i> Class: <?= htmlspecialchars($user['class_level']) ?></span>
-        <span><i class="fas fa-shield-alt"></i> Status: <?= ucfirst($user['status']) ?></span>
+        <span><i class="fas fa-user"></i> <?= htmlspecialchars($user['fullname'] ?? '') ?></span>
+        <span><i class="fas fa-chalkboard"></i> Class: <?= htmlspecialchars($user['class_level'] ?? '') ?></span>
+        <span><i class="fas fa-shield-alt"></i> Status: <?= ucfirst($user['status'] ?? '') ?></span>
     </div>
 
     <?php if ($group): ?>
     <div class="card group-card">
-        <h3><i class="fas fa-users"></i> My Group: <?= htmlspecialchars($group['class_level']) ?> – Group <?= $group['group_number'] ?></h3>
+        <h3><i class="fas fa-users"></i> My Group: <?= htmlspecialchars($group['class_level'] ?? '') ?> – Group <?= $group['group_number'] ?? '' ?></h3>
         <p><strong>Fellow members:</strong></p>
         <ul>
         <?php foreach ($fellow_members as $f): ?>
-            <li><?= htmlspecialchars($f['fullname']) ?> (<?= htmlspecialchars($f['phone']) ?>)</li>
+            <li><?= htmlspecialchars($f['fullname'] ?? '') ?> (<?= htmlspecialchars($f['phone'] ?? '') ?>)</li>
         <?php endforeach; ?>
         <?php if (empty($fellow_members)) echo "<li>You are the first member of this group.</li>"; ?>
         </ul>
