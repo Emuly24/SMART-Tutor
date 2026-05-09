@@ -309,6 +309,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_GET['action'])) {
         <button id="askQuestionBtn" title="Ask admin about selected text"><i class="fas fa-question-circle"></i></button>
 
         <div class="separator"></div>
+        <!-- Ask Question Modal -->
+<div id="askQuestionDialog" title="Ask Admin About This Text" style="display:none;">
+    <div class="form-group">
+        <label>Selected text:</label>
+        <div id="selectedTextDisplay" style="background:var(--card-alt-bg); padding:0.5rem; border-radius:0.5rem; margin-bottom:0.5rem; max-height:150px; overflow-y:auto;"></div>
+    </div>
+    <div class="form-group">
+        <label for="questionInput">Your question:</label>
+        <textarea id="questionInput" rows="3" cols="30" placeholder="What do you need help with?" style="width:100%;"></textarea>
+    </div>
+</div>
 
         <button id="zoomOut" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
         <select id="zoomSelect">
@@ -844,7 +855,29 @@ document.addEventListener('mouseup', function() {
     });
 });
 
-// Ask Question button click
+// --- Ask Question Feature ---
+let selectedTextForQuestion = '';
+let selectedPageForQuestion = 0;
+
+document.addEventListener('mouseup', function() {
+    const selection = window.getSelection();
+    const text = selection.toString().trim();
+    if (!text) {
+        selectedTextForQuestion = '';
+        return;
+    }
+    selectedTextForQuestion = text;
+    // Find which page wrapper the selection is in
+    const range = selection.getRangeAt(0);
+    const pageWrappers = container.querySelectorAll('.page-wrapper');
+    pageWrappers.forEach(wrapper => {
+        const rect = wrapper.getBoundingClientRect();
+        if (rect.top <= range.getClientRects()[0].top && rect.bottom >= range.getClientRects()[0].bottom) {
+            selectedPageForQuestion = parseInt(wrapper.dataset.page);
+        }
+    });
+});
+
 document.getElementById('askQuestionBtn').addEventListener('click', function() {
     if (!selectedTextForQuestion) {
         showToast('Please highlight some text first.');
@@ -865,10 +898,10 @@ document.getElementById('askQuestionBtn').addEventListener('click', function() {
                 // Send to server
                 $.post('save_book_question.php', {
                     book_id: bookId,
+                    book_title: '<?= addslashes($book_title) ?>',
                     page_number: selectedPageForQuestion,
-                    highlighted_text: selectedTextForQuestion,
-                    question_text: question,
-                    position: JSON.stringify(selectedPositionForQuestion)
+                    selected_text: selectedTextForQuestion,
+                    question: question
                 }, function(res) {
                     if (res.success) {
                         showToast('Your question has been sent to the admin.');
@@ -881,8 +914,7 @@ document.getElementById('askQuestionBtn').addEventListener('click', function() {
             "Cancel": function() { $(this).dialog("close"); }
         }
     });
-}); 
-
+});
     // --- Animation Keyframes ---
     const styleSheet = document.createElement('style');
     styleSheet.textContent = `
