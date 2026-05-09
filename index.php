@@ -26,9 +26,11 @@ require_once 'check_remember_me.php';
     <div class="get-started-wrapper" style="text-align: center; margin: 2rem 0;">
         <?php if (!isset($_SESSION['user_id'])): ?>
             <button id="mainGetStartedBtn" class="btn-hero">Get Started</button>
-        <?php else: ?>
-            <a href="dashboard.php" class="btn-hero">Go to Dashboard</a>
+        <?php elseif (isset($_SESSION['approved']) && $_SESSION['approved'] == 0 && isset($_SESSION['status']) && $_SESSION['status'] == 'rejected'): ?>
+            <!-- 👇 Rejected logged‑in students see "Re‑apply" instead -->
+            <a href="apply.php" class="btn-hero">🔄 Re‑apply Now</a>
         <?php endif; ?>
+        <!-- All other logged‑in students see nothing here -->
     </div>
 
     <!-- Testimonials Section (hidden by default, shown only if testimonials exist) -->
@@ -82,11 +84,9 @@ require_once 'check_remember_me.php';
             .then(res => res.json())
             .then(data => {
                 if (data.length === 0) {
-                    // No testimonials → hide the whole section
                     section.style.display = 'none';
                     return;
                 }
-                // Show the section and populate
                 section.style.display = 'block';
                 testimonials = data;
                 showTestimonial(0);
@@ -129,7 +129,6 @@ require_once 'check_remember_me.php';
         });
     }
 
-    // Modal handling (single button)
     const modal = document.getElementById('eligibilityModal');
     const getStartedBtn = document.getElementById('mainGetStartedBtn');
     const closeSpan = document.querySelector('#eligibilityModal .close');
@@ -141,7 +140,6 @@ require_once 'check_remember_me.php';
     if (closeBtn) closeBtn.addEventListener('click', () => modal.style.display = 'none');
     window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
 
-    // Load testimonials on page load
     fetchTestimonials();
 </script>
 </body>

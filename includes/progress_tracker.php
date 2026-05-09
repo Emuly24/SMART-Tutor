@@ -1,6 +1,18 @@
 <?php
 $current = basename($_SERVER['PHP_SELF']);
+$show_tracker = true;
+
+// Hide if user is logged in and has already signed consent
+if (isset($_SESSION['user_id'])) {
+    $conn = getDB();
+    $uid = $_SESSION['user_id'];
+    $user = $conn->query("SELECT consent_signed FROM users WHERE id = $uid")->fetch_assoc();
+    if ($user && $user['consent_signed'] == 1) {
+        $show_tracker = false;
+    }
+}
 ?>
+<?php if ($show_tracker): ?>
 <div class="progress-tracker">
   <a href="index.php" class="progress-step <?= $current=='index.php' ? 'active' : '' ?>" title="Go to Home">
     <i class="fas fa-home"></i> Home
@@ -32,3 +44,4 @@ $current = basename($_SERVER['PHP_SELF']);
 <div class="progress-indicator">
   <div class="progress-indicator-fill"></div>
 </div>
+<?php endif; ?>

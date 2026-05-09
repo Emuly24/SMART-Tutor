@@ -2,203 +2,118 @@
 require_once 'check_remember_me.php';
 require_once 'config.php';
 session_start();
-if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
+
+// Determine admin hash
+if (function_exists('getAdminHash')) {
+    $admin_hash = getAdminHash();
+} elseif (defined('ADMIN_HASH')) {
+    $admin_hash = ADMIN_HASH;
+} else {
+    $admin_hash = '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu';
+}
+
+if (!isset($_SESSION['admin_logged'])) {
+    if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
+        header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
+        header('HTTP/1.0 401 Unauthorized');
+        echo 'Access denied';
+        exit;
+    }
+    $_SESSION['admin_logged'] = true;
+    $_SESSION['role'] = 'admin';
+    unset($_SESSION['user_id']);
+}
+
+$conn = getDB();
+
+// Delete student
+if (isset($_GET['delete'])) {
+    $user_id = (int)$_GET['delete'];
+    $conn->query("DELETE FROM users WHERE id = $user_id");
+    header("Location: admin_students_list.php");
     exit;
 }
-$conn = getDB();
-$uid = $_SESSION['user_id'];
-$user = $conn->query("SELECT fullname, class_level, school, consent_signed, consent_signed_at FROM users WHERE id=$uid")->fetch_assoc();
-if (!$user) die("User not found.");
 
-function generateSignature($fullname) {
-    $parts = explode(' ', $fullname);
-    $surname = end($parts);
-    $firstName = $parts[0];
-    return substr($surname, 0, 1) . '. ' . $firstName;
+$filter = $_GET['filter'] ?? 'all';
+
+// Build query based on filter
+if ($filter == 'suspended') {
+    $sql = "SELECT id, fullname, class_level, status, suspension_end, approved 
+            FROM users WHERE status = 'suspended' ORDER BY class_level";
+} elseif ($filter == 'pending') {
+    // Students who have submitted an application and it's pending
+    $sql = "SELECT u.id, u.fullname, u.class_level, u.status, u.suspension_end, u.approved 
+            FROM users u 
+            JOIN applications a ON u.id = a.user_id 
+            WHERE a.status = 'pending' 
+            ORDER BY u.class_level";
+} elseif ($filter == 'signedup') {
+    // Students who registered but never applied (no application record)
+    $sql = "SELECT u.id, u.fullname, u.class_level, u.status, u.suspension_end, u.approved 
+            FROM users u 
+            LEFT JOIN applications a ON u.id = a.user_id 
+            WHERE a.id IS NULL AND u.approved = 0 
+            ORDER BY u.class_level";
+} else { // 'all' – active (approved + status active)
+    $sql = "SELECT id, fullname, class_level, status, suspension_end, approved 
+            FROM users WHERE approved = 1 AND status = 'active' ORDER BY class_level";
 }
-$generated_signature = generateSignature($user['fullname']);
-
-$signed_by = '';
-$signed_date = '';
-$success = false;
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
-    $signed_by = trim($_POST['signed_by']);
-    $signed_date = $_POST['signed_date'];
-    $conn->query("UPDATE users SET consent_signed=1, consent_signed_at=NOW() WHERE id=$uid");
-    $success = true;
-    $user['consent_signed'] = 1;
-    $user['consent_signed_at'] = date('Y-m-d H:i:s');
-}
+$students = $conn->query($sql);
 ?>
 <!DOCTYPE html>
-<html>
-<head>
-    <title>Consent Form</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-</head>
-<body>
-<?php include_once 'includes/header.php'; ?>
-<?php include_once 'includes/progress_tracker.php'; ?>
-<div class="consent-container">
-    <?php if ($user['consent_signed'] && !$success): ?>
-        <div class="success-card" id="consentCard">
-            <h2><i class="fas fa-check-circle"></i> Your Signed Consent Agreement</h2>
-            <div class="student-details">
-                <p><strong>Student:</strong> <?= htmlspecialchars($user['fullname']) ?></p>
-                <p><strong>Class:</strong> <?= htmlspecialchars($user['class_level']) ?></p>
-                <p><strong>School:</strong> <?= htmlspecialchars($user['school']) ?></p>
-                <p><strong>Signed on:</strong> <?= date('Y-m-d', strtotime($user['consent_signed_at'])) ?></p>
-                <p><strong>Signature:</strong> <?= htmlspecialchars($generated_signature) ?></p>
-            </div>
-            <p>You have already agreed to the SMART Tutor group rules. You can download or print a copy below.</p>
-            <div class="success-actions">
-                <a href="dashboard.php" class="btn">Go to Dashboard</a>
-                <button onclick="printConsent()" class="btn-secondary">🖨️ Print Copy</button>
-                <button onclick="downloadPDF()" class="btn-secondary">📄 Download PDF</button>
-            </div>
+<html><head><title>Student List</title><link rel="stylesheet" href="style.css"></head>
+<body class="admin-page">
+    <?php include_once 'includes/header.php'; ?>
+    <div class="container">
+        <!-- Pill‑style filter buttons (4 options) -->
+        <div class="filter-links" style="margin: 1rem 0; display: flex; gap: 0.8rem; flex-wrap: wrap;">
+            <a href="?filter=all" class="filter-btn <?= $filter == 'all' ? 'active' : '' ?>">✅ All Active</a>
+            <a href="?filter=suspended" class="filter-btn <?= $filter == 'suspended' ? 'active' : '' ?>">⏸️ Suspended</a>
+            <a href="?filter=pending" class="filter-btn <?= $filter == 'pending' ? 'active' : '' ?>">⏳ Pending Approval</a>
+            <a href="?filter=signedup" class="filter-btn <?= $filter == 'signedup' ? 'active' : '' ?>">📝 Signed Up (Not Applied)</a>
         </div>
-    <?php elseif ($success): ?>
-        <div class="success-card" id="consentCard">
-            <h2><i class="fas fa-check-circle"></i> Agreement Confirmed</h2>
-            <div class="student-details">
-                <p><strong>Student:</strong> <?= htmlspecialchars($user['fullname']) ?></p>
-                <p><strong>Class:</strong> <?= htmlspecialchars($user['class_level']) ?></p>
-                <p><strong>School:</strong> <?= htmlspecialchars($user['school']) ?></p>
-                <p><strong>Signed on:</strong> <?= htmlspecialchars($signed_date) ?></p>
-                <p><strong>Signature:</strong> <?= htmlspecialchars($signed_by) ?></p>
-            </div>
-            <p>You have successfully agreed to the SMART Tutor group rules. This confirmation serves as your official commitment.</p>
-            <div class="success-actions">
-                <a href="dashboard.php" class="btn">Go to Dashboard</a>
-                <button onclick="printConsent()" class="btn-secondary">🖨️ Print Copy</button>
-                <button onclick="downloadPDF()" class="btn-secondary">📄 Download PDF</button>
-            </div>
+
+        <div class="grid">
+        <?php if ($students->num_rows == 0): ?>
+            <div class="card"><p>No students found in this category.</p></div>
+        <?php else: ?>
+            <?php while($s = $students->fetch_assoc()): ?>
+                <div class="card">
+                    <h3><?= htmlspecialchars($s['fullname']) ?></h3>
+                    <p>
+                        Class: <?= $s['class_level'] ?><br>
+                        Status: 
+                        <?php
+                            if ($s['status'] === 'active') {
+                                echo '<span class="status-badge status-active">Active</span>';
+                            } elseif ($s['status'] === 'suspended') {
+                                echo '<span class="status-badge status-suspended">Suspended</span>';
+                                if ($s['suspension_end']) echo " until " . $s['suspension_end'];
+                            } elseif (!$s['approved']) {
+                                // For signed‑up users, they are not approved; show "Not Applied" or "Pending Approval"
+                                if ($filter == 'signedup') {
+                                    echo '<span class="status-badge status-pending">Not Applied</span>';
+                                } elseif ($filter == 'pending') {
+                                    echo '<span class="status-badge status-pending">Pending Approval</span>';
+                                } else {
+                                    echo '<span class="status-badge status-pending">Pending</span>';
+                                }
+                            } else {
+                                echo htmlspecialchars($s['status']);
+                            }
+                        ?>
+                    </p>
+                    <div class="card-buttons">
+                        <a href="admin_view_student.php?id=<?= $s['id'] ?>">View Details</a>
+                        <a href="admin_discipline.php?user_id=<?= $s['id'] ?>">Discipline</a>
+                        <a href="?delete=<?= $s['id'] ?>" onclick="return confirm('Permanently delete this student and all their data? This cannot be undone.')" style="background:#e74c3c; color:white;">Delete</a>
+                    </div>
+                </div>
+            <?php endwhile; ?>
+        <?php endif; ?>
         </div>
-    <?php else: ?>
-        <h1><i class="fas fa-file-signature"></i> SMART Tutor Consent Agreement</h1>
-        <p>Dear <strong><?= htmlspecialchars($user['fullname']) ?></strong>, please read the following terms carefully. By signing this document, you commit to the rules below.</p>
-        <h2>Commitments</h2>
-        <ul class="agreement-list">
-            <li>I will work hard and read extensively to improve my knowledge.</li>
-            <li>I will be punctual for all sessions and respect the agreed schedule.</li>
-            <li>I will respect my class teacher and peers at all times.</li>
-            <li>I will not rely only on past papers but will engage fully with all learning materials.</li>
-            <li>I will not engage in any financial or inappropriate exchanges. I understand this leads to dismissal.</li>
-        </ul>
-        <h2>Consequences of Breach</h2>
-        <ul class="agreement-list">
-            <li>A warning may be issued for minor violations.</li>
-            <li>Extra assignments may be given as corrective measures.</li>
-            <li>Suspension may occur, during which my content access will be locked.</li>
-            <li>Permanent dismissal will result from serious or repeated violations.</li>
-        </ul>
-        <form method="post" class="consent-form">
-            <div class="form-group">
-                <label class="custom-checkbox"><input type="checkbox" name="agree" required> <span>I hereby agree to abide by all rules and commitments stated above.</span></label>
-            </div>
-            <div class="signature-section">
-                <h3>Electronic Signature</h3>
-                <div class="signature-line"><label>Signed by (Full Name):</label><input type="text" name="signed_by" value="<?= htmlspecialchars($generated_signature) ?>" required></div>
-                <div class="signature-line"><label>Date of Signing:</label><input type="date" name="signed_date" value="<?= date('Y-m-d') ?>" required></div>
-            </div>
-            <button type="submit" class="btn">Accept & Continue</button>
-        </form>
-    <?php endif; ?>
-</div>
-<div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div>
-<a href="#" class="back-to-top" id="backToTop">↑</a>
-<?php include_once 'includes/testimonial_prompt.php'; ?>
-<script>
-    function printConsent() {
-        const content = document.getElementById('consentCard').innerHTML;
-        const printWindow = window.open('', '', 'height=600,width=800');
-        printWindow.document.write('<html><head><title>Consent Agreement – SMART Tutor</title><style>body{font-family:Arial,sans-serif;padding:20px;} .student-details{background:#f5f5f5;padding:10px;margin:15px 0;}</style></head><body>');
-        printWindow.document.write(content);
-        printWindow.document.write('<div class="footer"><hr><p>SMART Tutor – Discipline & Integrity</p></div>');
-        printWindow.document.close();
-        printWindow.print();
-    }
-    async function downloadPDF() {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const leftMargin = 20;
-        const rightMargin = pageWidth - 20;
-        let y = 20;
-        doc.setFillColor(30, 42, 58);
-        doc.rect(0, 0, pageWidth, 40, 'F');
-        doc.setTextColor(212, 175, 55);
-        doc.setFontSize(18);
-        doc.text("SMART Tutor Consent Agreement", leftMargin, 25);
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.text("Discipline & Integrity", leftMargin, 35);
-        doc.setTextColor(0, 0, 0);
-        y = 50;
-        doc.setLineWidth(0.5);
-        doc.line(leftMargin, y, rightMargin, y);
-        y += 10;
-        doc.setFontSize(12);
-        const text = "This document certifies that the student named below has read, understood, and agreed to the rules and commitments of the SMART Tutor program.";
-        const lines = doc.splitTextToSize(text, pageWidth - 40);
-        doc.text(lines, leftMargin, y);
-        y += lines.length * 6 + 10;
-        doc.setFontSize(12);
-        doc.setTextColor(30, 42, 58);
-        doc.text("Student Information:", leftMargin, y);
-        y += 8;
-        doc.setFontSize(11);
-        doc.text("Full Name: <?= addslashes($user['fullname']) ?>", leftMargin + 10, y);
-        y += 7;
-        doc.text("Class Level: <?= addslashes($user['class_level']) ?>", leftMargin + 10, y);
-        y += 7;
-        doc.text("School: <?= addslashes($user['school']) ?>", leftMargin + 10, y);
-        y += 7;
-        doc.text("Agreement Date: <?= addslashes($signed_date ?: date('Y-m-d', strtotime($user['consent_signed_at']))) ?>", leftMargin + 10, y);
-        y += 12;
-        doc.text("The student agrees to:", leftMargin, y);
-        y += 8;
-        const rules = [
-            "Work hard and read extensively to improve knowledge.",
-            "Be punctual and respect the agreed schedule.",
-            "Respect the teacher and peers at all times.",
-            "Not rely solely on past papers but engage fully with materials.",
-            "Never engage in financial or inappropriate exchanges (dismissal)."
-        ];
-        rules.forEach(line => {
-            const bullet = "• " + line;
-            const wrapped = doc.splitTextToSize(bullet, pageWidth - 40);
-            doc.text(wrapped, leftMargin + 5, y);
-            y += wrapped.length * 5 + 2;
-        });
-        y += 8;
-        doc.text("Consequences of Breach:", leftMargin, y);
-        y += 8;
-        const cons = [
-            "Warning for minor violations.",
-            "Extra assignments as corrective measures.",
-            "Suspension (content locked).",
-            "Permanent dismissal for serious/repeated violations."
-        ];
-        cons.forEach(line => {
-            const bullet = "• " + line;
-            const wrapped = doc.splitTextToSize(bullet, pageWidth - 40);
-            doc.text(wrapped, leftMargin + 5, y);
-            y += wrapped.length * 5 + 2;
-        });
-        y += 10;
-        doc.text("Electronic Signature: <?= addslashes($signed_by ?: $generated_signature) ?>", leftMargin, y);
-        y += 8;
-        doc.text("Date: <?= addslashes($signed_date ?: date('Y-m-d', strtotime($user['consent_signed_at']))) ?>", leftMargin, y);
-        y += 20;
-        doc.setFontSize(10);
-        doc.setTextColor(100, 100, 100);
-        doc.text("SMART Tutor – Discipline & Integrity", leftMargin, y);
-        doc.save("Consent_Agreement_<?= preg_replace('/[^a-zA-Z0-9]/','_', $user['fullname']) ?>.pdf");
-    }
-</script>
+        <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+    </div>
+    <a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>

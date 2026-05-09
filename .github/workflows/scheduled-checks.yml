@@ -2,8 +2,7 @@ name: Scheduled Checks for SMART Tutor
 
 on:
   schedule:
-    - cron: '0 */6 * * *'   # every 6 hours
-  workflow_dispatch:          # allows manual run
+    - cron: '0 * * * *'
 
 jobs:
   run-checks:
@@ -12,4 +11,7 @@ jobs:
       - name: Call cron job script
         run: |
           curl -X GET "https://smarttutor.gt.tc/run_cron_jobs.php" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET_TOKEN }}"
+            -H "Authorization: Bearer 5f4dcc3b5aa765d61d8327deb882cf99" \
+            -H "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            -H "Referer: https://smarttutor.gt.tc/" \
+            -H "Host: smarttutor.gt.tc"

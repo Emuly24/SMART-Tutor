@@ -75,6 +75,41 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
 <body>
 <div class="container">
     <?php include_once 'includes/header.php'; ?>
+    <?php if ($user['consent_signed'] == 1): ?>
+    <div style="position: relative; margin: 0.5rem 0 0.5rem 0.5rem; display: inline-block;">
+        <button onclick="toggleProgressTracker()" class="btn btn-secondary" style="padding: 0.4rem 1rem; font-size: 0.85rem;">
+            📍 Show Progress Tracker
+        </button>
+    </div>
+    <script>
+        let trackerVisible = false;
+        function toggleProgressTracker() {
+            const tracker = document.querySelector('.progress-tracker');
+            const indicator = document.querySelector('.progress-indicator');
+            if (tracker) {
+                if (trackerVisible) {
+                    tracker.style.display = 'none';
+                    if (indicator) indicator.style.display = 'none';
+                    document.querySelector('button[onclick="toggleProgressTracker()"]').textContent = '📍 Show Progress Tracker';
+                } else {
+                    tracker.style.display = 'flex';
+                    if (indicator) indicator.style.display = 'block';
+                    document.querySelector('button[onclick="toggleProgressTracker()"]').textContent = '📍 Hide Progress Tracker';
+                }
+                trackerVisible = !trackerVisible;
+            }
+        }
+        // Hide by default on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const tracker = document.querySelector('.progress-tracker');
+            const indicator = document.querySelector('.progress-indicator');
+            if (tracker) {
+                tracker.style.display = 'none';
+                if (indicator) indicator.style.display = 'none';
+            }
+        });
+    </script>
+<?php endif; ?>
     <?php include_once 'includes/progress_tracker.php'; ?>
 
     <!-- Subjects Horizontal Row -->

@@ -155,14 +155,12 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
 
         <!-- Run Checks Card -->
         <div class="card">
-            <i class="fas fa-play-circle"></i>
-            <h3>Automated Checks</h3>
-            <div class="card-buttons">
-                <a href="admin_run_pending_exercises.php">⏰ Run Pending Exercise Checks (Manual)</a>
-                <a href="run_cron_jobs.php?token=admin">🤖 Run Cron Jobs (Manual Trigger)</a>
-            </div>
-        </div>
-
+    <i class="fas fa-play-circle"></i>
+    <h3>Automated Checks</h3>
+    <div class="card-buttons">
+        <a href="admin_run_pending_exercises.php">⏰ Run Manual Checks (Exercises + Assignments)</a>
+    </div>
+</div>
         <!-- System Card -->
         <div class="card">
             <i class="fas fa-cogs"></i>

@@ -20,8 +20,14 @@ if (isset($_COOKIE['remember_me'])) {
             // Token is valid – log the user in
             $user_id = $row['user_id'];
             $user = $conn->query("SELECT id, fullname, approved, consent_signed, status, suspension_end FROM users WHERE id = $user_id")->fetch_assoc();
-            if ($user) {
-                $_SESSION['user_id'] = $user['id'];
+                    if ($user) {
+            $_SESSION['user_id'] = $user['id'];
+            // ✨ Set role explicitly
+            if (isset($user['role']) && $user['role'] === 'admin') {
+                $_SESSION['role'] = 'admin';
+                $_SESSION['admin_logged'] = true;
+                unset($_SESSION['user_id']);
+            } else {
                 $_SESSION['role'] = 'student';
                 unset($_SESSION['admin_logged']);
                 $_SESSION['fullname'] = $user['fullname'];

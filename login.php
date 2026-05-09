@@ -43,16 +43,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute();
         $user = $stmt->get_result()->fetch_assoc();
         if ($user && password_verify($pass, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-    log_activity($user['id'], "login", "Logged in via login form");
-            $_SESSION['role'] = 'student';
-            unset($_SESSION['admin_logged']);
-            $_SESSION['fullname'] = $user['fullname'];
-            $_SESSION['approved'] = $user['approved'];
-            $_SESSION['consent_signed'] = $user['consent_signed'];
-            $_SESSION['status'] = $user['status'];
-            $_SESSION['suspension_end'] = $user['suspension_end'];
-            
+    $_SESSION['user_id'] = $user['id'];
+    if (function_exists('log_activity')) log_activity($user['id'], "login", "Logged in via login form");
+    
+    // ✨ Set role explicitly
+    if (isset($user['role']) && $user['role'] === 'admin') {
+        $_SESSION['role'] = 'admin';
+        $_SESSION['admin_logged'] = true;
+        unset($_SESSION['user_id']); // Admin session uses admin_logged, not user_id
+    } else {
+        $_SESSION['role'] = 'student';
+        unset($_SESSION['admin_logged']);
+        $_SESSION['approved'] = $user['approved'];
+        $_SESSION['consent_signed'] = $user['consent_signed'];
+        $_SESSION['status'] = $user['status'];
+        $_SESSION['suspension_end'] = $user['suspension_end'];
+    }
+    
+}
             if ($remember) {
                 // Generate a secure random token
                 $token = bin2hex(random_bytes(32));
