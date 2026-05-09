@@ -1,6 +1,5 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -19,10 +18,9 @@ if (!isset($_SESSION['admin_logged'])) {
     unset($_SESSION['user_id']);
 }
 
-// Core subjects we assist with
 $subjects = ['Mathematics', 'Biology', 'English', 'Physics', 'Chemistry'];
-
 $last_note_id = 0;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn = getDB();
     $title = $_POST['title'];
@@ -37,13 +35,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->query("DELETE FROM note_drafts");
     
     if ($group_id) {
-        // Lock for all groups of this class, then unlock the selected one
         $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
         while ($g = $all_groups->fetch_assoc()) {
             $lock = $g['id'] == $group_id ? 0 : 1;
-            $conn->query("INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) 
-                          VALUES ({$g['id']}, 'note', $note_id, $lock)
-                          ON DUPLICATE KEY UPDATE is_locked = $lock");
+            $conn->query("INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) VALUES ({$g['id']}, 'note', $note_id, $lock) ON DUPLICATE KEY UPDATE is_locked = $lock");
         }
         $msg = "Note saved and unlocked for the selected group.";
     } else {
@@ -55,8 +50,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html><head><title>Advanced Note Editor</title>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
+<!-- TinyMCE -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.7.0/tinymce.min.js"></script>
+<!-- MathQuill -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.css">
+<!-- MathJax -->
+<script>MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };</script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<!-- Mermaid -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- Highlight.js -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<!-- Cropper (for diagrams) -->
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.css">
 <style>
@@ -66,11 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .toolbar-extras { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; background: var(--card-alt-bg); padding: 10px; border-radius: 8px; }
     .toolbar-extras button, .toolbar-extras select { background: var(--accent); color: #1e293b; border: none; padding: 6px 14px; border-radius: 20px; font-weight: 600; cursor: pointer; transition: 0.2s; }
     .toolbar-extras button:hover, .toolbar-extras select:hover { background: var(--accent-dark); transform: scale(1.02); }
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 10000; }
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 2000; }
     .modal-content { background: var(--card-bg); padding: 2rem; border-radius: 1rem; max-width: 90%; width: 800px; max-height: 90%; overflow-y: auto; }
     .library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 10px; max-height: 500px; overflow-y: auto; }
     .library-item { border: 1px solid #ddd; padding: 8px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center; }
-    .library-item:hover { background: var(--accent-light); transform: scale(1.02); }
+    .library-item:hover { background: rgba(212,175,55,0.1); transform: scale(1.02); }
     .library-item img { max-width: 100%; max-height: 100px; }
     .math-preview { background: #f9f9f9; padding: 10px; margin: 10px 0; border-radius: 4px; min-height: 50px; }
     .image-editor-container { display: flex; gap: 20px; flex-wrap: wrap; }
@@ -87,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .lock-manager td, .lock-manager th { padding: 8px; }
     .lock-toggle { cursor: pointer; background: var(--accent); color: #1e293b; border: none; padding: 4px 12px; border-radius: 20px; }
     .lock-toggle.locked { background: var(--error); color: white; }
+    .tox-tinymce { min-height: 600px !important; }
 </style>
 </head>
 <body>
@@ -143,10 +153,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="button" id="editDiagramBtn">✏️ Edit Diagram Image</button>
         </div>
         <div class="form-group"><label>Content</label><textarea name="content" id="editor"></textarea></div>
-        <button type="submit">Save Note</button>
+        <button type="submit" class="btn">Save Note</button>
     </form>
 
-    <!-- Lock Manager (initially hidden, appears after saving a note) -->
+    <!-- Lock Manager -->
     <div id="lockManager" class="lock-manager">
         <h3>🔒 Group Access Control for this Note</h3>
         <p>Toggle lock/unlock for each group. Locked = group cannot see the note. Unlocked = group can see the note.</p>
@@ -156,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
-<!-- All modals -->
+<!-- All modals (same as before) -->
 <div id="symbolModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h3>Insert Symbol</h3><div id="symbolList" style="display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;"></div></div></div>
 <div id="citationModal" class="modal"><div class="modal-content"><h3>Add Citation</h3><div class="form-group"><label>Author(s) (Last, First)</label><input type="text" id="apaAuthor"></div><div class="form-group"><label>Year</label><input type="text" id="apaYear"></div><div class="form-group"><label>Title</label><input type="text" id="apaTitle"></div><div class="form-group"><label>Source</label><input type="text" id="apaSource"></div><div class="form-group"><label>DOI (optional)</label><input type="text" id="apaDoi"></div><button id="addCitationBtn" class="btn">Add</button><button id="closeCitationBtn" class="btn-secondary">Cancel</button></div></div>
 <div id="referenceModal" class="modal"><div class="modal-content"><h3>Reference List</h3><div id="referenceListContainer" class="citation-list"></div><button id="insertReferencesBtn" class="btn">Insert List</button><button id="closeReferenceBtn" class="btn-secondary">Close</button></div></div>
@@ -171,47 +181,71 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    let editorInstance = null;
-    let currentCitations = [];
-    let currentEditedImage = null;
-    let cropper = null;
+    // ---------- TinyMCE CORE ----------
+    tinymce.init({
+        selector: '#editor',
+        height: 600,
+        menubar: true,
+        plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
+        toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | specialchars | charmap | code | mathquill',
+        content_style: 'body { font-family: Inter, sans-serif; }',
+        auto_focus: true,
+        // ------ Equation Handling ------
+        mathquill: { version: 'editable' },
+        setup: function(editor) {
+            // Auto‑convert existing LaTeX to MathQuill on load
+            editor.on('init', function() {
+                const content = editor.getContent();
+                if (content && window.MathJax) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = content;
+                    MathJax.typesetPromise([tempDiv]).then(() => {
+                        editor.setContent(tempDiv.innerHTML);
+                    }).catch(() => {});
+                }
+                // Trigger diagram rendering
+                if (window.mermaid) mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+                if (window.hljs) hljs.highlightAll();
+            });
 
-    // ======================= GROUP LOADER =======================
+            // Highlight.js for code blocks
+            editor.on('SetContent', function() {
+                if (window.hljs) setTimeout(hljs.highlightAll, 100);
+            });
+        }
+    });
+
+    // ---------- GROUP LOADER ----------
     const classSelect = document.getElementById('noteClass');
     const routeSelect = document.getElementById('routeSelect');
     const groupSelect = document.getElementById('groupSelect');
-    
     function loadGroups() {
-    const classLevel = document.getElementById('noteClass').value;
-    const route = document.getElementById('routeSelect').value;
-    const groupSelect = document.getElementById('groupSelect');
-    if (!classLevel || !route) {
-        groupSelect.innerHTML = '<option value="">-- Select route and class first --</option>';
-        return;
-    }
-    fetch(`admin_get_groups.php?class=${encodeURIComponent(classLevel)}&route=${encodeURIComponent(route)}`)
-        .then(res => res.json())
-        .then(data => {
-            groupSelect.innerHTML = '<option value="">-- Any group (use locks later) --</option>';
-            data.forEach(group => {
-                groupSelect.innerHTML += `<option value="${group.id}">Group ${group.group_number} (${group.current_members}/5 members, ${group.attendance_rate}% attendance, pending exercises: ${group.pending_exercises}, quiz avg: ${group.avg_quiz_score}%)</option>`;
+        const classLevel = classSelect.value;
+        const route = routeSelect.value;
+        if (!classLevel || !route) {
+            groupSelect.innerHTML = '<option value="">-- Select route and class first --</option>';
+            return;
+        }
+        fetch(`admin_get_groups.php?class=${encodeURIComponent(classLevel)}&route=${encodeURIComponent(route)}`)
+            .then(res => res.json())
+            .then(data => {
+                groupSelect.innerHTML = '<option value="">-- Any group (use locks later) --</option>';
+                data.forEach(group => {
+                    groupSelect.innerHTML += `<option value="${group.id}">Group ${group.group_number} (${group.current_members}/5 members)</option>`;
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                groupSelect.innerHTML = '<option value="">Error loading groups</option>';
             });
-        })
-        .catch(err => {
-            console.error(err);
-            groupSelect.innerHTML = '<option value="">Error loading groups</option>';
-        });
-}
-    
+    }
     classSelect.addEventListener('change', loadGroups);
     routeSelect.addEventListener('change', loadGroups);
-    loadGroups(); // initial load if both selected
-    
-    // ======================= LOCK MANAGER =======================
+
+    // ---------- LOCK MANAGER ----------
     let currentNoteId = <?= $last_note_id ?>;
     const lockManagerDiv = document.getElementById('lockManager');
     const lockManagerContent = document.getElementById('lockManagerContent');
-    
     function loadLockManager(noteId) {
         if (!noteId) {
             lockManagerDiv.style.display = 'none';
@@ -220,7 +254,7 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`admin_note_lock_api.php?action=get_locks&note_id=${noteId}`)
             .then(res => res.json())
             .then(data => {
-                if (data.success && data.locks && data.locks.length) {
+                if (data.success && data.locks) {
                     let html = '<table class="data-table"><thead><tr><th>Route</th><th>Group</th><th>Status</th><th>Action</th></tr></thead><tbody>';
                     data.locks.forEach(lock => {
                         const statusText = lock.is_locked ? '🔒 Locked' : '🔓 Unlocked';
@@ -235,7 +269,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     html += '</tbody></table>';
                     lockManagerContent.innerHTML = html;
                     lockManagerDiv.style.display = 'block';
-                    // Attach event listeners to toggle buttons
                     document.querySelectorAll('.lock-toggle').forEach(btn => {
                         btn.addEventListener('click', function() {
                             const note = this.dataset.note;
@@ -249,31 +282,30 @@ document.addEventListener('DOMContentLoaded', function() {
                                         statusSpan.innerHTML = isLocked ? '🔒 Locked' : '🔓 Unlocked';
                                         this.innerHTML = isLocked ? 'Unlock' : 'Lock';
                                         this.classList.toggle('locked', isLocked);
-                                    } else {
-                                        alert('Error toggling lock');
-                                    }
-                                })
-                                .catch(err => alert('Network error'));
+                                    } else alert('Error toggling lock');
+                                });
                         });
                     });
-                } else {
-                    lockManagerDiv.style.display = 'none';
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                lockManagerDiv.style.display = 'none';
+                } else lockManagerDiv.style.display = 'none';
             });
     }
-    
     if (currentNoteId) loadLockManager(currentNoteId);
-    
-    // ======================= SYMBOL PALETTE =======================
+
+    // ---------- SYMBOL PALETTE (expanded) ----------
     const symbolPalette = {
-        "Greek": ["α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","σ","τ","υ","φ","χ","ψ","ω","Α","Β","Γ","Δ","Ε","Ζ","Η","Θ","Ι","Κ","Λ","Μ","Ν","Ξ","Ο","Π","Ρ","Σ","Τ","Υ","Φ","Χ","Ψ","Ω"],
-        "Math": ["+","−","×","÷","±","√","∫","∑","∏","∂","∇","∞","∝","∠","⊥","≅","≈","≠","≤","≥","→","↔","⇒","⇔"],
-        "Arrows": ["←","↑","→","↓","↔","↕","↖","↗","↘","↙","↩","↪","⇒","⇐","⇔","⇑","⇓","⇕"],
-        "Chemistry": ["↑","↓","→","↔","⇌","●","○","□","■","△","▲","▼","◆","◇","⇌","⇄"]
+        "📐 Math Symbols": ["+","−","×","÷","±","∓","∗","∙","⋅","∘","√","∛","∜","∞","≈","≅","≠","≤","≥","≡","≢","≪","≫","∑","∏","∫","∮","∯","∂","∇","∅","∎","□","▭","▱","◻","◼","◯"],
+        "📊 Set Theory": ["∈","∉","∋","∌","⊂","⊃","⊆","⊇","∪","∩","∖","∨","∧","⊕","⊖","⊗","⊘","⊙","⊚","⊛","⊞","⊟","⊠","⊡","⋂","⋃","⋀","⋁"],
+        "📈 Calculus": ["∂","∇","∫","∮","∯","∰","∱","∲","∳","lim","∑","∏","∐","Δ","δ","ε","λ","μ","ν","ξ","π","ρ","τ","φ","ψ","ω"],
+        "🔺 Geometry & Trig": ["∠","∡","∢","⊥","∥","∦","△","▽","◿","◺","°","′","″","∇","·"],
+        "🔬 Physics": ["ℏ","ħ","α","β","γ","Γ","Δ","δ","ε","ζ","η","θ","Θ","ι","κ","λ","μ","ν","ξ","π","ρ","σ","τ","υ","φ","Φ","χ","ψ","Ω","∇","∂","∫","∮","∞","⊕","⊗"],
+        "🧪 Chemistry": ["⇌","⇄","→","←","↔","↑","↓","●","○","□","■","△","▲","▼","◆","◇","♢","♠","♥","♣","♦","⚗","⚛","☢","☣","⚡"],
+        "🧬 Biology/Life Sciences": ["⚕","⚗","⚘","⚙","⚚","⊕","⊖","⊘","⊗","⊛","⊞","⊟","⊠","⊡","⋂","⋃","⋀","⋁","⁺","⁻","⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹","₁","₂","₃","₄","₅","₆","₇","₈","₉"],
+        "📈 Statistics": ["∑","∏","Δ","μ","σ","X̄","x̄","ȳ","P̄","p̄","n","N","k","c","p","q","±","≈","≠","≤","≥","∞","∇"],
+        "💻 Computer Science": ["λ","μ","π","σ","τ","ε","η","ζ","θ","ι","κ","ν","ξ","ρ","χ","ψ","ω","Φ","∇","∂","∫","∮","∞","⊕","∘","·","×","≠","≤","≥","≡","≢"],
+        "🔄 Arrows": ["←","↑","→","↓","↖","↗","↘","↙","↔","↕","↩","↪","↫","↬","↭","↮","↰","↱","↲","↳","↴","↵","↶","↷","↸","↹","↺","↻","⇐","⇑","⇒","⇓","⇔","⇕","⇖","⇗","⇘","⇙","⇚","⇛"],
+        "🧮 Greek Letters (Symbols)": ["α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","σ","τ","υ","φ","χ","ψ","ω","Α","Β","Γ","Δ","Ε","Ζ","Η","Θ","Ι","Κ","Λ","Μ","Ν","Ξ","Ο","Π","Ρ","Σ","Τ","Υ","Φ","Χ","Ψ","Ω"],
+        "✨ Punctuation & Special": ["•","·","…","—","–","™","®","©","℗","∅","⊘","⌀","⌂","⌚","⌛","⏰","⏱","⏲","⌨","✉","✍","✎","✏","✐","✑","✒","⚒","⚔","⚖","⚗","⚙","⚛","⚜","⛰","⛪","⛲","⛳","⛵","⛺","⛽","✈","⚓","⛴","⛵","✌","✋","✊","👊","✌","🍀","☘","🌿","🌱","🌿"],
+        "💰 Currency": ["$","€","£","¥","₱","₹","₽","₩","₪","₫","₦","₨","₸","₺","₮","₲","₴","₵","₧","₣","₡","₭","₼","₾","₽","₪","₩","¥"]
     };
     const symbolModal = document.getElementById('symbolModal');
     const symbolList = document.getElementById('symbolList');
@@ -284,7 +316,6 @@ document.addEventListener('DOMContentLoaded', function() {
             syms.forEach(sym => {
                 const btn = document.createElement('button');
                 btn.textContent = sym;
-                btn.style.margin = '4px';
                 btn.style.padding = '6px 12px';
                 btn.style.borderRadius = '12px';
                 btn.style.border = '1px solid #ccc';
@@ -294,464 +325,84 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
-    const symbolBtn = document.getElementById('symbolBtn');
-    if (symbolBtn) symbolBtn.onclick = () => symbolModal.style.display = 'flex';
-    const closeSymbol = symbolModal?.querySelector('.close');
-    if (closeSymbol) closeSymbol.onclick = () => symbolModal.style.display = 'none';
+    document.getElementById('symbolBtn').onclick = () => symbolModal.style.display = 'flex';
 
-    // ======================= FILE UPLOAD =======================
-    const fileUploadBtn = document.getElementById('fileUploadBtn');
-    if (fileUploadBtn) {
-        fileUploadBtn.onclick = () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const fd = new FormData();
-                fd.append('file', file);
-                fetch('note_editor_api.php?action=upload_attachment', { method: 'POST', body: fd })
-                    .then(res => res.json())
-                    .then(data => { if (data.url) insertText(`[File: ${file.name}](${data.url})`); else alert('Upload failed'); });
-            };
-            input.click();
+    // ---------- FILE UPLOAD ----------
+    document.getElementById('fileUploadBtn').onclick = () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file || !tinymce.activeEditor) return;
+            const fd = new FormData();
+            fd.append('file', file);
+            fetch('note_editor_api.php?action=upload_attachment', { method: 'POST', body: fd })
+                .then(res => res.json())
+                .then(data => { if (data.url) tinymce.activeEditor.insertContent(`<a href="${data.url}">${file.name}</a>`); else alert('Upload failed'); });
         };
-    }
+        input.click();
+    };
 
-    // ======================= APA CITATION =======================
+    // ---------- CITATION ----------
     const citationBtn = document.getElementById('citationBtn');
     const citationModal = document.getElementById('citationModal');
     const closeCitationBtn = document.getElementById('closeCitationBtn');
     const addCitationBtn = document.getElementById('addCitationBtn');
-    if (citationBtn) citationBtn.onclick = () => citationModal.style.display = 'flex';
-    if (closeCitationBtn) closeCitationBtn.onclick = () => citationModal.style.display = 'none';
-    if (addCitationBtn) {
-        addCitationBtn.onclick = () => {
-            const author = document.getElementById('apaAuthor').value;
-            const year = document.getElementById('apaYear').value;
-            const title = document.getElementById('apaTitle').value;
-            const source = document.getElementById('apaSource').value;
-            const doi = document.getElementById('apaDoi').value;
-            if (!author || !year || !title || !source) { alert("Please fill author, year, title, source."); return; }
-            currentCitations.push(`${author} (${year}). ${title}. ${source}${doi ? ' ' + doi : ''}`);
-            citationModal.style.display = 'none';
-            ['apaAuthor','apaYear','apaTitle','apaSource','apaDoi'].forEach(id => document.getElementById(id).value = '');
-            alert("Citation added.");
-        };
-    }
-
-    // Reference Manager
-    const referenceBtn = document.getElementById('referenceBtn');
-    const referenceModal = document.getElementById('referenceModal');
-    const closeReferenceBtn = document.getElementById('closeReferenceBtn');
-    const insertReferencesBtn = document.getElementById('insertReferencesBtn');
-    if (referenceBtn) referenceBtn.onclick = () => {
-        const container = document.getElementById('referenceListContainer');
-        if (!container) return;
-        container.innerHTML = '';
-        if (currentCitations.length === 0) container.innerHTML = '<p>No citations added yet.</p>';
-        else {
-            currentCitations.forEach((cit, idx) => {
-                const div = document.createElement('div');
-                div.className = 'citation-item';
-                div.innerHTML = `<span>${cit}</span> <button class="remove-citation" data-idx="${idx}">❌</button>`;
-                container.appendChild(div);
-            });
-            document.querySelectorAll('.remove-citation').forEach(btn => {
-                btn.onclick = () => {
-                    const idx = parseInt(btn.getAttribute('data-idx'));
-                    currentCitations.splice(idx, 1);
-                    referenceBtn.click(); // refresh
-                };
-            });
+    citationBtn.onclick = () => citationModal.style.display = 'flex';
+    closeCitationBtn.onclick = () => citationModal.style.display = 'none';
+    addCitationBtn.onclick = () => {
+        const author = document.getElementById('apaAuthor').value;
+        const year = document.getElementById('apaYear').value;
+        const title = document.getElementById('apaTitle').value;
+        const source = document.getElementById('apaSource').value;
+        const doi = document.getElementById('apaDoi').value;
+        if (!author || !year || !title || !source) { alert("Please fill author, year, title, source."); return; }
+        citationModal.style.display = 'none';
+        document.getElementById('apaAuthor').value = '';
+        document.getElementById('apaYear').value = '';
+        document.getElementById('apaTitle').value = '';
+        document.getElementById('apaSource').value = '';
+        document.getElementById('apaDoi').value = '';
+        if (tinymce.activeEditor) {
+            tinymce.activeEditor.insertContent(`${author} (${year}). ${title}. ${source}${doi ? ' ' + doi : ''}`);
         }
-        referenceModal.style.display = 'flex';
     };
-    if (closeReferenceBtn) closeReferenceBtn.onclick = () => referenceModal.style.display = 'none';
-    if (insertReferencesBtn) {
-        insertReferencesBtn.onclick = () => {
-            if (currentCitations.length === 0) { alert("No citations."); return; }
-            let refHtml = '<h3>References</h3><ul>';
-            currentCitations.forEach(cit => refHtml += `<li>${cit}</li>`);
-            refHtml += '</ul>';
-            insertHtml(refHtml);
-            referenceModal.style.display = 'none';
-        };
-    }
 
-    // ======================= EQUATION HELPER =======================
+    // ---------- EQUATION HELPER (inserts rendered math) ----------
     const mathBtn = document.getElementById('mathBtn');
     const mathHelperModal = document.getElementById('mathHelperModal');
     const closeMathHelperBtn = document.getElementById('closeMathHelperBtn');
     const insertHelperEquationBtn = document.getElementById('insertHelperEquationBtn');
     const latexHelperInput = document.getElementById('latexHelperInput');
     const mathHelperPreview = document.getElementById('mathHelperPreview');
-    if (mathBtn) mathBtn.onclick = () => mathHelperModal.style.display = 'flex';
-    if (closeMathHelperBtn) closeMathHelperBtn.onclick = () => mathHelperModal.style.display = 'none';
-    if (latexHelperInput) {
-        latexHelperInput.addEventListener('input', () => {
-            if (mathHelperPreview) {
-                mathHelperPreview.innerHTML = `\\[ ${latexHelperInput.value} \\]`;
-                if (window.MathJax) MathJax.typesetPromise([mathHelperPreview]).catch(console.log);
-            }
-        });
-    }
-    if (insertHelperEquationBtn) {
-        insertHelperEquationBtn.onclick = () => {
-            const latex = latexHelperInput?.value;
-            if (latex) {
-                insertText(`$$ ${latex} $$`);
-                mathHelperModal.style.display = 'none';
-                if (latexHelperInput) latexHelperInput.value = '';
-                if (mathHelperPreview) mathHelperPreview.innerHTML = '';
-            }
-        };
-    }
-
-    // ======================= DIAGRAM EDITOR =======================
-    const editDiagramBtn = document.getElementById('editDiagramBtn');
-    const diagramEditorModal = document.getElementById('diagramEditorModal');
-    const closeDiagramEditorBtn = document.getElementById('closeDiagramEditorBtn');
-    const applyImageChanges = document.getElementById('applyImageChanges');
-    const saveEditedImage = document.getElementById('saveEditedImage');
-    const editorImage = document.getElementById('editorImage');
-    if (editDiagramBtn) {
-        editDiagramBtn.onclick = () => {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                currentEditedImage = file;
-                const url = URL.createObjectURL(file);
-                if (editorImage) {
-                    editorImage.src = url;
-                    editorImage.onload = () => {
-                        if (cropper) cropper.destroy();
-                        cropper = new Cropper(editorImage, { aspectRatio: NaN, viewMode: 1 });
-                        const brightness = document.getElementById('brightness');
-                        const contrast = document.getElementById('contrast');
-                        const resizeWidth = document.getElementById('resizeWidth');
-                        if (brightness) brightness.value = 0;
-                        if (contrast) contrast.value = 0;
-                        if (resizeWidth) resizeWidth.value = '';
-                    };
-                }
-                diagramEditorModal.style.display = 'flex';
-            };
-            input.click();
-        };
-    }
-    if (closeDiagramEditorBtn) closeDiagramEditorBtn.onclick = () => { if (cropper) cropper.destroy(); diagramEditorModal.style.display = 'none'; };
-    if (applyImageChanges) {
-        applyImageChanges.onclick = () => {
-            if (!cropper) return;
-            const brightness = parseInt(document.getElementById('brightness')?.value || 0);
-            const contrast = parseInt(document.getElementById('contrast')?.value || 0);
-            const targetWidth = document.getElementById('resizeWidth')?.value;
-            let canvas = cropper.getCroppedCanvas();
-            const ctx = canvas.getContext('2d');
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const data = imageData.data;
-            for (let i = 0; i < data.length; i += 4) {
-                let r = data[i], g = data[i+1], b = data[i+2];
-                r += brightness; g += brightness; b += brightness;
-                const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-                r = factor * (r - 128) + 128;
-                g = factor * (g - 128) + 128;
-                b = factor * (b - 128) + 128;
-                data[i] = Math.min(255, Math.max(0, r));
-                data[i+1] = Math.min(255, Math.max(0, g));
-                data[i+2] = Math.min(255, Math.max(0, b));
-            }
-            ctx.putImageData(imageData, 0, 0);
-            if (targetWidth && parseInt(targetWidth) > 0) {
-                const newWidth = parseInt(targetWidth);
-                const newHeight = canvas.height * (newWidth / canvas.width);
-                const newCanvas = document.createElement('canvas');
-                newCanvas.width = newWidth;
-                newCanvas.height = newHeight;
-                const newCtx = newCanvas.getContext('2d');
-                newCtx.drawImage(canvas, 0, 0, newWidth, newHeight);
-                canvas = newCanvas;
-            }
-            if (editorImage) editorImage.src = canvas.toDataURL();
-            if (cropper) cropper.destroy();
-            cropper = new Cropper(editorImage, { aspectRatio: NaN, viewMode: 1 });
-        };
-    }
-    if (saveEditedImage) {
-        saveEditedImage.onclick = () => {
-            if (!cropper) return;
-            const canvas = cropper.getCroppedCanvas();
-            canvas.toBlob(blob => {
-                const formData = new FormData();
-                const title = prompt("Enter title for this diagram:", "Edited Diagram");
-                if (!title) return;
-                const category = prompt("Category (biology/physics/chemistry/agriculture):", "biology");
-                formData.append('diagram_title', title);
-                formData.append('diagram_category', category);
-                formData.append('diagram_image', blob, 'edited_diagram.png');
-                fetch('admin_library_manager.php', { method: 'POST', body: formData })
-                    .then(() => { alert("Diagram saved."); if (cropper) cropper.destroy(); diagramEditorModal.style.display = 'none'; });
-            });
-        };
-    }
-
-    // ======================= BIOLOGY DIAGRAMS (library) =======================
-    const diagramBtn = document.getElementById('diagramBtn');
-    const diagramModal = document.getElementById('diagramModal');
-    const diagramGrid = document.getElementById('diagramGrid');
-    const closeDiagramBtn = document.getElementById('closeDiagramBtn');
-    if (diagramBtn) {
-        diagramBtn.onclick = () => {
-            fetch('admin_library_api.php?type=diagrams')
-                .then(res => res.json())
-                .then(images => {
-                    if (diagramGrid) {
-                        diagramGrid.innerHTML = '';
-                        if (images.length === 0) diagramGrid.innerHTML = '<p>No diagrams uploaded.</p>';
-                        else {
-                            images.forEach(img => {
-                                const div = document.createElement('div');
-                                div.className = 'library-item';
-                                div.innerHTML = `<img src="${img.file_path}" style="max-width:100%;"><br><strong>${img.title}</strong><br><small>${img.category}</small>`;
-                                div.onclick = () => { insertText(`![${img.title}](${img.file_path})`); diagramModal.style.display = 'none'; };
-                                diagramGrid.appendChild(div);
-                            });
-                        }
-                    }
-                    diagramModal.style.display = 'flex';
-                });
-        };
-    }
-    if (closeDiagramBtn) closeDiagramBtn.onclick = () => diagramModal.style.display = 'none';
-
-    // ======================= EQUATIONS LIBRARY =======================
-    const libraryEqBtn = document.getElementById('libraryEqBtn');
-    const eqLibraryModal = document.getElementById('eqLibraryModal');
-    const eqLibraryList = document.getElementById('eqLibraryList');
-    const closeEqLibBtn = document.getElementById('closeEqLibBtn');
-    if (libraryEqBtn) {
-        libraryEqBtn.onclick = () => {
-            fetch('admin_library_api.php?type=equations')
-                .then(res => res.json())
-                .then(items => {
-                    if (eqLibraryList) {
-                        eqLibraryList.innerHTML = '';
-                        items.forEach(item => {
-                            const div = document.createElement('div');
-                            div.className = 'library-item';
-                            div.innerHTML = `<strong>${item.title}</strong><br><code>${item.latex}</code><br><small>${item.category}</small>`;
-                            div.onclick = () => { insertText(`$$ ${item.latex} $$`); eqLibraryModal.style.display = 'none'; };
-                            eqLibraryList.appendChild(div);
-                        });
-                    }
-                    eqLibraryModal.style.display = 'flex';
-                });
-        };
-    }
-    if (closeEqLibBtn) closeEqLibBtn.onclick = () => eqLibraryModal.style.display = 'none';
-
-    // ======================= DIAGRAMS LIBRARY (admin managed) =======================
-    const libraryDiagramBtn = document.getElementById('libraryDiagramBtn');
-    const diagramLibraryModal = document.getElementById('diagramLibraryModal');
-    const diagramLibraryList = document.getElementById('diagramLibraryList');
-    const closeDiagramLibBtn = document.getElementById('closeDiagramLibBtn');
-    if (libraryDiagramBtn) {
-        libraryDiagramBtn.onclick = () => {
-            fetch('admin_library_api.php?type=diagrams')
-                .then(res => res.json())
-                .then(items => {
-                    if (diagramLibraryList) {
-                        diagramLibraryList.innerHTML = '';
-                        items.forEach(item => {
-                            const div = document.createElement('div');
-                            div.className = 'library-item';
-                            div.innerHTML = `<img src="${item.file_path}" style="max-width:100%;"><br><strong>${item.title}</strong><br><small>${item.category}</small>`;
-                            div.onclick = () => { insertText(`![${item.title}](${item.file_path})`); diagramLibraryModal.style.display = 'none'; };
-                            diagramLibraryList.appendChild(div);
-                        });
-                    }
-                    diagramLibraryModal.style.display = 'flex';
-                });
-        };
-    }
-    if (closeDiagramLibBtn) closeDiagramLibBtn.onclick = () => diagramLibraryModal.style.display = 'none';
-
-    // ======================= CHEMISTRY EQUATIONS =======================
-    const chemistryBtn = document.getElementById('chemistryBtn');
-    const chemistryModal = document.getElementById('chemistryModal');
-    const closeChemistryBtn = document.getElementById('closeChemistryBtn');
-    const insertChemistryBtn = document.getElementById('insertChemistryBtn');
-    const chemistrySelect = document.getElementById('chemistrySelect');
-    if (chemistryBtn) chemistryBtn.onclick = () => chemistryModal.style.display = 'flex';
-    if (closeChemistryBtn) closeChemistryBtn.onclick = () => chemistryModal.style.display = 'none';
-    if (insertChemistryBtn) {
-        insertChemistryBtn.onclick = () => {
-            const selected = chemistrySelect?.value;
-            if (selected) insertText(selected);
-            chemistryModal.style.display = 'none';
-        };
-    }
-
-    // ======================= MEDIA UPLOAD =======================
-    const mediaBtn = document.getElementById('mediaBtn');
-    const mediaUploadModal = document.getElementById('mediaUploadModal');
-    const closeMediaUploadBtn = document.getElementById('closeMediaUploadBtn');
-    const uploadMediaBtn = document.getElementById('uploadMediaBtn');
-    const mediaFileInput = document.getElementById('mediaFileInput');
-    if (mediaBtn) mediaBtn.onclick = () => mediaUploadModal.style.display = 'flex';
-    if (closeMediaUploadBtn) closeMediaUploadBtn.onclick = () => mediaUploadModal.style.display = 'none';
-    if (uploadMediaBtn) {
-        uploadMediaBtn.onclick = () => {
-            const file = mediaFileInput?.files[0];
-            if (!file) { alert("Select a file."); return; }
-            const formData = new FormData();
-            formData.append('file', file);
-            fetch('note_editor_api.php?action=upload_media', { method: 'POST', body: formData })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.url) {
-                        const ext = file.name.split('.').pop().toLowerCase();
-                        let tag = '';
-                        if (['mp3','wav','ogg'].includes(ext)) tag = `<audio controls src="${data.url}"></audio>`;
-                        else if (['mp4','webm','mov'].includes(ext)) tag = `<video controls width="100%" src="${data.url}"></video>`;
-                        else tag = `<a href="${data.url}">${file.name}</a>`;
-                        insertHtml(tag);
-                        mediaUploadModal.style.display = 'none';
-                        if (mediaFileInput) mediaFileInput.value = '';
-                    } else alert('Upload failed');
-                });
-        };
-    }
-
-    // ======================= INSERT EXAMPLE / EXERCISE =======================
-    const exampleBtn = document.getElementById('exampleBtn');
-    const exerciseBtn = document.getElementById('exerciseBtn');
-    if (exampleBtn) exampleBtn.onclick = () => insertHtml('<div class="example"><strong>Example:</strong><br>Type your example here.</div>');
-    if (exerciseBtn) exerciseBtn.onclick = () => insertHtml('<div class="exercise"><strong>Exercise:</strong><br>Type your exercise question here.</div>');
-
-    // ======================= INSERT FOOTER =======================
-    const footerBtn = document.getElementById('footerBtn');
-    if (footerBtn) {
-        footerBtn.onclick = () => {
-            const footerHtml = `<hr><div style="text-align:center;font-size:smaller;"><p><strong>SMART Tutor</strong> – Discipline & Integrity</p><p>Blessings Emulyn, Metallurgy & Materials Engineering, MUST</p></div>`;
-            insertHtml(footerHtml);
-        };
-    }
-
-    // ======================= RESEARCH MODAL =======================
-    const researchPanelBtn = document.getElementById('researchPanelBtn');
-    const webResearchModal = document.getElementById('webResearchModal');
-    const closeWebResearchBtn = document.getElementById('closeWebResearchBtn');
-    const openBrowserBtn = document.getElementById('openBrowserBtn');
-    const insertResearchNoteBtn = document.getElementById('insertResearchNoteBtn');
-    const researchText = document.getElementById('researchText');
-    const researchUrl = document.getElementById('researchUrl');
-    if (researchPanelBtn) researchPanelBtn.onclick = () => webResearchModal.style.display = 'flex';
-    if (closeWebResearchBtn) closeWebResearchBtn.onclick = () => webResearchModal.style.display = 'none';
-    if (openBrowserBtn) {
-        openBrowserBtn.onclick = () => {
-            let url = researchUrl?.value.trim();
-            if (!url) url = 'https://scholar.google.com/';
-            if (!url.startsWith('http')) url = 'https://' + url;
-            window.open(url, '_blank');
-        };
-    }
-    if (insertResearchNoteBtn) {
-        insertResearchNoteBtn.onclick = () => {
-            const note = researchText?.value;
-            if (note) insertText(note);
-            webResearchModal.style.display = 'none';
-        };
-    }
-
-    // ======================= AUTO‑SAVE DRAFT =======================
-    function autoSaveDraft() {
-        if (!editorInstance) return;
-        const title = document.getElementById('noteTitle')?.value;
-        const subject = document.getElementById('noteSubject')?.value;
-        const classLevel = document.getElementById('noteClass')?.value;
-        const content = editorInstance.getData();
-        fetch('note_editor_api.php?action=auto_save_draft', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title, subject, class_level: classLevel, content })
-        });
-    }
-    setInterval(autoSaveDraft, 30000);
-    window.addEventListener('beforeunload', () => autoSaveDraft());
-    function loadDraft() {
-        fetch('note_editor_api.php?action=load_draft')
-            .then(res => res.json())
-            .then(draft => {
-                if (draft && draft.title && confirm('Load unsaved draft?')) {
-                    const titleInput = document.getElementById('noteTitle');
-                    const subjectInput = document.getElementById('noteSubject');
-                    const classSelect = document.getElementById('noteClass');
-                    if (titleInput) titleInput.value = draft.title;
-                    if (subjectInput) subjectInput.value = draft.subject;
-                    if (classSelect) classSelect.value = draft.class_level;
-                    if (editorInstance) editorInstance.setData(draft.content);
-                }
-            });
-    }
-
-    // ======================= CKEDITOR INITIALIZATION =======================
-    function insertText(text) {
-        if (editorInstance) {
-            editorInstance.model.change(writer => {
-                writer.insertText(text, editorInstance.model.document.selection.getFirstPosition());
-            });
+    mathBtn.onclick = () => mathHelperModal.style.display = 'flex';
+    closeMathHelperBtn.onclick = () => mathHelperModal.style.display = 'none';
+    latexHelperInput.addEventListener('input', () => {
+        if (mathHelperPreview) {
+            mathHelperPreview.innerHTML = `\\[ ${latexHelperInput.value} \\]`;
+            if (window.MathJax) MathJax.typesetPromise([mathHelperPreview]).catch(console.log);
         }
-    }
-    function insertHtml(html) {
-        if (editorInstance) {
-            const viewFragment = editorInstance.data.processor.toView(html);
-            const modelFragment = editorInstance.data.toModel(viewFragment);
-            editorInstance.model.change(writer => {
-                writer.insert(modelFragment, editorInstance.model.document.selection.getFirstPosition());
-            });
+    });
+    insertHelperEquationBtn.onclick = () => {
+        const latex = latexHelperInput?.value;
+        if (latex && tinymce.activeEditor) {
+            tinymce.activeEditor.execCommand('mceMathQuill', false, latex);
+            mathHelperModal.style.display = 'none';
+            latexHelperInput.value = '';
+            if (mathHelperPreview) mathHelperPreview.innerHTML = '';
         }
-    }
-    
-    ClassicEditor
-        .create(document.querySelector('#editor'), {
-            toolbar: [
-                'heading', '|', 'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript', '|',
-                'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', '|',
-                'alignment:left', 'alignment:center', 'alignment:right', 'alignment:justify', '|',
-                'bulletedList', 'numberedList', '|',
-                'link', 'blockQuote', 'insertTable', 'imageUpload', 'mediaEmbed', '|',
-                'undo', 'redo'
-            ],
-            fontSize: { options: [9, 11, 13, 'default', 17, 19, 21] },
-            fontFamily: {
-                options: [
-                    'default',
-                    'Arial, Helvetica, sans-serif',
-                    'Courier New, Courier, monospace',
-                    'Georgia, serif',
-                    'Lucida Sans Unicode, Lucida Grande, sans-serif',
-                    'Tahoma, Geneva, sans-serif',
-                    'Times New Roman, Times, serif',
-                    'Trebuchet MS, Helvetica, sans-serif',
-                    'Verdana, Geneva, sans-serif'
-                ]
-            },
-            image: { toolbar: ['imageTextAlternative', 'imageStyle:full', 'imageStyle:side'] },
-            table: { contentToolbar: ['tableColumn', 'tableRow', 'mergeTableCells'] }
-        })
-        .then(editor => {
-            editorInstance = editor;
-            loadDraft();
-        })
-        .catch(error => {
-            console.error(error);
-            alert('Editor failed to load. Check console.');
-        });
+    };
+
+    // ---------- INSERT EXAMPLE/EXERCISE ----------
+    document.getElementById('exampleBtn').onclick = () => { if (tinymce.activeEditor) tinymce.activeEditor.insertContent('<div class="example"><strong>Example:</strong><br>Type your example here.</div>'); };
+    document.getElementById('exerciseBtn').onclick = () => { if (tinymce.activeEditor) tinymce.activeEditor.insertContent('<div class="exercise"><strong>Exercise:</strong><br>Type your exercise question here.</div>'); };
+
+    // ---------- INSERT FOOTER ----------
+    document.getElementById('footerBtn').onclick = () => { if (tinymce.activeEditor) tinymce.activeEditor.insertContent('<hr><div style="text-align:center;font-size:smaller;"><p><strong>SMART Tutor</strong> – Discipline & Integrity</p><p>Blessings Emulyn, Metallurgy & Materials Engineering, MUST</p></div>'); };
+
+    // ---------- HELPER FUNCTIONS ----------
+    function insertText(text) { if (tinymce.activeEditor) tinymce.activeEditor.insertContent(text); }
+    function insertHtml(html) { if (tinymce.activeEditor) tinymce.activeEditor.insertContent(html); }
 });
 </script>
 <a href="#" class="back-to-top" id="backToTop">↑</a>

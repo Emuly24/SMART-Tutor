@@ -1,6 +1,5 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -118,17 +117,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include_once 'includes/header.php'; ?>
 
 <div class="container">
-    
-    
     <?php if ($error): ?><div class="error"><?= htmlspecialchars($error) ?></div><?php endif; ?>
     <?php if ($success): ?><div class="success"><?= htmlspecialchars($success) ?></div><?php endif; ?>
     <?php if ($pic_error): ?><div class="error"><?= htmlspecialchars($pic_error) ?></div><?php endif; ?>
 
-    <div class="profile-header">
+    <!-- Profile Header -->
+    <div class="profile-header" style="margin-top: 1rem;">
         <?php if ($user['profile_pic'] && file_exists($user['profile_pic'])): ?>
             <img src="<?= $user['profile_pic'] ?>" class="profile-pic" alt="Profile Picture">
         <?php else: ?>
-            <i class="fas fa-user-circle" style="font-size: 100px; color: var(--brown-dark);"></i>
+            <i class="fas fa-user-circle" style="font-size: 100px; color: var(--accent);"></i>
         <?php endif; ?>
         <div class="profile-name">
             <h2><?= htmlspecialchars($user['fullname']) ?></h2>
@@ -136,8 +134,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 
+    <!-- Main Profile Info Grid -->
     <div class="info-grid">
-        <div class="info-card">
+        <!-- Personal Details -->
+        <div class="card">
             <h3>Personal Details</h3>
             <p><strong>Gender:</strong> <?= $user['gender'] ?></p>
             <p><strong>Date of Birth:</strong> <?= $user['dob'] ?></p>
@@ -146,37 +146,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p><strong>Target Points:</strong> <?= $user['target_points'] ?></p>
             <p><strong>Membership Date:</strong> <?= date('d M Y', strtotime($user['created_at'])) ?></p>
         </div>
-        <div class="info-card">
+
+        <!-- Subjects & Goals -->
+        <div class="card">
             <h3>Subjects & Goals</h3>
             <p><strong>Subjects I am currently taking:</strong> <?= nl2br(htmlspecialchars($user['subjects'])) ?></p>
             <p><strong>Subjects I need assistance with:</strong> <?= nl2br(htmlspecialchars($user['subject_assist'])) ?></p>
             <p><strong>Career Reason:</strong> <?= nl2br(htmlspecialchars($user['career_reason'])) ?></p>
         </div>
-        <div class="info-card">
+
+        <!-- Contact -->
+        <div class="card">
             <h3>Contact</h3>
             <p><strong>Phone:</strong> <?= htmlspecialchars($user['phone']) ?></p>
             <p><strong>Parent/Guardian Phone:</strong> <?= htmlspecialchars($user['parent_phone']) ?></p>
             <p><strong>Email:</strong> <?= htmlspecialchars($user['email']) ?></p>
         </div>
-        <div class="info-card">
+
+        <!-- Group Information -->
+        <div class="card">
             <h3>Group Information</h3>
             <p><strong>Group:</strong> <?= $group ? $group['class_level'] . ' – Group ' . $group['group_number'] : 'Not assigned yet' ?></p>
-            <button id="showMembersBtn" class="btn">View Group Members</button>
-            <div id="groupMembersList" style="display:none;" class="group-members-list">
-                <?php if ($group && count($group_members) > 0): ?>
-                    <ul><?php foreach($group_members as $m): ?><li><?= htmlspecialchars($m['fullname']) ?> (<?= $m['phone'] ?>)</li><?php endforeach; ?></ul>
-                <?php elseif ($group): ?>
-                    <p>You are the only member in this group (yet).</p>
-                <?php else: ?>
-                    <p>No group assigned yet.</p>
-                <?php endif; ?>
-            </div>
+            <?php if ($group): ?>
+                <div style="margin-bottom: 1rem;">
+                    <button id="showMembersBtn" class="btn btn-secondary">View Group Members</button>
+                    <div id="groupMembersList" style="display:none; margin-top: 0.5rem;">
+                        <?php if (count($group_members) > 0): ?>
+                            <ul style="list-style: none; padding: 0;">
+                                <?php foreach($group_members as $m): ?>
+                                    <li style="border-bottom: 1px solid var(--card-alt-bg); padding: 0.5rem 0;"><?= htmlspecialchars($m['fullname']) ?> (<?= $m['phone'] ?>)</li>
+                                <?php endforeach; ?>
+                            </ul>
+                        <?php else: ?>
+                            <p>You are the only member in this group.</p>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            <?php else: ?>
+                <p>No group assigned yet.</p>
+            <?php endif; ?>
         </div>
-        <div class="info-card">
+
+        <!-- Actions -->
+        <div class="card">
             <h3>Actions</h3>
-            <button id="editProfileBtn" class="btn">Edit Profile</button>
-            <button id="changePasswordBtn" class="btn">Change Password</button>
-            
+            <div class="card-buttons">
+                <button id="editProfileBtn" class="btn">Edit Profile</button>
+                <button id="changePasswordBtn" class="btn">Change Password</button>
+            </div>
         </div>
     </div>
 

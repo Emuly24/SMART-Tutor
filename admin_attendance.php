@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $success_count = 0;
     $error_count = 0;
     $errors = [];
-    
+}
    foreach ($_POST['status'] as $uid => $stat) {
     if (empty($stat)) continue;
     

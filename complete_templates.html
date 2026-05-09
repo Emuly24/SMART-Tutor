@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete SMART Tutor Template Library – All Subjects</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background: #f8f9fa; padding: 40px; max-width: 1200px; margin: 0 auto; }
+        h1 { border-bottom: 3px solid #d4af37; padding-bottom: 10px; }
+        h2 { color: #1e293b; margin-top: 0; border-left: 5px solid #d4af37; padding-left: 15px; }
+        section { background: white; padding: 30px; border-radius: 16px; margin-bottom: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .template-card { background: #f1f5f9; padding: 20px; border-radius: 12px; margin-bottom: 25px; }
+        .template-card h3 { margin-top: 0; color: #334155; }
+        .code-block { background: #1e293b; color: #e2e8f0; padding: 20px; border-radius: 12px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.6; }
+        .btn-copy { background: #d4af37; color: #1e293b; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer; margin-top: 10px; }
+        .btn-copy:hover { background: #b8921f; }
+        .badge { display: inline-block; background: #d4af37; color: #1e293b; padding: 2px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
+        .category-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .category-grid a { background: #1e293b; color: white; padding: 10px; border-radius: 10px; text-decoration: none; text-align: center; font-weight: 500; }
+        .category-grid a:hover { background: #d4af37; color: #1e293b; }
+        .subject-tag { display: inline-block; background: #1e293b; color: white; padding: 2px 10px; border-radius: 12px; font-size: 11px; margin-left: 8px; }
+    </style>
+</head>
+<body>
+
+<h1>🧪 Complete SMART Tutor Template Library</h1>
+<p>Copy any template and paste into your TinyMCE editor. All code is ready to render.</p>
+
+<div class="category-grid">
+    <a href="#maths">📐 Mathematics</a>
+    <a href="#physics">⚛️ Physics</a>
+    <a href="#chemistry">🧪 Chemistry</a>
+    <a href="#biology">🧬 Biology</a>
+    <a href="#english">📝 English</a>
+    <a href="#data-science">📊 Data Science & Stats</a>
+    <a href="#engineering">⚙️ Engineering</a>
+    <a href="#tables">📋 Data Tables</a>
+    <a href="#latex">∫ LaTeX Equations</a>
+</div>
+
+<!-- ======================= MATHEMATICS ======================= -->
+<section id="maths">
+    <h2>📐 Mathematics</h2>
+
+    <div class="template-card">
+        <span class="badge">Unit 1</span>
+        <h3>Quadratic Graph – Roots & Vertex</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="quadraticGraph" width="600" height="400"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+const ctx = document.getElementById('quadraticGraph').getContext('2d');
+ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(550, 350);
+ctx.moveTo(300, 20); ctx.lineTo(300, 350);
+ctx.strokeStyle = '#333'; ctx.stroke();
+ctx.beginPath(); ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2;
+for (let x = -2; x &lt;= 6; x += 0.05) {
+    const y = (x - 2) * (x - 2) - 4;
+    const px = 300 + x * 50;
+    const py = 350 - y * 20;
+    if (x === -2) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+}
+ctx.stroke();
+ctx.fillStyle = '#333'; ctx.font = '14px Inter';
+ctx.fillText('Vertex (2, -4)', 310, 120);
+ctx.fillText('Roots: x = 0, x = 4', 310, 150);
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 5</span>
+        <h3>Sets – Venn Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Universal Set U]
+    B[Set A]
+    C[Set B]
+    D[A ∩ B]
+    E[A ∪ B]
+    F[A' (Complement)]
+    A --> B
+    A --> C
+    B --> D
+    C --> D
+    D --> E
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 6</span>
+        <h3>Mapping & Functions – Arrow Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Domain] --> B[Rule f] --> C[Range]
+    A1[x₁] --> D[f(x₁)] --> G[f(x₁)=y₁]
+    A2[x₂] --> E[f(x₂)] --> H[f(x₂)=y₂]
+    A3[x₃] --> F[f(x₃)] --> I[f(x₃)=y₃]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 7</span>
+        <h3>Circle Geometry – Angle Properties</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[O is centre] --> B[Radius OA]
+    A --> C[Radius OB]
+    B --> D[Arc AB]
+    C --> D
+    D --> E[∠AOB = 2∠ACB]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 8</span>
+        <h3>Transformation – Reflection & Rotation</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Original] --> B[Reflection]
+    A --> C[Rotation]
+    A --> D[Translation]
+    A --> E[Enlargement]
+    B --> F[Mirror image]
+    C --> G[Turned about point]
+    D --> H[Moved straight]
+    E --> I[Resized]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 11</span>
+        <h3>Trigonometry – Sine & Cosine Graphs</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="trigGraph" width="600" height="300"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+new Chart(document.getElementById('trigGraph'), {
+    type: 'line',
+    data: {
+        labels: ['0°','45°','90°','135°','180°','225°','270°','315°','360°'],
+        datasets: [
+            { label: 'sin θ', data: [0,0.707,1,0.707,0,-0.707,-1,-0.707,0], borderColor: '#d4af37', tension: 0.3 },
+            { label: 'cos θ', data: [1,0.707,0,-0.707,-1,-0.707,0,0.707,1], borderColor: '#2563eb', tension: 0.3 }
+        ]
+    }
+});
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 13</span>
+        <h3>Coordinate Geometry – Midpoint Formula</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="midpointGraph" width="600" height="400"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+const A={x:100,y:300},B={x:500,y:100},M={x:(A.x+B.x)/2,y:(A.y+B.y)/2};
+const ctx = document.getElementById('midpointGraph').getContext('2d');
+ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y);
+ctx.strokeStyle='#d4af37'; ctx.lineWidth=3; ctx.stroke();
+ctx.beginPath(); ctx.arc(A.x,A.y,5,0,2*Math.PI); ctx.fillStyle='#d4af37'; ctx.fill();
+ctx.fillText('A',A.x-10,A.y+15);
+ctx.beginPath(); ctx.arc(B.x,B.y,5,0,2*Math.PI); ctx.fillStyle='#2563eb'; ctx.fill();
+ctx.fillText('B',B.x-10,B.y+15);
+ctx.beginPath(); ctx.arc(M.x,M.y,5,0,2*Math.PI); ctx.fillStyle='#16a34a'; ctx.fill();
+ctx.fillText('M = (300, 200)',M.x-15,M.y-15);
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 14</span>
+        <h3>Variations – Direct & Inverse Proportion</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Direct y ∝ x] --> B[y=kx]
+    B --> C[Straight line through origin]
+    D[Inverse y ∝ 1/x] --> E[y=k/x]
+    E --> F[Hyperbola]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 1: Matrices</span>
+        <h3>2x2 Matrix Operations</h3>
+        <div class="code-block">
+<pre>&lt;table style="border-collapse:collapse; text-align:center; width:100%; max-width:600px; margin:auto;"&gt;
+    &lt;tr&gt;
+        &lt;td rowspan="2" style="padding:10px;"&gt;A = &lt;/td&gt;
+        &lt;td style="border:1px solid #333; padding:8px;"&gt;a₁₁&lt;/td&gt;
+        &lt;td style="border:1px solid #333; padding:8px;"&gt;a₁₂&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+        &lt;td style="border:1px solid #333; padding:8px;"&gt;a₂₁&lt;/td&gt;
+        &lt;td style="border:1px solid #333; padding:8px;"&gt;a₂₂&lt;/td&gt;
+    &lt;/tr&gt;
+&lt;/table&gt;
+&lt;p&gt;det(A) = a₁₁a₂₂ – a₁₂a₂₁ &nbsp;|&nbsp; A⁻¹ = (1/det) × adj(A)&lt;/p&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 4</span>
+        <h3>Simultaneous Linear & Quadratic Equations – Intersection</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="intersectionGraph" width="600" height="400"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+const ctx = document.getElementById('intersectionGraph').getContext('2d');
+ctx.beginPath(); ctx.moveTo(50, 350); ctx.lineTo(550, 350);
+ctx.moveTo(300, 20); ctx.lineTo(300, 350);
+ctx.strokeStyle = '#333'; ctx.stroke();
+ctx.beginPath(); ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2;
+for (let x = -1; x &lt;= 5; x += 0.05) {
+    const y = x*x - 4*x + 3;
+    const px = 300 + x*50;
+    const py = 350 - y*20;
+    if (x === -1) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+}
+ctx.stroke();
+ctx.beginPath(); ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 2;
+ctx.moveTo(50, 350 - (-3)*20);
+ctx.lineTo(550, 350 - (2*5 - 3)*20);
+ctx.stroke();
+ctx.fillStyle = '#333'; ctx.font = '12px Inter';
+ctx.fillText('Intersection at (2, 1) and (3, 3)', 320, 180);
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<!-- ======================= PHYSICS ======================= -->
+<section id="physics">
+    <h2>⚛️ Physics</h2>
+
+    <div class="template-card">
+        <span class="badge">Unit 1: Thermal Expansion</span>
+        <h3>Thermal Expansion Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Heating] --> B[Solids expand]
+    A --> C[Liquids expand]
+    A --> D[Gases expand]
+    B --> E[Bimetallic strip bends]
+    C --> F[Thermometer rises]
+    D --> G[Pressure increases]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 2: Newton's Laws</span>
+        <h3>Newton's Laws of Motion</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Newton's Laws] --> B[1st: Inertia]
+    A --> C[2nd: F = ma]
+    A --> D[3rd: Action-Reaction]
+    B --> E[Object at rest stays at rest]
+    C --> F[Force = Mass × Acceleration]
+    D --> G[Equal and opposite forces]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 3: Frictional Force</span>
+        <h3>Friction Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Friction] --> B[Static friction]
+    A --> C[Kinetic friction]
+    B --> D[Prevents motion]
+    C --> E[Opposes motion]
+    D --> F[F = μN]
+    E --> F
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 4: Hooke's Law</span>
+        <h3>Spring Extension Graph</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="hookeGraph" width="600" height="300"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+new Chart(document.getElementById('hookeGraph'), {
+    type: 'line',
+    data: {
+        labels: ['0', '1', '2', '3', '4', '5'],
+        datasets: [{
+            label: 'Extension (cm)',
+            data: [0, 2, 4, 6, 8, 10],
+            borderColor: '#d4af37',
+            tension: 0
+        }]
+    }
+});
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 5: Circular Motion</span>
+        <h3>Centripetal Force Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Object in circular motion] --> B[Centripetal force F = mv²/r]
+    B --> C[Direction toward centre]
+    A --> D[Velocity tangent to circle]
+    D --> E[Centripetal acceleration]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 6: Moments</span>
+        <h3>Principle of Moments</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Principle of Moments] --> B[Clockwise moment = Anticlockwise moment]
+    B --> C[F₁ × d₁ = F₂ × d₂]
+    C --> D[Equilibrium]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 7: Magnetism</span>
+        <h3>Domain Theory of Magnetism</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Unmagnetised] --> B[Domains randomly aligned]
+    C[Magnetised] --> D[Domains aligned]
+    B --> E[Weaker magnetic field]
+    D --> F[Stronger magnetic field]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 8: Electromagnetism</span>
+        <h3>Magnetic Field around a Straight Conductor</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Current-carrying conductor] --> B[Right-hand grip rule]
+    B --> C[Magnetic field lines circular]
+    C --> D[Direction: anticlockwise]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 9: Electromagnetic Induction</span>
+        <h3>Transformer Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Primary coil] --> B[Iron core]
+    B --> C[Secondary coil]
+    A --> D[AC input]
+    C --> E[AC output]
+    D --> B
+    E --> B
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 10: Digital Electronics</span>
+        <h3>Logic Gate Symbols</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[AND] --> B[A·B]
+    C[OR] --> D[A+B]
+    E[NOT] --> F[¬A]
+    G[NAND] --> H[¬(A·B)]
+    I[NOR] --> J[¬(A+B)]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 11: Electromagnetic Spectrum</span>
+        <h3>EM Spectrum Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Radio] --> B[Microwave]
+    B --> C[Infrared]
+    C --> D[Visible]
+    D --> E[UV]
+    E --> F[X-ray]
+    F --> G[Gamma]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 12: Light & Lenses</span>
+        <h3>Ray Diagram for Convex Lens</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="lensDiagram" width="600" height="400"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+const ctx = document.getElementById('lensDiagram').getContext('2d');
+ctx.beginPath(); ctx.ellipse(300, 200, 20, 120, 0, 0, 2 * Math.PI);
+ctx.fillStyle = 'rgba(212,175,55,0.3)'; ctx.fill();
+ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2; ctx.stroke();
+ctx.beginPath(); ctx.moveTo(0, 200); ctx.lineTo(600, 200);
+ctx.strokeStyle = '#333'; ctx.setLineDash([5,5]); ctx.stroke(); ctx.setLineDash([]);
+ctx.beginPath(); ctx.moveTo(100, 300); ctx.lineTo(300, 200);
+ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 2; ctx.stroke();
+ctx.beginPath(); ctx.moveTo(300, 200); ctx.lineTo(500, 100);
+ctx.stroke();
+ctx.fillStyle = '#333'; ctx.font = '14px Inter';
+ctx.fillText('Object', 60, 320); ctx.fillText('Image', 480, 80);
+ctx.fillText('Lens', 290, 140); ctx.fillText('f', 450, 230);
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 13: Isotopes</span>
+        <h3>Structure of the Atom</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Atom] --> B[Nucleus]
+    A --> C[Electrons]
+    B --> D[Protons]
+    B --> E[Neutrons]
+    D --> F[Atomic number Z]
+    E --> G[Mass number A]
+    C --> H[Orbitals]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 14: Radioactivity</span>
+        <h3>Half-life Graph</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="halfLife" width="600" height="300"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+new Chart(document.getElementById('halfLife'), {
+    type: 'line',
+    data: {
+        labels: ['0', '1', '2', '3', '4', '5'],
+        datasets: [{
+            label: 'Remaining amount',
+            data: [100, 50, 25, 12.5, 6.25, 3.125],
+            borderColor: '#d4af37',
+            tension: 0
+        }]
+    }
+});
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 25: Linear Motion</span>
+        <h3>Equations of Motion</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[v = u + at] --> B[s = ut + ½at²]
+    B --> C[v² = u² + 2as]
+    C --> D[s = ½(u + v)t]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 26: Work & Energy</span>
+        <h3>Conservation of Energy</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Kinetic Energy KE = ½mv²] --> B[Total Energy]
+    C[Potential Energy PE = mgh] --> B
+    D[Work-Energy Theorem] --> B
+    B --> E[Conservation: E₁ = E₂]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<!-- ======================= CHEMISTRY ======================= -->
+<section id="chemistry">
+    <h2>🧪 Chemistry</h2>
+
+    <div class="template-card">
+        <span class="badge">Unit 3: Stoichiometry</span>
+        <h3>Mole Concept Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Molar mass M] --> B[N = m/M]
+    C[Avogadro's number Nₐ] --> D[Particles = N × Nₐ]
+    E[Gas volume] --> F[N = V/22.4 L]
+    G[Titration] --> H[M₁V₁ = M₂V₂]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 4: Alkanols</span>
+        <h3>Functional Group of Alcohols</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[CₙH₂ₙ₊₁OH] --> B[-OH group]
+    B --> C[Primary R-CH₂OH]
+    B --> D[Secondary R-CHOH-R']
+    B --> E[Tertiary R-COH-R']
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 5: Alkanals & Alkanones</span>
+        <h3>Oxidation of Alcohols</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Primary alcohol] --> B[Alkanal]
+    B --> C[Alkanoic acid]
+    D[Secondary alcohol] --> E[Alkanone]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 14: Electrolysis</span>
+        <h3>Electrolysis of Copper Sulphate</h3>
+        <div class="code-block">
+<pre>```mermaid
+flowchart LR
+    A[Anode] --> B[Cu → Cu²⁺ + 2e⁻]
+    A --> C[CuSO₄ electrolyte]
+    C --> D[Cathode]
+    D --> E[Cu²⁺ + 2e⁻ → Cu]
+    E --> F[Copper deposited]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 11: Rates of Reaction</span>
+        <h3>Rate vs Concentration Graph</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="rateGraph" width="600" height="300"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+new Chart(document.getElementById('rateGraph'),{
+    type:'line',
+    data:{labels:['0','10','20','30','40','50'],datasets:[{
+        label:'Rate of reaction',data:[0,12,18,20,15,10],
+        borderColor:'#d4af37',tension:0.3,fill:true,
+        backgroundColor:'rgba(212,175,55,0.1)'
+    }]}
+});
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 13: Oxidation & Reduction</span>
+        <h3>Oxidation Numbers Table</h3>
+        <div class="code-block">
+<pre>&lt;table style="width:100%; border-collapse:collapse;"&gt;
+    &lt;thead&gt;&lt;tr style="background:#d4af37; color:#1e293b;"&gt;
+        &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Element&lt;/th&gt;
+        &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Oxidation Number&lt;/th&gt;
+    &lt;/tr&gt;&lt;/thead&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;H (most compounds)&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;+1&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;O (most compounds)&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;-2&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Group 1 metals&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;+1&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Group 2 metals&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;+2&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Fluorine&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;-1&lt;/td&gt;&lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Preliminary Unit</span>
+        <h3>Rates of Reaction – Factors</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Factors affecting rate] --> B[Temperature]
+    A --> C[Concentration]
+    A --> D[Surface area]
+    A --> E[Catalyst]
+    B --> F[↑ Temp → ↑ Rate]
+    C --> G[↑ Conc → ↑ Rate]
+    D --> H[↑ Surface area → ↑ Rate]
+    E --> I[Catalyst lowers activation energy]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 2: Acids & Bases</span>
+        <h3>pH Scale Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[0 Strong acid] --> B[1]
+    B --> C[2]
+    C --> D[3]
+    D --> E[4]
+    E --> F[5]
+    F --> G[6]
+    G --> H[7 Neutral]
+    H --> I[8]
+    I --> J[9]
+    J --> K[10]
+    K --> L[11]
+    L --> M[12]
+    M --> N[13]
+    N --> O[14 Strong base]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<!-- ======================= BIOLOGY ======================= -->
+<section id="biology">
+    <h2>🧬 Biology</h2>
+
+    <div class="template-card">
+        <span class="badge">Unit 1: Problem Solving</span>
+        <h3>Problem Solving Flowchart</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Identify problem] --> B[Gather information]
+    B --> C[Propose solutions]
+    C --> D[Select best solution]
+    D --> E[Implement solution]
+    E --> F[Evaluate outcome]
+    F --> G{Solved?}
+    G -->|Yes| H[Report results]
+    G -->|No| B
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 3: Photosynthesis</span>
+        <h3>Chloroplast Structure</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Chloroplast] --> B[Thylakoid membrane]
+    A --> C[Stroma]
+    B --> D[Granum]
+    B --> E[Light-dependent reactions]
+    E --> F[ATP and NADPH]
+    C --> G[Light-independent reactions (Calvin cycle)]
+    F --> G
+    G --> H[Glucose]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 4: Transport in Plants</span>
+        <h3>Xylem & Phloem Transport</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Xylem] --> B[Transports water and minerals]
+    A --> C[From roots to leaves]
+    D[Phloem] --> E[Transports organic nutrients]
+    D --> F[From leaves to other parts]
+    B --> G[Transpiration stream]
+    E --> H[Source to sink]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 5: Genetics</span>
+        <h3>Punnett Square – Monohybrid Cross</h3>
+        <div class="code-block">
+<pre>&lt;table style="border-collapse:collapse; text-align:center; width:100%; max-width:400px;"&gt;
+    &lt;thead&gt;
+        &lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th style="border:1px solid #333; padding:10px;"&gt;A&lt;/th&gt;&lt;th style="border:1px solid #333; padding:10px;"&gt;a&lt;/th&gt;&lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;&lt;th style="border:1px solid #333; padding:10px;"&gt;A&lt;/th&gt;&lt;td style="border:1px solid #333; padding:10px; background:#dcfce7;"&gt;AA&lt;/td&gt;&lt;td style="border:1px solid #333; padding:10px; background:#dcfce7;"&gt;Aa&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;th style="border:1px solid #333; padding:10px;"&gt;a&lt;/th&gt;&lt;td style="border:1px solid #333; padding:10px; background:#dcfce7;"&gt;Aa&lt;/td&gt;&lt;td style="border:1px solid #333; padding:10px; background:#fef2f2;"&gt;aa&lt;/td&gt;&lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;
+&lt;p&gt;Genotypic ratio: 1 AA : 2 Aa : 1 aa &nbsp;|&nbsp; Phenotypic ratio: 3 dominant : 1 recessive&lt;/p&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 6: Ecosystems</span>
+        <h3>Food Web Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    Sun --> Grass
+    Sun --> Water
+    Grass --> Rabbit
+    Grass --> Grasshopper
+    Water --> Fish
+    Rabbit --> Fox
+    Grasshopper --> Bird
+    Fish --> Eagle
+    Fox --> Eagle
+    Bird --> Eagle
+    Eagle --> Decomposers
+    Decomposers --> Grass
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 7: Co-ordination</span>
+        <h3>Reflex Arc Diagram</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph LR
+    A[Stimulus] --> B[Receptor]
+    B --> C[Sensory neurone]
+    C --> D[Spinal cord]
+    D --> E[Relay neurone]
+    E --> F[Motor neurone]
+    F --> G[Effector]
+    G --> H[Response]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 9: Cancer</span>
+        <h3>Causes of Cancer</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Causes of cancer] --> B[Genetic factors]
+    A --> C[Environmental]
+    C --> D[Carcinogens]
+    C --> E[Radiation]
+    C --> F[Viral infections]
+    C --> G[Unhealthy diet]
+    D --> H[DNA damage]
+    E --> H
+    F --> H
+    G --> H
+    H --> I[Uncontrolled cell division]
+    I --> J[Tumour formation]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 10: Evolution</span>
+        <h3>Natural Selection Flowchart</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Overproduction] --> B[Struggle for survival]
+    B --> C[Variation]
+    C --> D[Survival of fittest]
+    D --> E[Reproduction]
+    E --> F[Traits passed on]
+    F --> G[Population changes]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 14: Circulatory System</span>
+        <h3>Structure of the Heart</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Right atrium] --> B[Tricuspid valve]
+    B --> C[Right ventricle]
+    C --> D[Pulmonary valve]
+    D --> E[Pulmonary artery]
+    E --> F[Lungs]
+    F --> G[Pulmonary vein]
+    G --> H[Left atrium]
+    H --> I[Mitral valve]
+    I --> J[Left ventricle]
+    J --> K[Aortic valve]
+    K --> L[Aorta]
+    L --> M[Body]
+    M --> A
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 17: Reproduction</span>
+        <h3>Mitosis vs Meiosis</h3>
+        <div class="code-block">
+<pre>```mermaid
+graph TD
+    A[Cell division] --> B[Mitosis]
+    A --> C[Meiosis]
+    B --> D[2 identical diploid cells]
+    B --> E[Growth and repair]
+    C --> F[4 non-identical haploid cells]
+    C --> G[Sexual reproduction]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Unit 19: Human Population</span>
+        <h3>Population Growth Curve</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="popGrowth" width="600" height="300"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+new Chart(document.getElementById('popGrowth'),{
+    type:'line',
+    data:{labels:['0','10','20','30','40','50','60','70','80','90','100'],
+    datasets:[{
+        label:'Population size',
+        data:[10,20,40,80,160,320,640,1280,2560,5120,10240],
+        borderColor:'#d4af37',
+        tension:0.3
+    }]}
+});
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<!-- ======================= ENGLISH ======================= -->
+<section id="english">
+    <h2>📝 English – MSCE Exam Topics</h2>
+
+    <div class="template-card">
+        <span class="badge">Paper I</span>
+        <h3>Question Tags</h3>
+        <div class="code-block">
+<pre>&lt;table style="width:100%; border-collapse:collapse;"&gt;
+    &lt;thead&gt;
+        &lt;tr style="background:#d4af37; color:#1e293b;"&gt;
+            &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Statement&lt;/th&gt;
+            &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Question Tag&lt;/th&gt;
+        &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;The problem could hardly be solved&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;... could it?&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Let's ask Tondido&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;... shall we?&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;They never saw me&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;... did they?&lt;/td&gt;&lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Paper I</span>
+        <h3>Order of Adjectives</h3>
+        <div class="code-block">
+<pre>&lt;table style="width:100%; border-collapse:collapse;"&gt;
+    &lt;thead&gt;
+        &lt;tr style="background:#d4af37; color:#1e293b;"&gt;
+            &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Order&lt;/th&gt;
+            &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Examples&lt;/th&gt;
+        &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Opinion&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;fabulous, beautiful, boring&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Size&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;big, small, tiny, huge&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Age&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;new, old, ancient, modern&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Colour&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;red, blue, green, brown&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Origin&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;British, French, Mongolian, Ivorian&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Material&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;woolen, wooden, silk, velvet&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Type&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;mug, suit, bed, cuisine&lt;/td&gt;&lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Paper II</span>
+        <h3>Note-Making Template</h3>
+        <div class="code-block">
+<pre>&lt;div style="background:#f1f5f9; padding:15px; border-radius:8px;"&gt;
+    &lt;h4&gt;Title: &lt;span style="border-bottom:2px solid #d4af37;"&gt;Benefits of Sports in Schools&lt;/span&gt;&lt;/h4&gt;
+    &lt;ol style="list-style:decimal; padding-left:20px;"&gt;
+        &lt;li&gt;Regulates behaviour&lt;/li&gt;
+        &lt;ol style="list-style:lower-alpha; padding-left:20px;"&gt;
+            &lt;li&gt;&lt;strong&gt;Supporting point:&lt;/strong&gt; Learns fairness&lt;/li&gt;
+            &lt;li&gt;&lt;strong&gt;Supporting point:&lt;/strong&gt; Accepts consequences when rules broken&lt;/li&gt;
+        &lt;/ol&gt;
+        &lt;li&gt;Builds teamwork skills&lt;/li&gt;
+        &lt;ol style="list-style:lower-alpha; padding-left:20px;"&gt;
+            &lt;li&gt;&lt;strong&gt;Supporting point:&lt;/strong&gt; Must coordinate with others to win&lt;/li&gt;
+            &lt;li&gt;&lt;strong&gt;Supporting point:&lt;/strong&gt; Learns cooperation&lt;/li&gt;
+        &lt;/ol&gt;
+    &lt;/ol&gt;
+&lt;/div&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Paper III – Poetry</span>
+        <h3>Sonnet 116 – Themes & Figures</h3>
+        <div class="code-block">
+<pre>&lt;div style="background:#f1f5f9; padding:15px; border-radius:8px;"&gt;
+    &lt;p&gt;&lt;strong&gt;Theme:&lt;/strong&gt; True love is unchanging – cannot be altered by time or circumstances.&lt;/p&gt;
+    &lt;p&gt;&lt;strong&gt;Key metaphors:&lt;/strong&gt; "It is an ever‑fixed mark", "It is the star to every wandering bark".&lt;/p&gt;
+    &lt;p&gt;&lt;strong&gt;Figure of speech:&lt;/strong&gt; Personification – "Love's not Time's fool".&lt;/p&gt;
+    &lt;p&gt;&lt;strong&gt;Tone:&lt;/strong&gt; Calm and certain – the persona unemotionally explains true love.&lt;/p&gt;
+&lt;/div&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Paper III – Short Story</span>
+        <h3>Character Analysis – Scorpion vs Narrator</h3>
+        <div class="code-block">
+<pre>&lt;table style="width:100%; border-collapse:collapse;"&gt;
+    &lt;thead&gt;
+        &lt;tr style="background:#d4af37; color:#1e293b;"&gt;
+            &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Character&lt;/th&gt;
+            &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Traits&lt;/th&gt;
+            &lt;th style="padding:8px; border:1px solid #ccc;"&gt;Evidence from story&lt;/th&gt;
+        &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Scorpion&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Brutal, cruel, sadistic&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Made the narrator pee in his hands&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;The Narrator&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Enduring, resilient, fearful&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;Survived four years in prison&lt;/td&gt;&lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<!-- ======================= DATA SCIENCE & STATISTICS ======================= -->
+<section id="data-science">
+    <h2>📊 Data Science & Statistics</h2>
+
+    <div class="template-card">
+        <span class="badge">Regression</span>
+        <h3>Scatter Plot with Trendline</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="scatterTrend" width="600" height="400"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+new Chart(document.getElementById('scatterTrend'),{
+    type:'scatter',
+    data:{datasets:[{
+        label:'Data',
+        data:[{x:10,y:20},{x:20,y:35},{x:30,y:45},{x:40,y:55},{x:50,y:60},{x:60,y:70}],
+        backgroundColor:'#d4af37'
+    }]}
+});
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Normal Distribution</span>
+        <h3>Bell Curve</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="normalDist" width="600" height="300"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+const ctx = document.getElementById('normalDist').getContext('2d');
+ctx.beginPath(); ctx.moveTo(50,250); ctx.lineTo(550,250);
+ctx.moveTo(300,100); ctx.lineTo(300,250);
+ctx.strokeStyle='#333'; ctx.stroke();
+ctx.beginPath(); ctx.strokeStyle='#d4af37'; ctx.lineWidth=2;
+for(let x=50;x<=550;x+=1){
+    const z=(x-300)/100;
+    const y=250-150*Math.exp(-0.5*z*z);
+    if(x===50)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+}
+ctx.stroke();
+ctx.fillStyle='#333'; ctx.font='12px Inter';
+ctx.fillText('μ=0',290,120); ctx.fillText('σ=1',310,100);
+ctx.fillText('68%',260,210); ctx.fillText('95%',230,230);
+ctx.fillText('99.7%',200,250);
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Box Plot</span>
+        <h3>Box and Whisker Plot</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="boxPlot" width="600" height="200"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+const ctx = document.getElementById('boxPlot').getContext('2d');
+const data = { min: 10, q1: 25, median: 35, q3: 45, max: 60 };
+ctx.beginPath(); ctx.moveTo(50,100); ctx.lineTo(550,100);
+ctx.strokeStyle='#333'; ctx.lineWidth=2; ctx.stroke();
+ctx.fillStyle='rgba(212,175,55,0.3)';
+ctx.fillRect(50 + data.q1*8 - 20, 80, (data.q3 - data.q1)*8, 40);
+ctx.strokeRect(50 + data.q1*8 - 20, 80, (data.q3 - data.q1)*8, 40);
+ctx.beginPath(); ctx.moveTo(50 + data.median*8 - 20, 70);
+ctx.lineTo(50 + data.median*8 - 20, 130); ctx.stroke();
+ctx.beginPath(); ctx.moveTo(50 + data.min*8 - 20,100);
+ctx.lineTo(50 + data.q1*8 - 20,100); ctx.stroke();
+ctx.beginPath(); ctx.moveTo(50 + data.max*8 - 20,100);
+ctx.lineTo(50 + data.q3*8 - 20,100); ctx.stroke();
+ctx.fillStyle='#333'; ctx.font='12px Inter';
+ctx.fillText('Min: '+data.min, 50 + data.min*8 - 30, 80);
+ctx.fillText('Q1: '+data.q1, 50 + data.q1*8 - 30, 70);
+ctx.fillText('Median: '+data.median, 50 + data.median*8 - 30, 60);
+ctx.fillText('Q3: '+data.q3, 50 + data.q3*8 - 30, 70);
+ctx.fillText('Max: '+data.max, 50 + data.max*8 - 30, 80);
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<!-- ======================= ENGINEERING ======================= -->
+<section id="engineering">
+    <h2>⚙️ Engineering</h2>
+
+    <div class="template-card">
+        <span class="badge">Stress-Strain</span>
+        <h3>Stress-Strain Diagram</h3>
+        <div class="code-block">
+<pre>&lt;canvas id="stressStrain" width="600" height="400"&gt;&lt;/canvas&gt;
+&lt;script&gt;
+const ctx = document.getElementById('stressStrain').getContext('2d');
+ctx.beginPath(); ctx.moveTo(50,350); ctx.lineTo(550,350);
+ctx.moveTo(50,30); ctx.lineTo(50,350);
+ctx.strokeStyle='#333'; ctx.stroke();
+const pts=[[0,0],[60,60],[160,200],[220,260],[260,300],[280,310],[290,315],[295,310],[300,300]];
+ctx.beginPath(); ctx.strokeStyle='#d4af37'; ctx.lineWidth=3;
+pts.forEach((p,i)=>{
+    const x=50+p[0]*0.8,y=350-p[1]*0.8;
+    if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y);
+});
+ctx.stroke();
+ctx.fillStyle='#333'; ctx.font='12px Inter';
+ctx.fillText('Stress (MPa)',20,100); ctx.fillText('Strain (%)',500,380);
+ctx.fillText('Elastic limit',160,120); ctx.fillText('Yield point',220,140);
+ctx.fillText('Ultimate strength',260,70); ctx.fillText('Fracture',280,100);
+&lt;/script&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">RC Circuit</span>
+        <h3>Charging Circuit</h3>
+        <div class="code-block">
+<pre>```mermaid
+flowchart LR
+    A[V] --> B[Switch]
+    B --> C[Resistor R]
+    C --> D[Capacitor C]
+    D --> E[Ground]
+    ```</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<!-- ======================= DATA TABLES ======================= -->
+<section id="tables">
+    <h2>📋 Data Tables</h2>
+
+    <div class="template-card">
+        <span class="badge">Chemistry</span>
+        <h3>Solubility Table</h3>
+        <div class="code-block">
+<pre>&lt;table style="width:100%; border-collapse:collapse;"&gt;
+    &lt;thead&gt;
+        &lt;tr style="background:#d4af37; color:#1e293b;"&gt;
+            &lt;th style="padding:10px; border:1px solid #ccc;"&gt;Substance&lt;/th&gt;
+            &lt;th style="padding:10px; border:1px solid #ccc;"&gt;Solubility (g/100mL)&lt;/th&gt;
+        &lt;/tr&gt;
+    &lt;/thead&gt;
+    &lt;tbody&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;NaCl&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;36.0&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;KNO₃&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;31.6&lt;/td&gt;&lt;/tr&gt;
+        &lt;tr&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;AgCl&lt;/td&gt;&lt;td style="padding:8px; border:1px solid #ccc;"&gt;0.00019&lt;/td&gt;&lt;/tr&gt;
+    &lt;/tbody&gt;
+&lt;/table&gt;</pre>
+        </div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<!-- ======================= LATEX EQUATIONS ======================= -->
+<section id="latex">
+    <h2>∫ LaTeX Equations</h2>
+
+    <div class="template-card">
+        <span class="badge">Quadratic Formula</span>
+        <div class="code-block">x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}</div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Newton's Second Law</span>
+        <div class="code-block">F = ma</div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Einstein's Mass-Energy</span>
+        <div class="code-block">E = mc^2</div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Ohm's Law</span>
+        <div class="code-block">V = IR</div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Chemical Equilibrium</span>
+        <div class="code-block">K_c = \frac{[C]^c[D]^d}{[A]^a[B]^b}</div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Area of a Circle</span>
+        <div class="code-block">A = \pi r^2</div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+
+    <div class="template-card">
+        <span class="badge">Pythagoras' Theorem</span>
+        <div class="code-block">a^2 + b^2 = c^2</div>
+        <button class="btn-copy" onclick="copyCode(this)">Copy</button>
+    </div>
+</section>
+
+<script>
+    function copyCode(btn) {
+        const pre = btn.previousElementSibling;
+        let text = pre.textContent;
+        if (text.includes('```mermaid')) text = text.split('```mermaid')[1].split('```')[0].trim();
+        else if (text.includes('```')) text = text.split('```')[1].split('```')[0].trim();
+        navigator.clipboard.writeText(text.trim()).then(() => {
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 2000);
+        }).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = text.trim();
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            btn.textContent = '✅ Copied!';
+            setTimeout(() => btn.textContent = 'Copy', 2000);
+        });
+    }
+</script>
+</body>
+</html>
