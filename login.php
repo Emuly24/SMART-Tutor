@@ -44,10 +44,10 @@ if (isset($_SESSION['user_id'])) {
             <h2>You are already logged in</h2>
             <p>You are currently logged in as <strong><?= htmlspecialchars($first_name) ?></strong>.</p>
             <p>Do you want to log out and sign in with a different account?</p>
-            <div class="card-buttons">
-                <a href="dashboard.php" class="btn">Go to Dashboard</a>
-                <a href="logout.php" class="btn-danger">Logout</a>
-            </div>
+            <div class="card-buttons" style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+            <a href="dashboard.php" class="btn">Go to Dashboard</a>
+            <a href="logout.php" class="btn-danger">Logout</a>
+        </div>
         </div>
     </div>
     </body></html>
