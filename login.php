@@ -7,11 +7,32 @@ if (session_status() === PHP_SESSION_NONE) {
 
 // === Already logged in (captures first name) ===
 if (isset($_SESSION['user_id'])) {
-    // Get fullname from session
+    $first_name = '';
+
+    // 1. Try to get fullname from session first
     $fullname = $_SESSION['fullname'] ?? '';
-    // Extract first name only
-    $name_parts = explode(' ', trim($fullname));
-    $first_name = $name_parts[0] ?? '';
+
+    if (!empty($fullname)) {
+        $name_parts = explode(' ', trim($fullname));
+        $first_name = $name_parts[0] ?? '';
+    }
+
+    // 2. If session failed, fall back to database query
+    if (empty($first_name)) {
+        $conn = getDB();
+        $uid = (int)$_SESSION['user_id'];
+        $result = $conn->query("SELECT fullname FROM users WHERE id = $uid");
+        if ($result && $user = $result->fetch_assoc()) {
+            $fullname = $user['fullname'] ?? '';
+            $name_parts = explode(' ', trim($fullname));
+            $first_name = $name_parts[0] ?? '';
+        }
+    }
+
+    // 3. If still empty, display "User"
+    if (empty($first_name)) {
+        $first_name = 'User';
+    }
     ?>
     <!DOCTYPE html>
     <html><head><title>Already Logged In</title><link rel="stylesheet" href="style.css"></head>
@@ -33,7 +54,6 @@ if (isset($_SESSION['user_id'])) {
     <?php
     exit;
 }
-
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $login = $_POST['login'];
