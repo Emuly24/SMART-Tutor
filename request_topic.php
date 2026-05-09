@@ -2,11 +2,11 @@
 require_once 'check_remember_me.php';
 require_once 'config.php';
 require_once 'check_access.php';
-require_once 'topics_data.php'; // Include the new shared file
+require_once 'topics_data.php';
 
 $conn = getDB();
 $uid = $_SESSION['user_id'];
-$class = $_SESSION['class_level']; // This is "Form 3" or "Form 4"
+$class = $_SESSION['class_level']; // "Form 3" or "Form 4"
 
 $subjects = ['Mathematics', 'English', 'Biology', 'Physics', 'Chemistry'];
 
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "Enter a topic to check.";
         } else {
             $check = $conn->query("SELECT covered_date FROM topics_covered WHERE class_level='$class' AND subject='$subject' AND topic='$topic'");
-            if ($check->num_rows) {
+            if ($check && $check->num_rows) {
                 $covered_date = $check->fetch_assoc()['covered_date'];
                 $error = "⚠️ This topic was covered on $covered_date. You can still request it but priority may be lower.";
             } else {
@@ -63,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="container">
         <div class="card">
             <h2><i class="fas fa-lightbulb"></i> Request Topics to be Covered</h2>
-            <p>Select a subject, then choose topics from the list below. You can select multiple topics.</p>
+            <p>Select a subject, then check the topics you want to request. You can select as many as you need.</p>
             <p><a href="covered_topics.php">📜 View already covered topics</a></p>
             <?php if ($error): ?>
                 <div class="error"><?= nl2br(htmlspecialchars($error)) ?></div>
@@ -83,14 +83,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </select>
                 </div>
                 <div class="form-group" id="topicContainer">
-                    <label>Select Topics (one or more)</label>
-                    <div class="loading-message" style="padding: 20px; text-align: center; color: var(--text-muted);">
-                        <i class="fas fa-spinner fa-spin"></i> Loading topics...
+                    <label>Select Topics (check the ones you want)</label>
+                    <div id="loadingMessage" style="padding: 20px; text-align: center; color: var(--text-muted); display: none;">
+                        <i class="fas fa-spinner fa-spin" style="font-size: 1.5rem;"></i>
                     </div>
-                    <select name="topics[]" id="topicSelect" multiple style="height: 300px; width: 100%; display: none;">
-                        <!-- Topics will be loaded via AJAX -->
-                    </select>
-                    <small class="help-text">Hold <kbd>Ctrl</kbd> (Windows) or <kbd>Cmd</kbd> (Mac) to select multiple topics.</small>
+                    <div id="topicList" style="max-height: 400px; overflow-y: auto; border: 1px solid var(--card-alt-bg); padding: 10px; border-radius: 8px; display: none;">
+                        <!-- Topics will be loaded here as checkboxes -->
+                    </div>
                 </div>
                 <button type="submit" name="save_requests" class="btn">Submit Request</button>
             </form>
@@ -117,50 +116,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
     <a href="#" class="back-to-top" id="backToTop">↑</a>
     <script>
-        document.getElementById('subjectSelect').addEventListener('change', function() {
-            const subject = this.value;
-            const topicSelect = document.getElementById('topicSelect');
-            const loadingMsg = document.querySelector('.loading-message');
-            
-            topicSelect.style.display = 'none';
-            loadingMsg.style.display = 'block';
-            loadingMsg.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading topics...';
-            topicSelect.innerHTML = '';
-            
-            if (!subject) {
-                loadingMsg.style.display = 'none';
-                return;
-            }
-            
-            // Fetch topics based on subject and current class level (Form 3 or Form 4)
-            const classLevel = '<?= $_SESSION['class_level'] ?>';
-            fetch(`get_topics.php?subject=${encodeURIComponent(subject)}&class=${encodeURIComponent(classLevel)}`)
-                .then(res => res.json())
-                .then(data => {
+        document.addEventListener('DOMContentLoaded', function() {
+            const subjectSelect = document.getElementById('subjectSelect');
+            const topicList = document.getElementById('topicList');
+            const loadingMsg = document.getElementById('loadingMessage');
+            const existingTopics = <?= json_encode($existing) ?>;
+
+            // Load topics when subject changes
+            subjectSelect.addEventListener('change', function() {
+                const subject = this.value;
+                topicList.innerHTML = '';
+                topicList.style.display = 'none';
+                loadingMsg.style.display = 'block';
+
+                if (!subject) {
                     loadingMsg.style.display = 'none';
-                    topicSelect.style.display = 'block';
-                    // Pre-select existing topics if any
-                    const existingTopics = <?= json_encode($existing) ?>;
-                    data.forEach(topic => {
-                        const opt = document.createElement('option');
-                        opt.value = topic;
-                        opt.textContent = topic;
-                        if (existingTopics[subject] && existingTopics[subject].includes(topic)) {
-                            opt.selected = true;
+                    return;
+                }
+
+                const classLevel = '<?= $_SESSION['class_level'] ?>';
+                fetch(`get_topics.php?subject=${encodeURIComponent(subject)}&class=${encodeURIComponent(classLevel)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        loadingMsg.style.display = 'none';
+                        topicList.style.display = 'block';
+                        
+                        if (data.length === 0) {
+                            topicList.innerHTML = '<p style="color:var(--text-muted);">No topics available for this subject.</p>';
+                            return;
                         }
-                        topicSelect.appendChild(opt);
+
+                        // Create a checkbox for each topic
+                        data.forEach(topic => {
+                            const div = document.createElement('div');
+                            div.style.margin = '5px 0';
+                            
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.name = 'topics[]';
+                            checkbox.value = topic;
+                            checkbox.id = 'topic_' + topic.replace(/\s+/g, '_');
+
+                            // Pre-check if already requested
+                            if (existingTopics[subject] && existingTopics[subject].includes(topic)) {
+                                checkbox.checked = true;
+                            }
+
+                            const label = document.createElement('label');
+                            label.htmlFor = checkbox.id;
+                            label.textContent = ' ' + topic;
+
+                            div.appendChild(checkbox);
+                            div.appendChild(label);
+                            topicList.appendChild(div);
+                        });
+                    })
+                    .catch(err => {
+                        loadingMsg.style.display = 'none';
+                        topicList.style.display = 'block';
+                        topicList.innerHTML = '<p style="color:var(--error);">Error loading topics. Please refresh.</p>';
+                        console.error(err);
                     });
-                })
-                .catch(err => {
-                    console.error(err);
-                    loadingMsg.innerHTML = 'Error loading topics. Please refresh.';
-                });
+            });
+
+            // Trigger initial load if a subject was selected (e.g., after form submission)
+            const initialSubject = subjectSelect.value;
+            if (initialSubject) {
+                subjectSelect.dispatchEvent(new Event('change'));
+            }
         });
-        
-        // Trigger initial load for selected subject
-        const initialSubject = document.getElementById('subjectSelect').value;
-        if (initialSubject) {
-            document.getElementById('subjectSelect').dispatchEvent(new Event('change'));
-        }
     </script>
-</body></html>
+</body>
+</html>

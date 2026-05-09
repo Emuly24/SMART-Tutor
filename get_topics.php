@@ -31,8 +31,13 @@ switch ($subject) {
             $topics = array_merge($topics, $chemistry_book4);
         }
         break;
+    case 'Mathematics':
+        $topics = array_merge($maths_book3);
+        if ($include_book4) {
+            $topics = array_merge($topics, $maths_book4);
+        }
+        break;
     case 'English':
-        // Always show all papers (Paper I, II, III) regardless of class for English
         $topics = array_merge($english_paper1, $english_paper2, $english_paper3);
         break;
 }
