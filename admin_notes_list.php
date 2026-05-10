@@ -19,15 +19,20 @@ if (!isset($_SESSION['admin_logged'])) {
     unset($_SESSION['user_id']);
 }
 $conn = getDB();
+
+// Handle delete action
 if (isset($_GET['delete'])) {
     $id = (int)$_GET['delete'];
     $conn->query("DELETE FROM notes WHERE id=$id");
     header("Location: admin_notes_list.php");
     exit;
 }
-$notes = $conn->query("SELECT id,title,subject,class_level,created_at FROM notes ORDER BY created_at DESC");
+
+// Fetch all notes (they will be unique due to your UNIQUE KEY)
+$notes = $conn->query("SELECT id, title, subject, class_level, created_at FROM notes ORDER BY created_at DESC");
 ?>
-<!DOCTYPE html><html><head><title>Manage Notes</title><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html>
+<html><head><title>Manage Notes</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
         <div class="flex-between"><h1>Manage Notes</h1><a href="admin_note_editor.php" class="btn">+ New Note</a></div>
@@ -37,13 +42,17 @@ $notes = $conn->query("SELECT id,title,subject,class_level,created_at FROM notes
             <table class="data-table">
                 <thead><tr><th>Title</th><th>Subject</th><th>Class</th><th>Created</th><th>Actions</th></tr></thead>
                 <tbody>
-                <?php while($n=$notes->fetch_assoc()): ?>
+                <?php while($n = $notes->fetch_assoc()): ?>
                     <tr>
                         <td><?= htmlspecialchars($n['title']) ?></td>
                         <td><?= $n['subject'] ?></td>
                         <td><?= $n['class_level'] ?></td>
                         <td><?= $n['created_at'] ?></td>
-                        <td class="card-buttons"><a href="view_note.php?id=<?= $n['id'] ?>" target="_blank">View</a> | <a href="admin_edit_note.php?id=<?= $n['id'] ?>">Edit</a> | <a href="?delete=<?= $n['id'] ?>" onclick="return confirm('Delete?')" class="btn-danger">Delete</a></td>
+                        <td class="card-buttons">
+                            <a href="view_note.php?id=<?= $n['id'] ?>" target="_blank" class="btn">View</a>
+                            <a href="admin_note_editor.php?id=<?= $n['id'] ?>" class="btn">Edit</a>
+                            <a href="?delete=<?= $n['id'] ?>" onclick="return confirm('Delete this note?')" class="btn-danger">Delete</a>
+                        </td>
                     </tr>
                 <?php endwhile; ?>
                 </tbody>

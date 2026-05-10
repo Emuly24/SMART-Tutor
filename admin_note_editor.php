@@ -1,13 +1,7 @@
 <?php
 require_once 'check_remember_me.php';
 require_once 'config.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-$conn = getDB();
-if (!$conn) {
-    die("Database connection failed.");
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 $admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN_HASH') ? ADMIN_HASH : '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu');
 if (!isset($_SESSION['admin_logged'])) {
@@ -21,6 +15,9 @@ if (!isset($_SESSION['admin_logged'])) {
     $_SESSION['role'] = 'admin';
     unset($_SESSION['user_id']);
 }
+
+$conn = getDB();
+if (!$conn) die("Database connection failed.");
 
 $subjects = ['Mathematics', 'Biology', 'English', 'Physics', 'Chemistry'];
 $last_note_id = 0;
@@ -42,45 +39,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $class = $conn->real_escape_string($class);
     $content = $conn->real_escape_string($content);
     
-    $sql = "INSERT INTO notes (title, subject, class_level, content) VALUES ('$title', '$subject', '$class', '$content')";
-    if (!$conn->query($sql)) {
-        die("Insert failed: " . $conn->error);
-    }
-    
-    $note_id = $conn->insert_id;
-    $last_note_id = $note_id;
-    
-    // Delete drafts
-    $conn->query("DELETE FROM note_drafts");
-    
-    // Handle group locks
-    if ($group_id) {
-        $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
-        if (!$all_groups) {
-            die("Failed to fetch groups: " . $conn->error);
-        }
-        while ($g = $all_groups->fetch_assoc()) {
-            $lock = $g['id'] == $group_id ? 0 : 1;
-            $lock_sql = "INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) 
-                        VALUES ({$g['id']}, 'note', $note_id, $lock)
-                        ON DUPLICATE KEY UPDATE is_locked = $lock";
-            if (!$conn->query($lock_sql)) {
-                die("Lock insert failed: " . $conn->error);
-            }
-        }
-        $msg = "Note saved and unlocked for the selected group.";
+    // Check if note already exists (using unique key)
+    $existing = $conn->query("SELECT id FROM notes WHERE title='$title' AND subject='$subject' AND class_level='$class'");
+    if ($existing->num_rows > 0) {
+        // Update the existing note
+        $row = $existing->fetch_assoc();
+        $note_id = $row['id'];
+        $conn->query("UPDATE notes SET content='$content', created_at=NOW() WHERE id=$note_id");
     } else {
-        $msg = "Note saved. Use the lock manager below to control group access.";
+        // Insert new note
+        $conn->query("INSERT INTO notes (title, subject, class_level, content) VALUES ('$title', '$subject', '$class', '$content')");
+        $note_id = $conn->insert_id;
     }
+
+    $conn->query("DELETE FROM note_drafts");
+
+    // If the admin clicked "Finish", redirect to locking page
+    if (isset($_POST['finish'])) {
+        header("Location: admin_group_locks.php?content_type=note&content_id=$note_id&class_level=" . urlencode($class));
+        exit;
+    }
+
+    // If just saving as draft, stay on the page
+    $msg = "Note saved (ID: $note_id)";
     echo "<script>window.noteId = $note_id; alert('$msg');</script>";
 }
 ?>
 <!DOCTYPE html>
-<html><head><title>Advanced Note Editor</title>
+<html><head><title>Note Editor</title>
 <link rel="stylesheet" href="style.css">
 <!-- TinyMCE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.7.0/tinymce.min.js"></script>
 <!-- MathQuill -->
+<script src="js/tinymce/plugins/mathquill/plugin.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.css">
 <!-- MathJax -->
@@ -117,13 +108,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .image-controls input { width: 100%; }
     .citation-list { background: #f5f5f5; padding: 10px; border-radius: 8px; margin: 10px 0; max-height: 200px; overflow-y: auto; }
     .citation-item { padding: 5px; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; }
-    .group-selector { margin-bottom: 1rem; padding: 1rem; background: var(--card-alt-bg); border-radius: 0.75rem; }
-    .group-selector select { margin-right: 10px; margin-bottom: 5px; }
-    .lock-manager { margin-top: 2rem; padding: 1rem; background: var(--card-alt-bg); border-radius: 0.75rem; display: none; }
-    .lock-manager table { width: 100%; }
-    .lock-manager td, .lock-manager th { padding: 8px; }
-    .lock-toggle { cursor: pointer; background: var(--accent); color: #1e293b; border: none; padding: 4px 12px; border-radius: 20px; }
-    .lock-toggle.locked { background: var(--error); color: white; }
     .tox-tinymce { min-height: 600px !important; }
 </style>
 </head>
@@ -147,22 +131,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </select>
         </div>
         
-        <!-- Group selection (optional) -->
-        <div class="group-selector">
-            <h4>🎯 Assign to specific group (optional)</h4>
-            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <select id="routeSelect" style="min-width: 120px;">
-                    <option value="">-- Route --</option>
-                    <option value="sciences">Sciences</option>
-                    <option value="humanities">Humanities</option>
-                </select>
-                <select id="groupSelect" name="group_id" style="min-width: 150px;">
-                    <option value="">-- Any group (use locks later) --</option>
-                </select>
-            </div>
-            <small class="help-text">If you select a group, this note will be instantly unlocked for that group and locked for others.</small>
-        </div>
-
         <div class="toolbar-extras">
             <button type="button" id="symbolBtn">Ω Symbols</button>
             <button type="button" id="fileUploadBtn">📎 Attach File</button>
@@ -182,17 +150,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <button type="button" id="templateBtn">🧩 Templates</button>
         </div>
         <div class="form-group"><label>Content</label><textarea name="content" id="editor"></textarea></div>
-        <button type="submit" class="btn">Save Note</button>
+        
+        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+            <button type="submit" class="btn">💾 Save Draft</button>
+            <button type="submit" name="finish" class="btn btn-finish">✅ Finish & Lock</button>
+        </div>
     </form>
-
-    <!-- Lock Manager -->
-    <div id="lockManager" class="lock-manager">
-        <h3>🔒 Group Access Control for this Note</h3>
-        <p>Toggle lock/unlock for each group. Locked = group cannot see the note. Unlocked = group can see the note.</p>
-        <div id="lockManagerContent"></div>
-    </div>
 </div>
-<div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+<div class="footer"><a href="admin_notes_list.php" class="btn-back">← Back to Notes</a></div>
+</div>
+
 <!-- Template Library Modal -->
 <div id="templateModal" class="modal">
     <div class="modal-content" style="max-width: 1200px;">
@@ -202,8 +169,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php include 'complete_templates.html'; ?>
         </div>
     </div>
-</div>
-
 </div>
 
 <!-- All modals (same as before) -->
@@ -219,20 +184,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div id="webResearchModal" class="modal"><div class="modal-content"><h3>Web Research</h3><div class="form-group"><label>URL</label><input type="text" id="researchUrl" value="https://scholar.google.com/"></div><button id="openBrowserBtn" class="btn">Open</button><div class="form-group"><label>Notes</label><textarea id="researchText" rows="6"></textarea></div><button id="insertResearchNoteBtn" class="btn">Insert Notes</button><button id="closeWebResearchBtn" class="btn-secondary">Cancel</button></div></div>
 <div id="mediaModal" class="modal"><div class="modal-content"><h3>Embed Media (URL)</h3><div class="form-group"><label>Media URL</label><input type="text" id="mediaUrl"></div><button id="insertMediaBtn" class="btn">Embed</button><button id="closeMediaBtn" class="btn-secondary">Cancel</button></div></div>
 
-<script>
+<script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
     // ---------- TinyMCE CORE ----------
     tinymce.init({
         selector: '#editor',
         height: 600,
         menubar: true,
-        plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
+        plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code mathquill',
         toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | specialchars | charmap | code | mathquill',
         content_style: 'body { font-family: Inter, sans-serif; }',
-        auto_focus: true,
-        // ------ Equation Handling ------
         mathquill: { version: 'editable' },
         setup: function(editor) {
+            // Auto-save every 30 seconds
+            setInterval(function() {
+                saveDraft(editor);
+            }, 30000);
+
+            // Manual save on Ctrl+S
+            editor.addShortcut('Ctrl+S', 'Save Draft', function() {
+                saveDraft(editor);
+            });
+
             // Auto‑convert existing LaTeX to MathQuill on load
             editor.on('init', function() {
                 const content = editor.getContent();
@@ -255,10 +228,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // ---------- DRAFT FUNCTIONS ----------
+    function saveDraft(editor) {
+        const title = document.getElementById('noteTitle').value;
+        const subject = document.querySelector('select[name="subject"]').value;
+        const classLevel = document.querySelector('select[name="class_level"]').value;
+        const content = editor.getData();
+
+        localStorage.setItem('note_draft', JSON.stringify({
+            title: title,
+            subject: subject,
+            class_level: classLevel,
+            content: content
+        }));
+        console.log('Draft saved to localStorage at ' + new Date().toLocaleTimeString());
+    }
+
+    window.addEventListener('load', function() {
+        const draft = localStorage.getItem('note_draft');
+        if (draft) {
+            const data = JSON.parse(draft);
+            document.getElementById('noteTitle').value = data.title;
+            document.querySelector('select[name="subject"]').value = data.subject;
+            document.querySelector('select[name="class_level"]').value = data.class_level;
+            tinymce.get('editor').setContent(data.content);
+            console.log('Draft loaded from localStorage.');
+        }
+    });
+
     // ---------- GROUP LOADER ----------
     const classSelect = document.getElementById('noteClass');
     const routeSelect = document.getElementById('routeSelect');
     const groupSelect = document.getElementById('groupSelect');
+
     function loadGroups() {
         const classLevel = classSelect.value;
         const route = routeSelect.value;
@@ -281,185 +283,131 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     classSelect.addEventListener('change', loadGroups);
     routeSelect.addEventListener('change', loadGroups);
-    // ======================= TEMPLATE LIBRARY =======================
-const templateBtn = document.getElementById('templateBtn');
-const templateModal = document.getElementById('templateModal');
 
-if (templateBtn && templateModal) {
-    // Open modal
-    templateBtn.addEventListener('click', function() {
-        templateModal.style.display = 'flex';
-    });
+    // ---------- TEMPLATE LIBRARY ----------
+    const templateBtn = document.getElementById('templateBtn');
+    const templateModal = document.getElementById('templateModal');
 
-    // Close modal when clicking the 'X'
-    const closeTemplate = templateModal.querySelector('.close');
-    if (closeTemplate) {
-        closeTemplate.addEventListener('click', function() {
-            templateModal.style.display = 'none';
+    if (templateBtn && templateModal) {
+        templateBtn.addEventListener('click', function() {
+            templateModal.style.display = 'flex';
         });
+
+        const closeTemplate = templateModal.querySelector('.close');
+        if (closeTemplate) {
+            closeTemplate.addEventListener('click', function() {
+                templateModal.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('click', function(event) {
+            if (event.target === templateModal) {
+                templateModal.style.display = 'none';
+            }
+        });
+
+        setTimeout(() => {
+            const copyBtns = templateModal.querySelectorAll('.btn-copy');
+            copyBtns.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const pre = this.previousElementSibling;
+                    let text = pre.textContent;
+                    if (text.includes('```mermaid')) {
+                        text = text.split('```mermaid')[1].split('```')[0].trim();
+                    } else if (text.includes('```')) {
+                        text = text.split('```')[1].split('```')[0].trim();
+                    }
+                    if (tinymce.activeEditor) {
+                        tinymce.activeEditor.insertContent(text);
+                        showToast('✅ Template inserted!');
+                    } else {
+                        alert('Click inside the editor first.');
+                    }
+                });
+            });
+        }, 500);
     }
 
-    // Close when clicking outside the modal content
-    window.addEventListener('click', function(event) {
-        if (event.target === templateModal) {
-            templateModal.style.display = 'none';
-        }
-    });
+    // ---------- SYMBOL PALETTE ----------
+    const symbolPalette = {
+        "📐 Math Symbols": ["+","−","×","÷","±","∓","∗","∙","⋅","∘","√","∛","∜","∞","≈","≅","≠","≤","≥","≡","≢","≪","≫","∑","∏","∫","∮","∯","∂","∇","∅","∎","□","▭","▱","◻","◼","◯"],
+        "📊 Set Theory": ["∈","∉","∋","∌","⊂","⊃","⊆","⊇","∪","∩","∖","∨","∧","⊕","⊖","⊗","⊘","⊙","⊚","⊛","⊞","⊟","⊠","⊡","⋂","⋃","⋀","⋁"],
+        "📈 Calculus": ["∂","∇","∫","∮","∯","∰","∱","∲","∳","lim","∑","∏","∐","Δ","δ","ε","λ","μ","ν","ξ","π","ρ","τ","φ","ψ","ω"],
+        "🔺 Geometry & Trig": ["∠","∡","∢","⊥","∥","∦","△","▽","◿","◺","°","′","″","∇","·"],
+        "🔬 Physics": ["ℏ","ħ","α","β","γ","Γ","Δ","δ","ε","ζ","η","θ","Θ","ι","κ","λ","μ","ν","ξ","π","ρ","σ","τ","υ","φ","Φ","χ","ψ","Ω","∇","∂","∫","∮","∞","⊕","⊗"],
+        "🧪 Chemistry": ["⇌","⇄","→","←","↔","↑","↓","●","○","□","■","△","▲","▼","◆","◇","♢","♠","♥","♣","♦","⚗","⚛","☢","☣","⚡"],
+        "🧬 Biology/Life Sciences": ["⚕","⚗","⚘","⚙","⚚","⊕","⊖","⊘","⊗","⊛","⊞","⊟","⊠","⊡","⋂","⋃","⋀","⋁","⁺","⁻","⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹","₁","₂","₃","₄","₅","₆","₇","₈","₉"],
+        "📈 Statistics": ["∑","∏","Δ","μ","σ","X̄","x̄","ȳ","P̄","p̄","n","N","k","c","p","q","±","≈","≠","≤","≥","∞","∇"],
+        "💻 Computer Science": ["λ","μ","π","σ","τ","ε","η","ζ","θ","ι","κ","ν","ξ","ρ","χ","ψ","ω","Φ","∇","∂","∫","∮","∞","⊕","∘","·","×","≠","≤","≥","≡","≢"],
+        "🔄 Arrows": ["←","↑","→","↓","↖","↗","↘","↙","↔","↕","↩","↪","↫","↬","↭","↮","↰","↱","↲","↳","↴","↵","↶","↷","↸","↹","↺","↻","⇐","⇑","⇒","⇓","⇔","⇕","⇖","⇗","⇘","⇙","⇚","⇛"],
+        "🧮 Greek Letters (Symbols)": ["α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","σ","τ","υ","φ","χ","ψ","ω","Α","Β","Γ","Δ","Ε","Ζ","Η","Θ","Ι","Κ","Λ","Μ","Ν","Ξ","Ο","Π","Ρ","Σ","Τ","Υ","Φ","Χ","Ψ","Ω"],
+        "✨ Punctuation & Special": ["•","·","…","—","–","™","®","©","℗","∅","⊘","⌀","⌂","⌚","⌛","⏰","⏱","⏲","⌨","✉","✍","✎","✏","✐","✑","✒","⚒","⚔","⚖","⚗","⚙","⚛","⚜","⛰","⛪","⛲","⛳","⛵","⛺","⛽","✈","⚓","⛴","⛵","✌","✋","✊","👊","✌","🍀","☘","🌿","🌱","🌿"],
+        "💰 Currency": ["$","€","£","¥","₱","₹","₽","₩","₪","₫","₦","₨","₸","₺","₮","₲","₴","₵","₧","₣","₡","₭","₼","₾","₽","₪","₩","¥"]
+    };
+    const symbolModal = document.getElementById('symbolModal');
+    const symbolBtn = document.getElementById('symbolBtn');
+    const symbolList = document.getElementById('symbolList');
 
-    // Attach click handlers to each "Copy" button inside the modal
-    // (the buttons from complete_templates.html)
-    setTimeout(() => {
-        const copyBtns = templateModal.querySelectorAll('.btn-copy');
-        copyBtns.forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                // Prevent the default copy action (just insert into editor)
-                e.stopPropagation();
-                const pre = this.previousElementSibling;
-                let text = pre.textContent;
-                if (text.includes('```mermaid')) {
-                    text = text.split('```mermaid')[1].split('```')[0].trim();
-                } else if (text.includes('```')) {
-                    text = text.split('```')[1].split('```')[0].trim();
-                }
-                if (tinymce.activeEditor) {
-                    tinymce.activeEditor.insertContent(text);
-                    showToast('✅ Template inserted!');
-                } else {
-                    alert('Click inside the editor first.');
-                }
+    if (symbolModal && symbolBtn && symbolList) {
+        for (const [cat, syms] of Object.entries(symbolPalette)) {
+            const header = document.createElement('div');
+            header.innerHTML = `<strong style="display:block; margin-top:10px;">${cat}</strong><hr>`;
+            symbolList.appendChild(header);
+            syms.forEach(sym => {
+                const btn = document.createElement('button');
+                btn.textContent = sym;
+                btn.style.margin = '4px';
+                btn.style.padding = '6px 12px';
+                btn.style.borderRadius = '12px';
+                btn.style.border = '1px solid #ccc';
+                btn.style.cursor = 'pointer';
+                btn.style.background = 'var(--card-alt-bg)';
+                btn.style.color = 'var(--text-color)';
+                btn.onclick = () => {
+                    insertText(sym);
+                    symbolModal.style.display = 'none';
+                };
+                symbolList.appendChild(btn);
             });
-        });
-    }, 500);
-}
-
-    // ---------- LOCK MANAGER ----------
-    let currentNoteId = <?= $last_note_id ?>;
-    const lockManagerDiv = document.getElementById('lockManager');
-    const lockManagerContent = document.getElementById('lockManagerContent');
-    function loadLockManager(noteId) {
-        if (!noteId) {
-            lockManagerDiv.style.display = 'none';
-            return;
         }
-        fetch(`admin_note_lock_api.php?action=get_locks&note_id=${noteId}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.locks) {
-                    let html = '<table class="data-table"><thead><tr><th>Route</th><th>Group</th><th>Status</th><th>Action</th></tr></thead><tbody>';
-                    data.locks.forEach(lock => {
-                        const statusText = lock.is_locked ? '🔒 Locked' : '🔓 Unlocked';
-                        const btnText = lock.is_locked ? 'Unlock' : 'Lock';
-                        html += `<tr>
-                                    <td>${lock.route === 'sciences' ? 'Sciences' : 'Humanities'}</td>
-                                    <td>Group ${lock.group_number}</td>
-                                    <td id="status-${lock.group_id}">${statusText}</td>
-                                    <td><button class="lock-toggle ${lock.is_locked ? 'locked' : ''}" data-note="${noteId}" data-group="${lock.group_id}">${btnText}</button></td>
-                                 </tr>`;
-                    });
-                    html += '</tbody></table>';
-                    lockManagerContent.innerHTML = html;
-                    lockManagerDiv.style.display = 'block';
-                    document.querySelectorAll('.lock-toggle').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const note = this.dataset.note;
-                            const group = this.dataset.group;
-                            fetch(`admin_note_lock_api.php?action=toggle_lock&note_id=${note}&group_id=${group}`)
-                                .then(res => res.json())
-                                .then(res => {
-                                    if (res.success) {
-                                        const statusSpan = document.getElementById(`status-${group}`);
-                                        const isLocked = res.is_locked;
-                                        statusSpan.innerHTML = isLocked ? '🔒 Locked' : '🔓 Unlocked';
-                                        this.innerHTML = isLocked ? 'Unlock' : 'Lock';
-                                        this.classList.toggle('locked', isLocked);
-                                    } else alert('Error toggling lock');
-                                });
-                        });
-                    });
-                } else lockManagerDiv.style.display = 'none';
-            });
-    }
-    if (currentNoteId) loadLockManager(currentNoteId);
 
-  // ======================= SYMBOL PALETTE (Fully Working) =======================
-const symbolPalette = {
-    "📐 Math Symbols": ["+","−","×","÷","±","∓","∗","∙","⋅","∘","√","∛","∜","∞","≈","≅","≠","≤","≥","≡","≢","≪","≫","∑","∏","∫","∮","∯","∂","∇","∅","∎","□","▭","▱","◻","◼","◯"],
-    "📊 Set Theory": ["∈","∉","∋","∌","⊂","⊃","⊆","⊇","∪","∩","∖","∨","∧","⊕","⊖","⊗","⊘","⊙","⊚","⊛","⊞","⊟","⊠","⊡","⋂","⋃","⋀","⋁"],
-    "📈 Calculus": ["∂","∇","∫","∮","∯","∰","∱","∲","∳","lim","∑","∏","∐","Δ","δ","ε","λ","μ","ν","ξ","π","ρ","τ","φ","ψ","ω"],
-    "🔺 Geometry & Trig": ["∠","∡","∢","⊥","∥","∦","△","▽","◿","◺","°","′","″","∇","·"],
-    "🔬 Physics": ["ℏ","ħ","α","β","γ","Γ","Δ","δ","ε","ζ","η","θ","Θ","ι","κ","λ","μ","ν","ξ","π","ρ","σ","τ","υ","φ","Φ","χ","ψ","Ω","∇","∂","∫","∮","∞","⊕","⊗"],
-    "🧪 Chemistry": ["⇌","⇄","→","←","↔","↑","↓","●","○","□","■","△","▲","▼","◆","◇","♢","♠","♥","♣","♦","⚗","⚛","☢","☣","⚡"],
-    "🧬 Biology/Life Sciences": ["⚕","⚗","⚘","⚙","⚚","⊕","⊖","⊘","⊗","⊛","⊞","⊟","⊠","⊡","⋂","⋃","⋀","⋁","⁺","⁻","⁰","¹","²","³","⁴","⁵","⁶","⁷","⁸","⁹","₁","₂","₃","₄","₅","₆","₇","₈","₉"],
-    "📈 Statistics": ["∑","∏","Δ","μ","σ","X̄","x̄","ȳ","P̄","p̄","n","N","k","c","p","q","±","≈","≠","≤","≥","∞","∇"],
-    "💻 Computer Science": ["λ","μ","π","σ","τ","ε","η","ζ","θ","ι","κ","ν","ξ","ρ","χ","ψ","ω","Φ","∇","∂","∫","∮","∞","⊕","∘","·","×","≠","≤","≥","≡","≢"],
-    "🔄 Arrows": ["←","↑","→","↓","↖","↗","↘","↙","↔","↕","↩","↪","↫","↬","↭","↮","↰","↱","↲","↳","↴","↵","↶","↷","↸","↹","↺","↻","⇐","⇑","⇒","⇓","⇔","⇕","⇖","⇗","⇘","⇙","⇚","⇛"],
-    "🧮 Greek Letters (Symbols)": ["α","β","γ","δ","ε","ζ","η","θ","ι","κ","λ","μ","ν","ξ","ο","π","ρ","σ","τ","υ","φ","χ","ψ","ω","Α","Β","Γ","Δ","Ε","Ζ","Η","Θ","Ι","Κ","Λ","Μ","Ν","Ξ","Ο","Π","Ρ","Σ","Τ","Υ","Φ","Χ","Ψ","Ω"],
-    "✨ Punctuation & Special": ["•","·","…","—","–","™","®","©","℗","∅","⊘","⌀","⌂","⌚","⌛","⏰","⏱","⏲","⌨","✉","✍","✎","✏","✐","✑","✒","⚒","⚔","⚖","⚗","⚙","⚛","⚜","⛰","⛪","⛲","⛳","⛵","⛺","⛽","✈","⚓","⛴","⛵","✌","✋","✊","👊","✌","🍀","☘","🌿","🌱","🌿"],
-    "💰 Currency": ["$","€","£","¥","₱","₹","₽","₩","₪","₫","₦","₨","₸","₺","₮","₲","₴","₵","₧","₣","₡","₭","₼","₾","₽","₪","₩","¥"]
-};
+        symbolBtn.onclick = function() {
+            symbolModal.style.display = 'flex';
+        };
 
-const symbolModal = document.getElementById('symbolModal');
-const symbolBtn = document.getElementById('symbolBtn');
-const symbolList = document.getElementById('symbolList');
-
-if (symbolModal && symbolBtn && symbolList) {
-    // 1. Populate the symbol list
-    for (const [cat, syms] of Object.entries(symbolPalette)) {
-        const header = document.createElement('div');
-        header.innerHTML = `<strong style="display:block; margin-top:10px;">${cat}</strong><hr>`;
-        symbolList.appendChild(header);
-        syms.forEach(sym => {
-            const btn = document.createElement('button');
-            btn.textContent = sym;
-            btn.style.margin = '4px';
-            btn.style.padding = '6px 12px';
-            btn.style.borderRadius = '12px';
-            btn.style.border = '1px solid #ccc';
-            btn.style.cursor = 'pointer';
-            btn.style.background = 'var(--card-alt-bg)';
-            btn.style.color = 'var(--text-color)';
-            btn.onclick = () => {
-                insertText(sym);
+        const closeSymbol = symbolModal.querySelector('.close');
+        if (closeSymbol) {
+            closeSymbol.onclick = function() {
                 symbolModal.style.display = 'none';
             };
-            symbolList.appendChild(btn);
+        }
+
+        window.addEventListener('click', function(event) {
+            if (event.target === symbolModal) {
+                symbolModal.style.display = 'none';
+            }
         });
     }
 
-    // 2. Open the modal when button is clicked
-    symbolBtn.onclick = function() {
-        symbolModal.style.display = 'flex';
-    };
-
-    // 3. Close when clicking the 'X'
-    const closeSymbol = symbolModal.querySelector('.close');
-    if (closeSymbol) {
-        closeSymbol.onclick = function() {
-            symbolModal.style.display = 'none';
-        };
-    }
-
-    // 4. Close when clicking outside the modal content
-    window.addEventListener('click', function(event) {
-        if (event.target === symbolModal) {
-            symbolModal.style.display = 'none';
-        }
-    });
-}
-    document.getElementById('symbolBtn').onclick = () => symbolModal.style.display = 'flex';
-
     // ---------- FILE UPLOAD ----------
-    document.getElementById('fileUploadBtn').onclick = () => {
+    document.getElementById('fileUploadBtn').onclick = function() {
         const input = document.createElement('input');
         input.type = 'file';
-        input.onchange = (e) => {
+        input.onchange = function(e) {
             const file = e.target.files[0];
             if (!file || !tinymce.activeEditor) return;
             const fd = new FormData();
             fd.append('file', file);
             fetch('note_editor_api.php?action=upload_attachment', { method: 'POST', body: fd })
                 .then(res => res.json())
-                .then(data => { if (data.url) tinymce.activeEditor.insertContent(`<a href="${data.url}">${file.name}</a>`); else alert('Upload failed'); });
+                .then(data => {
+                    if (data.url) {
+                        tinymce.activeEditor.insertContent(`<a href="${data.url}">${file.name}</a>`);
+                    } else {
+                        alert('Upload failed');
+                    }
+                });
         };
         input.click();
     };
@@ -469,15 +417,23 @@ if (symbolModal && symbolBtn && symbolList) {
     const citationModal = document.getElementById('citationModal');
     const closeCitationBtn = document.getElementById('closeCitationBtn');
     const addCitationBtn = document.getElementById('addCitationBtn');
-    citationBtn.onclick = () => citationModal.style.display = 'flex';
-    closeCitationBtn.onclick = () => citationModal.style.display = 'none';
-    addCitationBtn.onclick = () => {
+
+    citationBtn.onclick = function() {
+        citationModal.style.display = 'flex';
+    };
+    closeCitationBtn.onclick = function() {
+        citationModal.style.display = 'none';
+    };
+    addCitationBtn.onclick = function() {
         const author = document.getElementById('apaAuthor').value;
         const year = document.getElementById('apaYear').value;
         const title = document.getElementById('apaTitle').value;
         const source = document.getElementById('apaSource').value;
         const doi = document.getElementById('apaDoi').value;
-        if (!author || !year || !title || !source) { alert("Please fill author, year, title, source."); return; }
+        if (!author || !year || !title || !source) {
+            alert("Please fill author, year, title, source.");
+            return;
+        }
         citationModal.style.display = 'none';
         document.getElementById('apaAuthor').value = '';
         document.getElementById('apaYear').value = '';
@@ -489,43 +445,74 @@ if (symbolModal && symbolBtn && symbolList) {
         }
     };
 
-    // ---------- EQUATION HELPER (inserts rendered math) ----------
+    // ---------- EQUATION HELPER ----------
     const mathBtn = document.getElementById('mathBtn');
     const mathHelperModal = document.getElementById('mathHelperModal');
     const closeMathHelperBtn = document.getElementById('closeMathHelperBtn');
     const insertHelperEquationBtn = document.getElementById('insertHelperEquationBtn');
     const latexHelperInput = document.getElementById('latexHelperInput');
     const mathHelperPreview = document.getElementById('mathHelperPreview');
-    mathBtn.onclick = () => mathHelperModal.style.display = 'flex';
-    closeMathHelperBtn.onclick = () => mathHelperModal.style.display = 'none';
-    latexHelperInput.addEventListener('input', () => {
+
+    mathBtn.onclick = function() {
+        mathHelperModal.style.display = 'flex';
+    };
+    closeMathHelperBtn.onclick = function() {
+        mathHelperModal.style.display = 'none';
+    };
+
+    latexHelperInput.addEventListener('input', function() {
         if (mathHelperPreview) {
             mathHelperPreview.innerHTML = `\\[ ${latexHelperInput.value} \\]`;
-            if (window.MathJax) MathJax.typesetPromise([mathHelperPreview]).catch(console.log);
+            if (window.MathJax) {
+                MathJax.typesetPromise([mathHelperPreview]).catch(console.log);
+            }
         }
     });
-    insertHelperEquationBtn.onclick = () => {
+
+    insertHelperEquationBtn.onclick = function() {
         const latex = latexHelperInput?.value;
         if (latex && tinymce.activeEditor) {
             tinymce.activeEditor.execCommand('mceMathQuill', false, latex);
             mathHelperModal.style.display = 'none';
             latexHelperInput.value = '';
-            if (mathHelperPreview) mathHelperPreview.innerHTML = '';
+            if (mathHelperPreview) {
+                mathHelperPreview.innerHTML = '';
+            }
         }
     };
 
-    // ---------- INSERT EXAMPLE/EXERCISE ----------
-    document.getElementById('exampleBtn').onclick = () => { if (tinymce.activeEditor) tinymce.activeEditor.insertContent('<div class="example"><strong>Example:</strong><br>Type your example here.</div>'); };
-    document.getElementById('exerciseBtn').onclick = () => { if (tinymce.activeEditor) tinymce.activeEditor.insertContent('<div class="exercise"><strong>Exercise:</strong><br>Type your exercise question here.</div>'); };
+    // ---------- INSERT EXAMPLE / EXERCISE ----------
+    document.getElementById('exampleBtn').onclick = function() {
+        if (tinymce.activeEditor) {
+            tinymce.activeEditor.insertContent('<div class="example"><strong>Example:</strong><br>Type your example here.</div>');
+        }
+    };
+    document.getElementById('exerciseBtn').onclick = function() {
+        if (tinymce.activeEditor) {
+            tinymce.activeEditor.insertContent('<div class="exercise"><strong>Exercise:</strong><br>Type your exercise question here.</div>');
+        }
+    };
 
     // ---------- INSERT FOOTER ----------
-    document.getElementById('footerBtn').onclick = () => { if (tinymce.activeEditor) tinymce.activeEditor.insertContent('<hr><div style="text-align:center;font-size:smaller;"><p><strong>SMART Tutor</strong> – Discipline & Integrity</p><p>Blessings Emulyn, Metallurgy & Materials Engineering, MUST</p></div>'); };
+    document.getElementById('footerBtn').onclick = function() {
+        if (tinymce.activeEditor) {
+            tinymce.activeEditor.insertContent('<hr><div style="text-align:center;font-size:smaller;"><p><strong>SMART Tutor</strong> – Discipline & Integrity</p><p>Blessings Emulyn, Metallurgy & Materials Engineering, MUST</p></div>');
+        }
+    };
 
     // ---------- HELPER FUNCTIONS ----------
-    function insertText(text) { if (tinymce.activeEditor) tinymce.activeEditor.insertContent(text); }
-    function insertHtml(html) { if (tinymce.activeEditor) tinymce.activeEditor.insertContent(html); }
+    function insertText(text) {
+        if (tinymce.activeEditor) {
+            tinymce.activeEditor.insertContent(text);
+        }
+    }
+    function insertHtml(html) {
+        if (tinymce.activeEditor) {
+            tinymce.activeEditor.insertContent(html);
+        }
+    }
 });
-
 </script>
 <a href="#" class="back-to-top" id="backToTop">↑</a>
-</body></html>
+</body>
+</html>

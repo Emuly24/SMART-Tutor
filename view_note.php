@@ -1,28 +1,78 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 require_once 'check_access.php';
+
 $conn = getDB();
 $uid = $_SESSION['user_id'];
 $note_id = (int)$_GET['id'];
+
+// Check if user is admin
+$is_admin = isset($_SESSION['admin_logged']) && $_SESSION['admin_logged'] === true;
+$role = $_SESSION['role'] ?? '';
+
 $note = $conn->query("SELECT * FROM notes WHERE id=$note_id")->fetch_assoc();
-    log_activity($uid, "view_note", "Note ID: $note_id");
 if (!$note) die("Note not found");
 
-// Check if note is unlocked for this student's group
-if (!is_content_unlocked('note', $note_id, $uid)) {
-    die("<!DOCTYPE html><html><head><title>Content Locked</title><link rel='stylesheet' href='style.css'></head><body>
+// Content lock check for students (admin bypass)
+if (!$is_admin && !is_content_unlocked('note', $note_id, $uid)) {
+    ?>
+    <!DOCTYPE html>
+    <html><head><title>Content Locked</title><link rel="stylesheet" href="style.css"></head>
+    <body>
     <?php include_once 'includes/header.php'; ?>
-
-    
-<div class='container'><div class='header'><a href='library.php'>Library</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This note is not yet available for your group. Please wait until the admin unlocks it after your group meeting.</div><a href='library.php'>← Back to Library</a></div>
-<a href="#" class="back-to-top" id="backToTop">↑</a>
-<?php include_once 'includes/testimonial_prompt.php'?>
-</body></html>");
+    <div class="container">
+        <div class="card error">
+            <h2>🔒 Content Locked</h2>
+            <p>This note is not yet available for your group. Please wait until the admin unlocks it after your group meeting.</p>
+            <div class="card-buttons">
+                <a href="library.php" class="btn-back">← Back to Library</a>
+            </div>
+        </div>
+    </div>
+    <a href="#" class="back-to-top" id="backToTop">↑</a>
+    <?php include_once 'includes/testimonial_prompt.php'; ?>
+    </body></html>
+    <?php
+    exit;
 }
 
-// Handle digital submission (text / file) – same as before
+// Log the view activity (only after confirming the note is accessible)
+if (function_exists('log_activity')) {
+    log_activity($uid, "view_note", "Note ID: $note_id");
+}
+
+// --------------------- ADMIN ACTIONS ---------------------
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_admin) {
+    // Edit note
+    if (isset($_POST['edit_note'])) {
+        header("Location: admin_note_editor.php?id=$note_id");
+        exit;
+    }
+
+    // Resend notification to all unlocked groups
+    if (isset($_POST['resend_notification'])) {
+        $unlocked_groups = $conn->query("
+            SELECT g.id FROM groups g
+            JOIN group_content_locks l ON g.id = l.group_id
+            WHERE l.content_type = 'note' AND l.content_id = $note_id AND l.is_locked = 0
+        ");
+        while ($ug = $unlocked_groups->fetch_assoc()) {
+            $members = $conn->query("SELECT user_id FROM group_members WHERE group_id = {$ug['id']}");
+            while ($m = $members->fetch_assoc()) {
+                $msg_text = "📘 A new note '{$note['title']}' has been unlocked for your group. Check it out!";
+                $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$m['user_id']}, '$msg_text')");
+            }
+        }
+        $admin_success = "Notification resent to all unlocked groups.";
+    }
+}
+
+// --------------------- STUDENT EXERCISE HANDLING (unchanged) ---------------------
+// (Keep all your existing exercise submission code here – digital, paper promise, etc.)
+// I've included it below for completeness, but it's identical to your earlier file.
+
+// Handle digital submission (text / file)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_digital'])) {
     $ex_id = (int)$_POST['exercise_id'];
     $answer_text = trim($_POST['answer_text'] ?? '');
@@ -81,12 +131,30 @@ $exercises->data_seek(0);
 $msg = '';
 if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. Your promise to submit on paper has been recorded.";
 ?>
-<!DOCTYPE html><html><head><title><?=htmlspecialchars($note['title'])?></title>
+<!DOCTYPE html>
+<html><head><title><?=htmlspecialchars($note['title'])?></title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
 <body><div class="container">
+
+<!-- ========== ADMIN ACTIONS (visible only to admin) ========== -->
+<?php if ($is_admin): ?>
+    <div style="margin: 1rem 0; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <form method="post">
+            <button type="submit" name="edit_note" class="btn">✏️ Edit Note</button>
+        </form>
+        <form method="post">
+            <button type="submit" name="resend_notification" class="btn btn-secondary">📨 Resend Notification</button>
+        </form>
+        <a href="admin_group_locks.php?content_type=note&content_id=<?= $note_id ?>&class_level=<?= $note['class_level'] ?>&route=sciences" class="btn btn-secondary">🔒 Manage Locks</a>
+        <?php if (isset($admin_success)): ?>
+            <div class="success" style="width:100%; margin-top:0.5rem;"><?= htmlspecialchars($admin_success) ?></div>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
+
 <div class="note-container"><?=$note['content']?></div>
 
 <?php
@@ -97,7 +165,7 @@ if ($quiz && is_content_unlocked('quiz', $quiz['id'], $uid)):
     $quiz_link = ($attempt && $attempt['status'] == 'submitted') ? "quiz_results.php?quiz_id={$quiz['id']}" : "take_quiz.php?quiz_id={$quiz['id']}";
     $button_text = ($attempt && $attempt['status'] == 'submitted') ? "View Quiz Results" : "Take Quiz";
 ?>
-<div class="card" style="margin: 20px 0; background: #f0f7ff; border-left: 5px solid var(--gold);">
+<div class="card" style="margin: 20px 0; background: #f0f7ff; border-left: 5px solid var(--accent);">
     <h3>📌 Test Your Understanding</h3>
     <p>Take the quiz to check if you truly understand this topic. You can take it anytime.</p>
     <a href="<?= $quiz_link ?>" class="btn"><?= $button_text ?></a>

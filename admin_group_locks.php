@@ -17,72 +17,238 @@ if (!isset($_SESSION['admin_logged'])) {
 }
 
 $conn = getDB();
+$msg = '';
+$error = '';
 
-// Create table if it doesn't exist (safety)
-$conn->query("
-    CREATE TABLE IF NOT EXISTS group_content_locks (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        group_id INT NOT NULL,
-        content_type VARCHAR(50) NOT NULL,
-        content_id INT NOT NULL,
-        is_locked TINYINT(1) DEFAULT 0,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_lock (group_id, content_type, content_id),
-        FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE
-    )
-");
+// Get parameters from URL
+$content_type = isset($_GET['content_type']) ? $_GET['content_type'] : 'note';
+$content_id = isset($_GET['content_id']) ? (int)$_GET['content_id'] : 0;
 
-// Handle AJAX toggle
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
-    header('Content-Type: application/json');
-    $action = $_POST['action'];
-    
-    if ($action === 'toggle_lock') {
-        $group_id = (int)$_POST['group_id'];
-        $content_type = $conn->real_escape_string($_POST['content_type']);
-        $content_id = (int)$_POST['content_id'];
-        $current = $conn->query("SELECT is_locked FROM group_content_locks WHERE group_id = $group_id AND content_type = '$content_type' AND content_id = $content_id");
-        if ($current->num_rows > 0) {
-            $row = $current->fetch_assoc();
-            $new_lock = $row['is_locked'] ? 0 : 1;
-            $conn->query("UPDATE group_content_locks SET is_locked = $new_lock WHERE group_id = $group_id AND content_type = '$content_type' AND content_id = $content_id");
-        } else {
-            $new_lock = 1; // Default to locked if not set
-            $conn->query("INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) VALUES ($group_id, '$content_type', $content_id, $new_lock)");
-        }
-        echo json_encode(['success' => true, 'is_locked' => $new_lock]);
-        exit;
+// If no content ID, try to get it from POST
+if ($content_id === 0 && isset($_POST['content_id'])) {
+    $content_id = (int)$_POST['content_id'];
+}
+
+// Get the note details (if content_type is 'note')
+$note = null;
+if ($content_type === 'note' && $content_id > 0) {
+    $note = $conn->query("SELECT * FROM notes WHERE id = $content_id")->fetch_assoc();
+    if (!$note) {
+        $error = "Note not found.";
     }
 }
 
-// Filter parameters
-$content_type = isset($_GET['content_type']) ? $conn->real_escape_string($_GET['content_type']) : 'note';
-$content_id = isset($_GET['content_id']) ? (int)$_GET['content_id'] : 0;
-$selected_class = isset($_GET['class_level']) ? $conn->real_escape_string($_GET['class_level']) : 'Form 3';
-$selected_route = isset($_GET['route']) ? $conn->real_escape_string($_GET['route']) : 'sciences';
+// Handle lock submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apply_locks'])) {
+    $lock_type = $_POST['lock_type']; // 'group', 'route', 'class'
+    $target_id = isset($_POST['target_id']) ? (int)$_POST['target_id'] : 0;
+    $route = isset($_POST['route']) ? $conn->real_escape_string($_POST['route']) : '';
+    $class_level = isset($_POST['class_level']) ? $conn->real_escape_string($_POST['class_level']) : '';
+    $content_type = isset($_POST['content_type']) ? $conn->real_escape_string($_POST['content_type']) : 'note';
+    $content_id = (int)$_POST['content_id'];
+    
+    if ($content_id <= 0) {
+        $error = "Invalid content ID.";
+    } else {
+        // Get all groups of the appropriate class
+        $class_filter = '';
+        if ($lock_type === 'group' || $lock_type === 'route') {
+            // For group and route, we need the class level of the selected group/route
+            if ($lock_type === 'group' && $target_id > 0) {
+                $group_info = $conn->query("SELECT class_level FROM groups WHERE id = $target_id")->fetch_assoc();
+                if ($group_info) {
+                    $class_filter = "class_level = '{$group_info['class_level']}'";
+                }
+            } elseif ($lock_type === 'route' && !empty($route)) {
+                // We need to know which class level this route belongs to
+                // For now, we'll use the note's class level if available
+                if ($note) {
+                    $class_filter = "class_level = '{$note['class_level']}'";
+                } else {
+                    $error = "Cannot determine class level for this route.";
+                }
+            }
+        } elseif ($lock_type === 'class' && !empty($class_level)) {
+            $class_filter = "class_level = '$class_level'";
+        }
+        
+        if (empty($class_filter)) {
+            $error = "Could not determine which groups to lock/unlock.";
+        } else {
+            // First, lock for ALL groups of the target class
+            $all_groups = $conn->query("SELECT id FROM groups WHERE $class_filter");
+            while ($g = $all_groups->fetch_assoc()) {
+                $conn->query("INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) 
+                              VALUES ({$g['id']}, '$content_type', $content_id, 1)
+                              ON DUPLICATE KEY UPDATE is_locked = 1");
+            }
+            
+            // Then unlock based on the selected option
+            if ($lock_type === 'group' && $target_id > 0) {
+                $conn->query("UPDATE group_content_locks SET is_locked = 0 WHERE group_id = $target_id AND content_type = '$content_type' AND content_id = $content_id");
+                $msg = "Note unlocked for the selected group.";
+            } elseif ($lock_type === 'route' && !empty($route)) {
+                // Determine class level for this route
+                $sub_query = "SELECT id FROM groups WHERE route = '$route'";
+                if (!empty($class_filter)) {
+                    // Use the class filter to narrow down the groups
+                    $sub_query .= " AND " . $class_filter;
+                }
+                $conn->query("UPDATE group_content_locks SET is_locked = 0 WHERE group_id IN ($sub_query) AND content_type = '$content_type' AND content_id = $content_id");
+                $msg = "Note unlocked for the entire $route route.";
+            } elseif ($lock_type === 'class' && !empty($class_level)) {
+                $conn->query("UPDATE group_content_locks SET is_locked = 0 WHERE group_id IN (SELECT id FROM groups WHERE class_level = '$class_level') AND content_type = '$content_type' AND content_id = $content_id");
+                $msg = "Note unlocked for the entire $class_level class.";
+            }
+            
+            // Optional: Send notification to all unlocked groups
+            if (empty($error)) {
+                $unlocked_groups = $conn->query("
+                    SELECT g.id FROM groups g
+                    JOIN group_content_locks l ON g.id = l.group_id
+                    WHERE l.content_type = '$content_type' AND l.content_id = $content_id AND l.is_locked = 0
+                ");
+                $notification_sent = 0;
+                while ($ug = $unlocked_groups->fetch_assoc()) {
+                    $members = $conn->query("SELECT user_id FROM group_members WHERE group_id = {$ug['id']}");
+                    while ($m = $members->fetch_assoc()) {
+                        $msg_text = "📘 A new note has been unlocked for your group. Check it out!";
+                        if ($note) {
+                            $msg_text = "📘 A new note '{$note['title']}' has been unlocked for your group. Check it out!";
+                        }
+                        $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$m['user_id']}, '$msg_text')");
+                        $notification_sent++;
+                    }
+                }
+                if ($notification_sent > 0) {
+                    $msg .= " Notifications sent to $notification_sent student(s).";
+                }
+            }
+        }
+    }
+}
 
-// Fetch all groups with their lock status for this content
-$groups = $conn->query("
-    SELECT g.id, g.group_number, g.class_level, g.route, 
-           COALESCE(l.is_locked, 0) as is_locked
-    FROM groups g
-    LEFT JOIN group_content_locks l ON g.id = l.group_id AND l.content_type = '$content_type' AND l.content_id = $content_id
-    WHERE g.class_level = '$selected_class' AND g.route = '$selected_route'
-    ORDER BY g.group_number
-");
+// Fetch lock status for all groups (for display)
+$groups = [];
+$selected_class = isset($_GET['class_level']) ? $_GET['class_level'] : '';
+$selected_route = isset($_GET['route']) ? $_GET['route'] : '';
+if ($content_id > 0 && !empty($content_type)) {
+    $query = "SELECT g.id, g.group_number, g.class_level, g.route, 
+              COALESCE(l.is_locked, 0) as is_locked
+              FROM groups g
+              LEFT JOIN group_content_locks l ON g.id = l.group_id AND l.content_type = '$content_type' AND l.content_id = $content_id";
+    if (!empty($selected_class) && !empty($selected_route)) {
+        $query .= " WHERE g.class_level = '$selected_class' AND g.route = '$selected_route'";
+    } elseif (!empty($selected_class)) {
+        $query .= " WHERE g.class_level = '$selected_class'";
+    } elseif (!empty($selected_route)) {
+        $query .= " WHERE g.route = '$selected_route'";
+    }
+    $query .= " ORDER BY g.class_level, g.route, g.group_number";
+    $result = $conn->query($query);
+    if ($result) {
+        while ($row = $result->fetch_assoc()) {
+            $groups[] = $row;
+        }
+    }
+}
+
+// Fetch all classes and routes for filters
+$class_levels = ['Form 3', 'Form 4'];
+$routes = ['sciences', 'humanities'];
 ?>
 <!DOCTYPE html>
 <html><head>
     <title>Group Content Locks</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .lock-manager { padding: 1rem; background: var(--card-alt-bg); border-radius: 0.75rem; margin: 1rem 0; }
-        .lock-toggle { cursor: pointer; background: var(--accent); color: #1e293b; border: none; padding: 4px 12px; border-radius: 20px; font-weight: 600; }
-        .lock-toggle.locked { background: var(--error); color: white; }
-        .filters { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; }
-        .filters select, .filters input { padding: 0.5rem; border-radius: 0.5rem; border: 1px solid #ccc; }
-        .filters button { background: var(--accent); color: #1e293b; border: none; padding: 0.5rem 1.5rem; border-radius: 0.5rem; cursor: pointer; }
-        .filters button:hover { background: var(--accent-dark); }
+        /* ===== EXACT CSS FROM THE NOTE EDITOR ===== */
+        .group-selector {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--card-alt-bg);
+            border-radius: 0.75rem;
+        }
+        .group-selector select {
+            margin-right: 10px;
+            margin-bottom: 5px;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #ccc;
+        }
+        .lock-manager {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--card-alt-bg);
+            border-radius: 0.75rem;
+            display: none;
+        }
+        .lock-manager table {
+            width: 100%;
+        }
+        .lock-manager td, .lock-manager th {
+            padding: 8px;
+        }
+        .lock-toggle {
+            cursor: pointer;
+            background: var(--accent);
+            color: #1e293b;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .lock-toggle.locked {
+            background: var(--error);
+            color: white;
+        }
+        
+        /* ===== ADDITIONAL STYLES ===== */
+        .filters {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .filters select, .filters input {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #ccc;
+        }
+        .filters button {
+            background: var(--accent);
+            color: #1e293b;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+        }
+        .filters button:hover {
+            background: var(--accent-dark);
+        }
+        .lock-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+        .lock-options select, .lock-options input {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #ccc;
+        }
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .content-info {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--accent);
+        }
     </style>
 </head>
 <body>
@@ -92,118 +258,206 @@ $groups = $conn->query("
     <h1>🔒 Group Content Lock Manager</h1>
     <p>Manage which groups can view a specific note, book, or other content.</p>
 
-    <!-- Filters -->
+    <?php if ($error): ?>
+        <div class="error"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+    <?php if ($msg): ?>
+        <div class="success"><?= htmlspecialchars($msg) ?></div>
+    <?php endif; ?>
+
+    <?php if ($note): ?>
+        <div class="content-info">
+            <h3>📄 Note: <?= htmlspecialchars($note['title']) ?></h3>
+            <p><strong>Subject:</strong> <?= htmlspecialchars($note['subject']) ?> | <strong>Class:</strong> <?= htmlspecialchars($note['class_level']) ?></p>
+        </div>
+    <?php endif; ?>
+
+    <!-- ===== PUBLISH / LOCK FORM ===== -->
+    <div class="group-selector">
+        <h4>🎯 Publish to a specific group, route, or class</h4>
+        <form method="post" id="lockForm">
+            <input type="hidden" name="content_type" value="<?= htmlspecialchars($content_type) ?>">
+            <input type="hidden" name="content_id" value="<?= $content_id ?>">
+
+            <div class="lock-options">
+                <label>Unlock for:</label>
+                <select id="lockType" name="lock_type" onchange="toggleLockOptions()">
+                    <option value="group">A specific group</option>
+                    <option value="route">A specific route (Sciences/Humanities)</option>
+                    <option value="class">A specific class (Form 3/Form 4)</option>
+                </select>
+            </div>
+
+            <div id="groupOption" style="display: none;">
+                <label>Select Group</label>
+                <select name="target_id" id="groupSelect">
+                    <option value="">-- Select --</option>
+                    <?php
+                    $all_groups = $conn->query("SELECT id, class_level, group_number, route FROM groups ORDER BY class_level, route, group_number");
+                    while ($g = $all_groups->fetch_assoc()): ?>
+                        <option value="<?= $g['id'] ?>"><?= $g['class_level'] ?> – Group <?= $g['group_number'] ?> (<?= ucfirst($g['route']) ?>)</option>
+                    <?php endwhile; ?>
+                </select>
+            </div>
+
+            <div id="routeOption" style="display: none;">
+                <label>Select Route</label>
+                <select name="route">
+                    <option value="sciences">Sciences</option>
+                    <option value="humanities">Humanities</option>
+                </select>
+            </div>
+
+            <div id="classOption" style="display: none;">
+                <label>Select Class</label>
+                <select name="class_level">
+                    <option value="Form 3">Form 3</option>
+                    <option value="Form 4">Form 4</option>
+                </select>
+            </div>
+
+            <button type="submit" name="apply_locks" class="btn" style="margin-top: 10px;">✅ Publish & Send</button>
+        </form>
+    </div>
+
+    <!-- ===== FILTER FOR VIEWING LOCKS ===== -->
     <div class="filters">
-        <label>Content Type:
-            <select id="contentTypeFilter">
-                <option value="note" <?= $content_type == 'note' ? 'selected' : '' ?>>Note</option>
-                <option value="book" <?= $content_type == 'book' ? 'selected' : '' ?>>Book</option>
-                <option value="exam" <?= $content_type == 'exam' ? 'selected' : '' ?>>Exam</option>
-            </select>
-        </label>
-        <label>Content ID:
-            <input type="number" id="contentIdFilter" value="<?= $content_id ?>" min="1">
-        </label>
         <label>Class:
             <select id="classFilter">
-                <option value="Form 3" <?= $selected_class == 'Form 3' ? 'selected' : '' ?>>Form 3</option>
-                <option value="Form 4" <?= $selected_class == 'Form 4' ? 'selected' : '' ?>>Form 4</option>
+                <option value="">All</option>
+                <?php foreach ($class_levels as $cls): ?>
+                    <option value="<?= $cls ?>" <?= ($selected_class == $cls) ? 'selected' : '' ?>><?= $cls ?></option>
+                <?php endforeach; ?>
             </select>
         </label>
         <label>Route:
             <select id="routeFilter">
-                <option value="sciences" <?= $selected_route == 'sciences' ? 'selected' : '' ?>>Sciences</option>
-                <option value="humanities" <?= $selected_route == 'humanities' ? 'selected' : '' ?>>Humanities</option>
+                <option value="">All</option>
+                <?php foreach ($routes as $rte): ?>
+                    <option value="<?= $rte ?>" <?= ($selected_route == $rte) ? 'selected' : '' ?>><?= ucfirst($rte) ?></option>
+                <?php endforeach; ?>
             </select>
         </label>
-        <button id="loadLocksBtn">Load Locks</button>
+        <button id="loadLocksBtn" class="btn-secondary">🔍 Filter Locks</button>
     </div>
 
-    <!-- Lock Manager -->
-    <div class="lock-manager">
-        <h3>🔒 Group Access Control</h3>
-        <p>Toggle lock/unlock for each group. <strong>Locked</strong> = group cannot see this content. <strong>Unlocked</strong> = group can see this content.</p>
-        <div id="lockManagerContent">
-            <table class="data-table">
-                <thead>
-                    <tr><th>Group</th><th>Route</th><th>Status</th><th>Action</th></tr>
-                </thead>
-                <tbody>
-                <?php while ($g = $groups->fetch_assoc()): ?>
-                    <tr>
-                        <td>Group <?= $g['group_number'] ?></td>
-                        <td><?= ucfirst($g['route']) ?></td>
-                        <td id="status-<?= $g['id'] ?>">
-                            <?= $g['is_locked'] ? '🔒 Locked' : '🔓 Unlocked' ?>
-                        </td>
-                        <td>
-                            <button class="lock-toggle <?= $g['is_locked'] ? 'locked' : '' ?>"
-                                    data-group="<?= $g['id'] ?>"
-                                    data-content-type="<?= $content_type ?>"
-                                    data-content-id="<?= $content_id ?>">
-                                <?= $g['is_locked'] ? 'Unlock' : 'Lock' ?>
-                            </button>
-                        </td>
-                    </tr>
-                <?php endwhile; ?>
-                </tbody>
-            </table>
-        </div>
+    <!-- ===== LOCK MANAGER TABLE ===== -->
+    <div class="lock-manager" style="display: <?= !empty($groups) ? 'block' : 'none' ?>;">
+        <h3>🔒 Current Lock Status</h3>
+        <p>Click "Lock" or "Unlock" to change access for a specific group.</p>
+        <table class="data-table">
+            <thead>
+                <tr><th>Group</th><th>Route</th><th>Status</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                <?php if (!empty($groups)): ?>
+                    <?php foreach ($groups as $g): ?>
+                        <tr>
+                            <td><?= $g['class_level'] ?> – Group <?= $g['group_number'] ?></td>
+                            <td><?= ucfirst($g['route']) ?></td>
+                            <td id="status-<?= $g['id'] ?>">
+                                <?= $g['is_locked'] ? '🔒 Locked' : '🔓 Unlocked' ?>
+                            </td>
+                            <td>
+                                <button class="lock-toggle <?= $g['is_locked'] ? 'locked' : '' ?>"
+                                        data-group="<?= $g['id'] ?>"
+                                        data-content-type="<?= $content_type ?>"
+                                        data-content-id="<?= $content_id ?>">
+                                    <?= $g['is_locked'] ? 'Unlock' : 'Lock' ?>
+                                </button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No groups found for the selected filters.</td></tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
     </div>
 
     <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Load locks with current filters
-        const loadLocksBtn = document.getElementById('loadLocksBtn');
-        const contentTypeFilter = document.getElementById('contentTypeFilter');
-        const contentIdFilter = document.getElementById('contentIdFilter');
-        const classFilter = document.getElementById('classFilter');
-        const routeFilter = document.getElementById('routeFilter');
+    // ===== TOGGLE PUBLISH OPTIONS =====
+    function toggleLockOptions() {
+        const type = document.getElementById('lockType').value;
+        document.getElementById('groupOption').style.display = type === 'group' ? 'block' : 'none';
+        document.getElementById('routeOption').style.display = type === 'route' ? 'block' : 'none';
+        document.getElementById('classOption').style.display = type === 'class' ? 'block' : 'none';
+    }
+    toggleLockOptions();
 
-        function reloadPage() {
-            const contentType = contentTypeFilter.value;
-            const contentId = contentIdFilter.value;
-            const classLevel = classFilter.value;
-            const route = routeFilter.value;
-            window.location.href = `admin_group_locks.php?content_type=${contentType}&content_id=${contentId}&class_level=${classLevel}&route=${route}`;
-        }
+    // ===== LOAD FILTERED LOCKS =====
+    document.getElementById('loadLocksBtn').addEventListener('click', function() {
+        const classFilter = document.getElementById('classFilter').value;
+        const routeFilter = document.getElementById('routeFilter').value;
+        const contentType = '<?= $content_type ?>';
+        const contentId = <?= $content_id ?>;
+        let url = `admin_group_locks.php?content_type=${contentType}&content_id=${contentId}`;
+        if (classFilter) url += `&class_level=${classFilter}`;
+        if (routeFilter) url += `&route=${routeFilter}`;
+        window.location.href = url;
+    });
 
-        loadLocksBtn.addEventListener('click', reloadPage);
+    // ===== TOGGLE INDIVIDUAL GROUP LOCKS (AJAX) =====
+    document.querySelectorAll('.lock-toggle').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const groupId = this.getAttribute('data-group');
+            const contentType = this.getAttribute('data-content-type');
+            const contentId = this.getAttribute('data-content-id');
 
-        // Toggle lock
-        document.querySelectorAll('.lock-toggle').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const groupId = this.getAttribute('data-group');
-                const contentType = this.getAttribute('data-content-type');
-                const contentId = this.getAttribute('data-content-id');
-
-                fetch('admin_group_locks.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `action=toggle_lock&group_id=${groupId}&content_type=${contentType}&content_id=${contentId}`
-                })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.success) {
-                        const statusSpan = document.getElementById(`status-${groupId}`);
-                        statusSpan.innerHTML = data.is_locked ? '🔒 Locked' : '🔓 Unlocked';
-                        this.innerHTML = data.is_locked ? 'Unlock' : 'Lock';
-                        this.classList.toggle('locked', data.is_locked);
-                    } else {
-                        alert('Error toggling lock');
-                    }
-                })
-                .catch(err => {
-                    console.error(err);
+            fetch('admin_group_locks.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `action=toggle_lock&group_id=${groupId}&content_type=${contentType}&content_id=${contentId}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    const statusSpan = document.getElementById(`status-${groupId}`);
+                    statusSpan.innerHTML = data.is_locked ? '🔒 Locked' : '🔓 Unlocked';
+                    this.innerHTML = data.is_locked ? 'Unlock' : 'Lock';
+                    this.classList.toggle('locked', data.is_locked);
+                } else {
                     alert('Error toggling lock');
-                });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Error toggling lock');
             });
         });
     });
+
+    // ===== HANDLE AJAX TOGGLE (BACKEND) =====
+    <?php if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_lock'): ?>
+        // This part should be handled by the PHP at the top, but adding a fallback here
+        // if the PHP block doesn't fire.
+    <?php endif; ?>
 </script>
+
+<?php
+// ===== HANDLE AJAX TOGGLE (PHP SIDE) =====
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'toggle_lock') {
+    header('Content-Type: application/json');
+    $group_id = (int)$_POST['group_id'];
+    $content_type = $conn->real_escape_string($_POST['content_type']);
+    $content_id = (int)$_POST['content_id'];
+
+    $current = $conn->query("SELECT is_locked FROM group_content_locks WHERE group_id = $group_id AND content_type = '$content_type' AND content_id = $content_id");
+    if ($current->num_rows > 0) {
+        $row = $current->fetch_assoc();
+        $new_lock = $row['is_locked'] ? 0 : 1;
+        $conn->query("UPDATE group_content_locks SET is_locked = $new_lock WHERE group_id = $group_id AND content_type = '$content_type' AND content_id = $content_id");
+    } else {
+        $new_lock = 1;
+        $conn->query("INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) VALUES ($group_id, '$content_type', $content_id, $new_lock)");
+    }
+    echo json_encode(['success' => true, 'is_locked' => $new_lock]);
+    exit;
+}
+?>
 <a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
 </html>
