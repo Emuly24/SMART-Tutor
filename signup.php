@@ -1,34 +1,49 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// === CHANGE START: Show options instead of redirect ===
+// === Already logged in (captures first name) ===
 if (isset($_SESSION['user_id'])) {
-    // Handle account deletion request
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_account'])) {
-        $uid = $_SESSION['user_id'];
+    $first_name = '';
+
+    // 1. Try to get fullname from session first
+    $fullname = $_SESSION['fullname'] ?? '';
+
+    if (!empty($fullname)) {
+        $name_parts = explode(' ', trim($fullname));
+        $first_name = $name_parts[0] ?? '';
+    }
+
+    // 2. If session failed, fall back to database query
+    if (empty($first_name)) {
         $conn = getDB();
-        $conn->query("DELETE FROM users WHERE id = $uid");
-        session_destroy();
-        header("Location: signup.php?msg=deleted");
-        exit;
+        $uid = (int)$_SESSION['user_id'];
+        $result = $conn->query("SELECT fullname FROM users WHERE id = $uid");
+        if ($result && $user = $result->fetch_assoc()) {
+            $fullname = $user['fullname'] ?? '';
+            $name_parts = explode(' ', trim($fullname));
+            $first_name = $name_parts[0] ?? '';
+        }
+    }
+
+    // 3. If still empty, display "User"
+    if (empty($first_name)) {
+        $first_name = 'User';
     }
     ?>
     <!DOCTYPE html>
-    <html><head><title>Already Signed Up</title><link rel="stylesheet" href="style.css"></head>
+    <html><head><title>Already Logged In</title><link rel="stylesheet" href="style.css"></head>
     <body>
     <?php include_once 'includes/header.php'; ?>
     <?php include_once 'includes/progress_tracker.php'; ?>
     <div class="container">
         <div class="card">
-            <h2>You already have an account</h2>
-            <p>You are currently logged in as <strong><?= htmlspecialchars($_SESSION['fullname'] ?? '') ?></strong>.</p>
+            <h2>You are already logged in</h2>
             <p>Would you like to delete this account and start over? (This action is permanent and cannot be undone.)</p>
-            <p>If this is your friend using your phone, please log out and let them sign up.</p>
+            <p>Do you want to log out and sign in with a different account?</p>
             <div class="card-buttons">
                 <form method="post" style="display:inline;">
                     <button type="submit" name="delete_account" class="btn-danger" onclick="return confirm('Delete your account permanently? All your data will be lost.')">Delete My Account</button>
@@ -83,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sign Up - SMART Circle</title>
+    <title>Sign Up - SMART Tutor</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="signup-page">
@@ -123,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="text" name="school" required placeholder="e.g., Ntcheu Secondary School">
             </div>
             <div class="form-group">
-                <label>Password * (min 5 chars)</label>
+                <label>Password * (min 5 characters)</label>
                 <input type="password" name="password" required>
             </div>
             <div class="form-group">
