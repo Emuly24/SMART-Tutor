@@ -8,7 +8,7 @@ if (session_status() === PHP_SESSION_NONE) {
 $admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN_HASH') ? ADMIN_HASH : '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu');
 if (!isset($_SESSION['admin_logged'])) {
     if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
-        header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
+        header('WWW-Authenticate: Basic realm="SMART Circle Admin"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Access denied';
         exit;
@@ -82,7 +82,7 @@ $categories = $conn->query("SELECT DISTINCT category FROM message_templates ORDE
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Message Templates – SMART Tutor</title>
+    <title>Message Templates – SMART Circle</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -399,7 +399,7 @@ $categories = $conn->query("SELECT DISTINCT category FROM message_templates ORDE
             ['Events', 'Event Postponed', '📅 The event "{event_name}" has been postponed to a later date. Please check the updated schedule.'],
             ['Events', 'Registration Open', '📝 Registration for {event_name} is now open. Please sign up before {date}.'],
             ['Events', 'Registration Deadline Reminder', '⏳ The registration deadline for {event_name} is {date}. Please complete your registration soon.'],
-            ['Administrative', 'Welcome to SMART Tutor', 'Welcome, {student}, to {class} – Group {group}. We are glad to have you in the SMART Tutor community.'],
+            ['Administrative', 'Welcome to SMART Circle', 'Welcome, {student}, to {class} – Group {group}. We are glad to have you in the SMART Circle community.'],
             ['Administrative', 'Welcome to New Group', '🏫 Welcome, {student}, to your new group: {class} – Group {group} ({route}). Please check your dashboard for updates.'],
             ['Administrative', 'Account Approved – Next Steps', '🎉 Congratulations, {student}! Your application has been approved. Please proceed to sign the consent form before accessing the dashboard.'],
             ['Administrative', 'Consent Signed – Thank You', '✅ Thank you, {student}, for signing the consent agreement. You now have full access to the dashboard.'],
@@ -410,8 +410,8 @@ $categories = $conn->query("SELECT DISTINCT category FROM message_templates ORDE
             ['Reminders', 'Library Book Due Tomorrow', '📚 Reminder: The book "{book_title}" is due tomorrow ({due_date}). Please return it on time.'],
             ['Reminders', 'Library Book Overdue', '📚 Reminder: The book "{book_title}" is overdue (due {due_date}). Please return it as soon as possible.'],
             ['Reminders', 'Library Book Returned – Thank You', '✅ Thank you for returning "{book_title}". Your account has been updated.'],
-            ['Reminders', 'Payment Reminder (Free Platform – no charges)', 'ℹ️ SMART Tutor is a free platform. No payment is required. If you are asked for money, please report it immediately.'],
-            ['Reminders', 'Feedback Request', '📝 We would love to hear about your experience with SMART Tutor. Please take a moment to submit your testimonial.'],
+            ['Reminders', 'Payment Reminder (Free Platform – no charges)', 'ℹ️ SMART Circle is a free platform. No payment is required. If you are asked for money, please report it immediately.'],
+            ['Reminders', 'Feedback Request', '📝 We would love to hear about your experience with SMART Circle. Please take a moment to submit your testimonial.'],
             ['Reminders', 'Testimonial Approved', '⭐ Your testimonial has been approved and is now visible on the homepage. Thank you for sharing!'],
             ['Reminders', 'Testimonial Rejected', '⚠️ Your testimonial could not be approved. Please review the guidelines and resubmit.'],
             ['Emergency', 'Urgent Notice – All Students', '🚨 Urgent notice for all {class} students: {message}. Please check your messages urgently.'],

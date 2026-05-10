@@ -27,7 +27,7 @@ $signed_by = generateSignature($user['fullname']);
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My Consent Agreement – SMART Tutor</title>
+    <title>My Consent Agreement – SMART Circle</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -45,7 +45,7 @@ $signed_by = generateSignature($user['fullname']);
                 <p><strong>Signed on:</strong> <?= htmlspecialchars($signed_date) ?></p>
                 <p><strong>Signature:</strong> <?= htmlspecialchars($signed_by) ?></p>
             </div>
-            <p>You have successfully agreed to the SMART Tutor group rules. This confirmation serves as your official commitment.</p>
+            <p>You have successfully agreed to the SMART Circle group rules. This confirmation serves as your official commitment.</p>
             <div class="success-actions">
                 <a href="dashboard.php" class="btn">Go to Dashboard</a>
                 <button onclick="printConsent()" class="btn-secondary">🖨️ Print Copy</button>
@@ -60,9 +60,9 @@ $signed_by = generateSignature($user['fullname']);
     function printConsent() {
         const content = document.getElementById('consentCard').innerHTML;
         const printWindow = window.open('', '', 'height=600,width=800');
-        printWindow.document.write('<html><head><title>Consent Agreement – SMART Tutor</title><style>body{font-family:Arial,sans-serif;padding:20px;} .student-details{background:#f5f5f5;padding:10px;margin:15px 0;}</style></head><body>');
+        printWindow.document.write('<html><head><title>Consent Agreement – SMART Circle</title><style>body{font-family:Arial,sans-serif;padding:20px;} .student-details{background:#f5f5f5;padding:10px;margin:15px 0;}</style></head><body>');
         printWindow.document.write(content);
-        printWindow.document.write('<div class="footer"><hr><p>SMART Tutor – Discipline & Integrity</p></div>');
+        printWindow.document.write('<div class="footer"><hr><p>SMART Circle – Discipline & Integrity</p></div>');
         printWindow.document.close();
         printWindow.print();
     }
@@ -74,12 +74,12 @@ $signed_by = generateSignature($user['fullname']);
         const rightMargin = pageWidth - 20;
         let y = 20;
 
-        // Header with SMART Tutor colors
+        // Header with SMART Circle colors
         doc.setFillColor(30, 42, 58); // dark blue
         doc.rect(0, 0, pageWidth, 40, 'F');
         doc.setTextColor(212, 175, 55); // gold
         doc.setFontSize(18);
-        doc.text("SMART Tutor Consent Agreement", leftMargin, 25);
+        doc.text("SMART Circle Consent Agreement", leftMargin, 25);
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
         doc.text("Discipline & Integrity", leftMargin, 35);
@@ -90,7 +90,7 @@ $signed_by = generateSignature($user['fullname']);
         doc.line(leftMargin, y, rightMargin, y);
         y += 10;
         doc.setFontSize(12);
-        const text = "This document certifies that the student named below has read, understood, and agreed to the rules and commitments of the SMART Tutor program.";
+        const text = "This document certifies that the student named below has read, understood, and agreed to the rules and commitments of the SMART Circle program.";
         const lines = doc.splitTextToSize(text, pageWidth - 40);
         doc.text(lines, leftMargin, y);
         y += lines.length * 6 + 10;
@@ -147,7 +147,7 @@ $signed_by = generateSignature($user['fullname']);
         y += 20;
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
-        doc.text("SMART Tutor – Discipline & Integrity", leftMargin, y);
+        doc.text("SMART Circle – Discipline & Integrity", leftMargin, y);
         doc.save("Consent_Agreement_<?= preg_replace('/[^a-zA-Z0-9]/','_', $user['fullname']) ?>.pdf");
     }
 </script>

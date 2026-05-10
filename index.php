@@ -1,12 +1,10 @@
 <?php
 require_once 'check_remember_me.php';
- if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-} ?>
+ session_start(); ?>
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SMART Tutor – Empowering Malawi's Youth</title>
+    <title>SMART Circle – Empowering Malawi's Youth</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -14,11 +12,22 @@ require_once 'check_remember_me.php';
 <div class="container">
     <?php include_once 'includes/header.php'; ?>
 
-    <!-- Hero Section (no button) -->
+    <!-- Hero Section -->
     <div class="hero-section">
-        <h1>Empowering Malawi’s Secondary Students</h1>
-        <p>SMART Tutor is a free, discipline‑based tutoring platform designed to help hardworking students master challenging subjects through small study groups, practical examples, and real‑world applications.</p>
-        <p class="promise"><strong>Our promise:</strong> No money, no favours – only punctuality, hard work, and respect.</p>
+    <h1>Empowering Malawi’s Secondary Students</h1>
+    <p>
+        <span class="brand-highlight">
+            Student Mentorship Academic Readiness Technology <span class="acronym-badge">(SMART)</span> Circle
+        </span>
+        is a free, discipline‑based learning community designed to help hardworking students master challenging subject topics through small study groups, practical examples, and real‑world applications.
+    </p>
+</div>
+    <!-- The Promise (Stylized Card) -->
+    <div class="promise-card">
+        <div class="promise-label">Our Promise to You</div>
+        <div class="promise-text">
+            No money, no favours – only <span>punctuality</span>, <span>hard work</span>, and <span>respect</span>.
+        </div>
     </div>
 
     <!-- Vision, Mission, Goals -->
@@ -28,14 +37,12 @@ require_once 'check_remember_me.php';
     <div class="get-started-wrapper" style="text-align: center; margin: 2rem 0;">
         <?php if (!isset($_SESSION['user_id'])): ?>
             <button id="mainGetStartedBtn" class="btn-hero">Get Started</button>
-        <?php elseif (isset($_SESSION['approved']) && $_SESSION['approved'] == 0 && isset($_SESSION['status']) && $_SESSION['status'] == 'rejected'): ?>
-            <!-- 👇 Rejected logged‑in students see "Re‑apply" instead -->
-            <a href="apply.php" class="btn-hero">🔄 Re‑apply Now</a>
+        <?php else: ?>
+            <a href="dashboard.php" class="btn-hero">Go to Dashboard</a>
         <?php endif; ?>
-        <!-- All other logged‑in students see nothing here -->
     </div>
 
-    <!-- Testimonials Section (hidden by default, shown only if testimonials exist) -->
+    <!-- Testimonials Section -->
     <div id="testimonialsSection" class="testimonials-section" style="display: none;">
         <h2><i class="fas fa-star"></i> What Our Students Say</h2>
         <div id="testimonialContainer" class="testimonial-slide"></div>
@@ -47,6 +54,8 @@ require_once 'check_remember_me.php';
         <?php else: ?>
             <a href="dashboard.php">Dashboard</a> | <a href="logout.php">Logout</a>
         <?php endif; ?>
+        <br><br>
+        <span style="color: var(--text-muted); font-size: 0.9rem;">SMART Circle – A digital learning community built for your future</span>
     </div>
 </div>
 
@@ -55,7 +64,7 @@ require_once 'check_remember_me.php';
     <div class="modal-content">
         <span class="close">&times;</span>
         <h2><i class="fas fa-clipboard-list"></i> Am I Eligible?</h2>
-        <p>To join SMART Tutor, you must meet the following criteria:</p>
+        <p>To join SMART Circle, you must meet the following criteria:</p>
         <ul class="eligibility-list">
             <li><i class="fas fa-check-circle"></i> Be in <strong>Form 3 or Form 4</strong> (secondary school)</li>
             <li><i class="fas fa-check-circle"></i> Live within <strong>Sharpevalley area</strong> or be willing to commute to the designated tutoring place</li>
@@ -74,7 +83,7 @@ require_once 'check_remember_me.php';
 <a href="#" class="back-to-top" id="backToTop">↑</a>
 
 <script>
-    // Show/hide testimonials and auto‑rotate
+    // (Your existing JavaScript remains unchanged)
     let testimonials = [];
     let currentIndex = 0;
     let interval;

@@ -43,7 +43,7 @@ if ($status === 'rejected') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title><?= $page_title ?> – SMART Tutor</title>
+    <title><?= $page_title ?> – SMART Circle</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -149,7 +149,7 @@ if ($status === 'rejected') {
 
             <?php if ($status === 'pending'): ?>
                 <!-- PENDING STATE -->
-                <p class="lead">Thank you for submitting your application. Your details have been received and are currently under review by the SMART Tutor admin team.</p>
+                <p class="lead">Thank you for submitting your application. Your details have been received and are currently under review by the SMART Circle admin team.</p>
                 
                 <div class="info-box">
                     <h4><i class="fas fa-arrow-right"></i> What happens next:</h4>
@@ -169,7 +169,7 @@ if ($status === 'rejected') {
                     </ul>
                 </div>
                 <p class="pending-footnote">
-                    <i class="fas fa-clock"></i> Please be patient — this step ensures that only disciplined and committed students join SMART Tutor groups.
+                    <i class="fas fa-clock"></i> Please be patient — this step ensures that only disciplined and committed students join SMART Circle groups.
                 </p>
 
             <?php elseif ($status === 'rejected'): ?>

@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Request Help – SMART Tutor</title>
+    <title>Request Help – SMART Circle</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>

@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Sign Up - SMART Tutor</title>
+    <title>Sign Up - SMART Circle</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="signup-page">

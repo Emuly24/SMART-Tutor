@@ -48,7 +48,7 @@ if ($role == 'student' && isset($_SESSION['user_id'])) {
     }
 } elseif ($role == 'admin') {
     $fullname = 'Admin';
-    $tagline = 'SMART Tutor Manager';
+    $tagline = 'SMART Circle Manager';
 }
 
 // Determine page title
@@ -116,6 +116,7 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
         <input type="checkbox" id="menu-toggle">
         <label for="menu-toggle" class="menu-icon">☰</label>
         <ul class="menu">
+            <li><a href="about.php">👥 About Us</a></li>
             <?php if ($role == 'admin'): ?>
                 <li><a href="admin_attendance_report.php">📈 Attendance Report</a></li>
                 <li><a href="admin_discipline_log.php">📜 Discipline Log</a></li>
@@ -142,7 +143,7 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
     </div>
 
     <div class="nav-title">
-        <i class="fas fa-graduation-cap"></i> SMART Tutor
+        <i class="fas fa-graduation-cap"></i> SMART Circle
     </div>
 
     <div class="page-title"><?= htmlspecialchars($page_title) ?></div>

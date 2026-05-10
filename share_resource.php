@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html><head><title>Share a Resource – SMART Tutor</title><link rel="stylesheet" href="style.css"></head>
+<html><head><title>Share a Resource – SMART Circle</title><link rel="stylesheet" href="style.css"></head>
 <body>
 <?php include_once 'includes/header.php'; ?>
 <div class="container">

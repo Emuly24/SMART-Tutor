@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 $admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN_HASH') ? ADMIN_HASH : '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu');
 if (!isset($_SESSION['admin_logged'])) {
     if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
-        header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
+        header('WWW-Authenticate: Basic realm="SMART Circle Admin"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Access denied';
         exit;
@@ -71,23 +71,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!-- TinyMCE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.7.0/tinymce.min.js"></script>
 
-<!-- MathQuill CSS (load this early) -->
+<!-- MathQuill CSS & JS (Custom panel will use this) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.css">
-<!-- 1. Load the MathQuill Library FIRST -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
 
-<!-- 2. Load the TinyMCE MathQuill Plugin AFTER the library -->
-<script src="js/tinymce/plugins/mathquill/plugin.js"></script>
 <!-- MathJax -->
 <script>MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] }, svg: { fontCache: 'global' } };</script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
 <!-- Mermaid -->
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11.6.0/dist/mermaid.min.js"></script>
+
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
 <!-- Highlight.js -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
 <!-- Cropper (for diagrams) -->
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.css">
@@ -191,102 +192,110 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
     // ---------- TinyMCE CORE ----------
-    tinymce.init({
-        selector: '#editor',
-        height: 600,
-        menubar: true,
-        plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code mathquill',
-        toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | specialchars | charmap | code | mathquill',
-        content_style: 'body { font-family: Inter, sans-serif; }',
-        mathquill: { version: 'editable' },
-        setup: function(editor) {
-            // Auto-save every 30 seconds
-            setInterval(function() {
-                saveDraft(editor);
-            }, 30000);
-
-            // Manual save on Ctrl+S
-            editor.addShortcut('Ctrl+S', 'Save Draft', function() {
-                saveDraft(editor);
-            });
-
-            // Auto‑convert existing LaTeX to MathQuill on load
-            editor.on('init', function() {
-                const content = editor.getContent();
-                if (content && window.MathJax) {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = content;
-                    MathJax.typesetPromise([tempDiv]).then(() => {
-                        editor.setContent(tempDiv.innerHTML);
-                    }).catch(() => {});
-                }
-                // Trigger diagram rendering
-                if (window.mermaid) mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
-                if (window.hljs) hljs.highlightAll();
-            });
-
-            // Highlight.js for code blocks
-            editor.on('SetContent', function() {
-                if (window.hljs) setTimeout(hljs.highlightAll, 100);
-            });
-        }
-    });
-
-    // ---------- DRAFT FUNCTIONS ----------
-    function saveDraft(editor) {
-        const title = document.getElementById('noteTitle').value;
-        const subject = document.querySelector('select[name="subject"]').value;
-        const classLevel = document.querySelector('select[name="class_level"]').value;
-        const content = editor.getData();
-
-        localStorage.setItem('note_draft', JSON.stringify({
-            title: title,
-            subject: subject,
-            class_level: classLevel,
-            content: content
-        }));
-        console.log('Draft saved to localStorage at ' + new Date().toLocaleTimeString());
-    }
-
-    window.addEventListener('load', function() {
-        const draft = localStorage.getItem('note_draft');
-        if (draft) {
-            const data = JSON.parse(draft);
-            document.getElementById('noteTitle').value = data.title;
-            document.querySelector('select[name="subject"]').value = data.subject;
-            document.querySelector('select[name="class_level"]').value = data.class_level;
-            tinymce.get('editor').setContent(data.content);
-            console.log('Draft loaded from localStorage.');
-        }
-    });
-
-    // ---------- GROUP LOADER ----------
-    const classSelect = document.getElementById('noteClass');
-    const routeSelect = document.getElementById('routeSelect');
-    const groupSelect = document.getElementById('groupSelect');
-
-    function loadGroups() {
-        const classLevel = classSelect.value;
-        const route = routeSelect.value;
-        if (!classLevel || !route) {
-            groupSelect.innerHTML = '<option value="">-- Select route and class first --</option>';
-            return;
-        }
-        fetch(`admin_get_groups.php?class=${encodeURIComponent(classLevel)}&route=${encodeURIComponent(route)}`)
-            .then(res => res.json())
-            .then(data => {
-                groupSelect.innerHTML = '<option value="">-- Any group (use locks later) --</option>';
-                data.forEach(group => {
-                    groupSelect.innerHTML += `<option value="${group.id}">Group ${group.group_number} (${group.current_members}/5 members)</option>`;
+tinymce.init({
+    selector: '#editor',
+    height: 600,
+    menubar: true,
+    // Remove 'mathquill' from plugins – it's not a real plugin, we're using a custom button
+    plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
+    toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | specialchars | charmap | code | mathquill',
+    content_style: 'body { font-family: Inter, sans-serif; }',
+    // Remove the old mathquill config – it's incompatible
+    // mathquill: { version: 'editable' },
+    setup: function(editor) {
+        // ---------- MODERN MATHQUILL PANEL (Fully Integrated) ----------
+        editor.ui.registry.addButton('mathquill', {
+            text: '∫',
+            tooltip: 'Insert Math Equation (MathQuill)',
+            onAction: function() {
+                const panel = editor.windowManager.open({
+                    title: 'MathQuill Equation Editor',
+                    width: 700,
+                    height: 200,
+                    body: {
+                        type: 'panel',
+                        items: [
+                            {
+                                type: 'htmlpanel',
+                                html: `
+                                    <div style="
+                                        padding: 10px;
+                                        text-align: center;
+                                        background: var(--card-bg, #ffffff);
+                                        border-radius: 12px;
+                                        border: 2px solid var(--accent, #d4af37);
+                                    ">
+                                        <div id="mathquill-editor" style="
+                                            background: transparent;
+                                            padding: 10px;
+                                            font-size: 1.5rem;
+                                            min-height: 60px;
+                                            color: var(--text-color, #000);
+                                        "></div>
+                                    </div>
+                                `
+                            }
+                        ]
+                    },
+                    buttons: [
+                        { type: 'submit', text: 'Insert Equation', primary: true },
+                        { type: 'cancel', text: 'Cancel' }
+                    ],
+                    onAction: function(api) {
+                        const latex = this.mathField ? this.mathField.latex() : '';
+                        if (latex) {
+                            editor.execCommand('mceMathQuill', false, latex);
+                        }
+                        api.close();
+                    },
+                    onClose: function() {
+                        if (this.mathField) this.mathField.destroy();
+                    },
+                    onOpen: function() {
+                        const mathFieldSpan = document.getElementById('mathquill-editor');
+                        if (mathFieldSpan && typeof MathQuill !== 'undefined') {
+                            const MQ = MathQuill.getInterface(2);
+                            this.mathField = MQ.MathField(mathFieldSpan, {
+                                spaceBehavesLikeTab: true,
+                                handlers: {
+                                    edit: function() {} // live preview optional
+                                }
+                            });
+                            setTimeout(() => this.mathField.focus(), 100);
+                        }
+                    }
                 });
-            })
-            .catch(err => {
-                console.error(err);
-                groupSelect.innerHTML = '<option value="">Error loading groups</option>';
-            });
+            }
+        });
+
+        // ---------- AUTO-SAVE DRAFT ----------
+        setInterval(function() {
+            saveDraft(editor);
+        }, 30000);
+
+        editor.addShortcut('Ctrl+S', 'Save Draft', function() {
+            saveDraft(editor);
+        });
+
+        // ---------- MATHJAX & DIAGRAMS ----------
+        editor.on('init', function() {
+            const content = editor.getContent();
+            if (content && window.MathJax) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = content;
+                MathJax.typesetPromise([tempDiv]).then(() => {
+                    editor.setContent(tempDiv.innerHTML);
+                }).catch(() => {});
+            }
+            if (window.mermaid) mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+            if (window.hljs) hljs.highlightAll();
+        });
+
+        editor.on('SetContent', function() {
+            if (window.hljs) setTimeout(hljs.highlightAll, 100);
+        });
     }
-    classSelect.addEventListener('change', loadGroups);
-    routeSelect.addEventListener('change', loadGroups);
+});
 
     // ---------- TEMPLATE LIBRARY ----------
     const templateBtn = document.getElementById('templateBtn');
@@ -500,7 +509,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // ---------- INSERT FOOTER ----------
     document.getElementById('footerBtn').onclick = function() {
         if (tinymce.activeEditor) {
-            tinymce.activeEditor.insertContent('<hr><div style="text-align:center;font-size:smaller;"><p><strong>SMART Tutor</strong> – Discipline & Integrity</p><p>Blessings Emulyn, Metallurgy & Materials Engineering, MUST</p></div>');
+            tinymce.activeEditor.insertContent('<hr><div style="text-align:center;font-size:smaller;"><p><strong>SMART Circle</strong> – Discipline & Integrity</p><p>Blessings Emulyn, Metallurgy & Materials Engineering, MUST</p></div>');
         }
     };
 

@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
                 <p><strong>Signed on:</strong> <?= date('Y-m-d', strtotime($signed_date)) ?></p>
                 <p><strong>Signature:</strong> <?= htmlspecialchars($generated_signature) ?></p>
             </div>
-            <p>You have already agreed to the SMART Tutor group rules. You can download or print a copy below.</p>
+            <p>You have already agreed to the SMART Circle group rules. You can download or print a copy below.</p>
             <div class="success-actions">
                 <a href="dashboard.php" class="btn">Go to Dashboard</a>
                 <button onclick="printConsent()" class="btn-secondary">🖨️ Print Copy</button>
@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
                 <p><strong>Signed on:</strong> <?= htmlspecialchars($signed_date) ?></p>
                 <p><strong>Signature:</strong> <?= htmlspecialchars($signed_by) ?></p>
             </div>
-            <p>You have successfully agreed to the SMART Tutor group rules. This confirmation serves as your official commitment.</p>
+            <p>You have successfully agreed to the SMART Circle group rules. This confirmation serves as your official commitment.</p>
             <div class="success-actions">
                 <a href="dashboard.php" class="btn">Go to Dashboard</a>
                 <button onclick="printConsent()" class="btn-secondary">🖨️ Print Copy</button>
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
         </div>
     <?php else: ?>
         <!-- Not signed yet – show form -->
-        <h1><i class="fas fa-file-signature"></i> SMART Tutor Consent Agreement</h1>
+        <h1><i class="fas fa-file-signature"></i> SMART Circle Consent Agreement</h1>
         <p>Dear <strong><?= htmlspecialchars($user['fullname']) ?></strong>, please read the following terms carefully. By signing this document, you commit to the rules below.</p>
 
         <h2>Commitments</h2>
@@ -144,9 +144,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
     function printConsent() {
         const content = document.getElementById('successCard').innerHTML;
         const printWindow = window.open('', '', 'height=600,width=800');
-        printWindow.document.write('<html><head><title>Consent Agreement – SMART Tutor</title><style>body{font-family:Arial,sans-serif;padding:20px;} .student-details{background:#f5f5f5;padding:10px;margin:15px 0;}</style></head><body>');
+        printWindow.document.write('<html><head><title>Consent Agreement – SMART Circle</title><style>body{font-family:Arial,sans-serif;padding:20px;} .student-details{background:#f5f5f5;padding:10px;margin:15px 0;}</style></head><body>');
         printWindow.document.write(content);
-        printWindow.document.write('<div class="footer"><hr><p>SMART Tutor – Discipline & Integrity</p></div>');
+        printWindow.document.write('<div class="footer"><hr><p>SMART Circle – Discipline & Integrity</p></div>');
         printWindow.document.close();
         printWindow.print();
     }
@@ -158,12 +158,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
         const rightMargin = pageWidth - 20;
         let y = 20;
 
-        // Header with SMART Tutor colors
+        // Header with SMART Circle colors
         doc.setFillColor(30, 42, 58);
         doc.rect(0, 0, pageWidth, 40, 'F');
         doc.setTextColor(212, 175, 55);
         doc.setFontSize(18);
-        doc.text("SMART Tutor Consent Agreement", leftMargin, 25);
+        doc.text("SMART Circle Consent Agreement", leftMargin, 25);
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(10);
         doc.text("Discipline & Integrity", leftMargin, 35);
@@ -174,7 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
         doc.line(leftMargin, y, rightMargin, y);
         y += 10;
         doc.setFontSize(12);
-        const text = "This document certifies that the student named below has read, understood, and agreed to the rules and commitments of the SMART Tutor program.";
+        const text = "This document certifies that the student named below has read, understood, and agreed to the rules and commitments of the SMART Circle program.";
         const lines = doc.splitTextToSize(text, pageWidth - 40);
         doc.text(lines, leftMargin, y);
         y += lines.length * 6 + 10;
@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
         y += 20;
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
-        doc.text("SMART Tutor – Discipline & Integrity", leftMargin, y);
+        doc.text("SMART Circle – Discipline & Integrity", leftMargin, y);
         doc.save("Consent_Agreement_<?= preg_replace('/[^a-zA-Z0-9]/','_', $user['fullname']) ?>.pdf");
     }
 </script>

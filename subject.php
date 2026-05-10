@@ -43,7 +43,7 @@ $quizzes = $conn->query("SELECT q.id, q.title, q.description, q.time_limit
     ORDER BY q.title");
 ?>
 <!DOCTYPE html>
-<html><head><title><?= htmlspecialchars($subject) ?> - SMART Tutor</title><link rel="stylesheet" href="style.css"></head><body>
+<html><head><title><?= htmlspecialchars($subject) ?> - SMART Circle</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
         <div class="content-grid">

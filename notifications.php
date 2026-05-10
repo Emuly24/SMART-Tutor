@@ -27,7 +27,7 @@ $approved = $user['approved'];
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My Notifications – SMART Tutor</title>
+    <title>My Notifications – SMART Circle</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -46,7 +46,7 @@ $approved = $user['approved'];
         <?php if ($approved): ?>
             <div class="card success-card">
                 <h2><i class="fas fa-user-check"></i> You’ve Been Approved!</h2>
-                <p>Congratulations! Your application has been reviewed and approved by the SMART Tutor admin team.</p>
+                <p>Congratulations! Your application has been reviewed and approved by the SMART Circle admin team.</p>
                 <p><strong>Next step:</strong> Please proceed to the <a href="consent.php">Consent Form</a> to confirm your commitments before accessing the full dashboard.</p>
             </div>
         <?php endif; ?>

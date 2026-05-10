@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html>
 <head>
-    <title><?= $existing ? 'Edit' : 'Submit' ?> Testimonial – SMART Tutor</title>
+    <title><?= $existing ? 'Edit' : 'Submit' ?> Testimonial – SMART Circle</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php include_once 'includes/header.php'; ?>
     <div class="apply-container">
         <h2><?= $existing ? 'Update Your Testimonial' : 'Share Your Experience' ?></h2>
-        <p>Tell us how SMART Tutor has helped you. Your testimonial may appear on our homepage to inspire other students.</p>
+        <p>Tell us how SMART Circle has helped you. Your testimonial may appear on our homepage to inspire other students.</p>
         <?php if ($error): ?>
             <div class="error"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>

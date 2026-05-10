@@ -6,7 +6,7 @@ if (session_status() === PHP_SESSION_NONE) session_start();
 $admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN_HASH') ? ADMIN_HASH : '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu');
 if (!isset($_SESSION['admin_logged'])) {
     if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
-        header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
+        header('WWW-Authenticate: Basic realm="SMART Circle Admin"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Access denied';
         exit;
@@ -186,7 +186,7 @@ $class_levels = ['Form 3', 'Form 4'];
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Notifications Center – SMART Tutor</title>
+    <title>Admin Notifications Center – SMART Circle</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>

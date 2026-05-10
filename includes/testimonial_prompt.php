@@ -5,14 +5,14 @@ $conn = getDB();
 
 $currentPage = basename($_SERVER['SCRIPT_NAME'], '.php');
 $context = [
-    'exam_results' => ['question' => 'How did your exam go?', 'example' => 'I improved my score from 60% to 85% after using SMART Tutor!'],
+    'exam_results' => ['question' => 'How did your exam go?', 'example' => 'I improved my score from 60% to 85% after using SMART Circle!'],
     'submit_quiz'   => ['question' => 'How was the quiz?', 'example' => 'The quiz helped me understand photosynthesis much better.'],
     'view_note'     => ['question' => 'How is your reading progressing?', 'example' => 'The note on algebra made everything click for me.'],
-    'dashboard'     => ['question' => 'How are you finding the SMART Tutor program?', 'example' => 'I love the small group discussions – they really help.'],
+    'dashboard'     => ['question' => 'How are you finding the SMART Circle program?', 'example' => 'I love the small group discussions – they really help.'],
     'consent'       => ['question' => 'Ready to commit to your success?', 'example' => 'I’m excited to start this journey!'],
-    'profile'       => ['question' => 'How has SMART Tutor helped you grow?', 'example' => 'My confidence in Maths has soared.'],
+    'profile'       => ['question' => 'How has SMART Circle helped you grow?', 'example' => 'My confidence in Maths has soared.'],
 ];
-$default = ['question' => 'How is your learning journey?', 'example' => 'SMART Tutor has been a game‑changer for my studies.'];
+$default = ['question' => 'How is your learning journey?', 'example' => 'SMART Circle has been a game‑changer for my studies.'];
 $ctx = $context[$currentPage] ?? $default;
 
 // Progress checks

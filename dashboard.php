@@ -71,7 +71,7 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Dashboard - SMART Tutor</title>
+    <title>Dashboard - SMART Circle</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -238,7 +238,7 @@ $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) 
         <div class="card">
             <i class="fas fa-star"></i>
             <h3>Testimonial</h3>
-            <p>Share your experience with SMART Tutor.</p>
+            <p>Share your experience with SMART Circle.</p>
             <div class="card-buttons"><a href="submit_testimonial.php">✍️ Write Testimonial</a></div>
         </div>
         <div class="card">

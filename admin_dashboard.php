@@ -19,7 +19,7 @@ if (function_exists('getAdminHash')) {
 
 if (!isset($_SESSION['admin_logged'])) {
     if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
-        header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
+        header('WWW-Authenticate: Basic realm="SMART Circle Admin"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Access denied';
         exit;
@@ -39,7 +39,7 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Dashboard - SMART Tutor</title>
+    <title>Admin Dashboard - SMART Circle</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -179,7 +179,7 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
         </div>
     </div>
 
-    <div class="footer">SMART Tutor – Discipline & Integrity</div>
+    <div class="footer">SMART Circle – Discipline & Integrity</div>
 </div>
 <a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>

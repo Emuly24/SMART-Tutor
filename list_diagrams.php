@@ -12,7 +12,7 @@ $admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN
 if (!isset($_SESSION['admin_logged'])) {
     // If not logged in via session, check HTTP Basic Auth
     if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
-        header('WWW-Authenticate: Basic realm="SMART Tutor Admin"');
+        header('WWW-Authenticate: Basic realm="SMART Circle Admin"');
         header('HTTP/1.0 401 Unauthorized');
         echo json_encode(['error' => 'Access denied']);
         exit;

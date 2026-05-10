@@ -43,7 +43,6 @@ if (isset($_SESSION['user_id'])) {
         <div class="card">
             <h2>You are already logged in</h2>
             <p>You are currently logged in as <strong><?= htmlspecialchars($first_name) ?></strong>.</p>
-            <p>Do you want to log out and sign in with a different account?</p>
             <div class="card-buttons" style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
                 <a href="dashboard.php" class="btn">Go to Dashboard</a>
                 <a href="logout.php" class="btn-danger">Logout</a>
@@ -83,6 +82,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['role'] = 'admin';
                 $_SESSION['admin_logged'] = true;
                 unset($_SESSION['user_id']);
+                header("Location: admin_dashboard.php");
+                exit;
             } else {
                 $_SESSION['role'] = 'student';
                 unset($_SESSION['admin_logged']);
@@ -92,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_SESSION['suspension_end'] = $user['suspension_end'];
             }
 
-            // --- Remember Me (Ensure cookie is set correctly) ---
+            // --- Remember Me ---
             if ($remember) {
                 $token = bin2hex(random_bytes(32));
                 $expires = date('Y-m-d H:i:s', strtotime('+30 days'));
@@ -103,6 +104,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setcookie('remember_me', $token, time() + 86400 * 30, '/', '', false, true);
             }
 
+            // --- 🔁 CORRECT REDIRECTION BASED ON STATUS ---
+            if ($user['approved'] == 0) {
+                // Check if they have an application
+                $has_app = $conn->query("SELECT id FROM applications WHERE user_id = {$user['id']}")->num_rows > 0;
+                if (!$has_app) {
+                    header("Location: apply.php");
+                    exit;
+                } else {
+                    header("Location: pending.php");
+                    exit;
+                }
+            } elseif ($user['approved'] == 1 && $user['consent_signed'] == 0) {
+                header("Location: consent.php");
+                exit;
+            }
+
+            // Default: fully approved and consent signed
             header("Location: dashboard.php");
             exit;
         } else {
@@ -112,7 +130,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 ?>
 <!DOCTYPE html>
-<html><head><title>Login - SMART Tutor</title><link rel="stylesheet" href="style.css"></head>
+<html><head><title>Login - SMART Circle</title><link rel="stylesheet" href="style.css"></head>
 <body class="login-page">
     <?php include_once 'includes/header.php'; ?>
     <?php include_once 'includes/progress_tracker.php'; ?>
@@ -133,7 +151,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label class="distinct-checkbox">
                     <input type="checkbox" name="remember" value="1">
-                    <span>Remember Me</span>
+                    <span>Remember Me (30 days)</span>
                 </label>
             </div>
             <button type="submit" class="btn btn-login">Login</button>

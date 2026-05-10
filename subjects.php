@@ -18,7 +18,7 @@ $subjects = $conn->query("SELECT DISTINCT n.subject
     ORDER BY n.subject");
 ?>
 <!DOCTYPE html>
-<html><head><title>Subjects - SMART Tutor</title><link rel="stylesheet" href="style.css"></head><body>
+<html><head><title>Subjects - SMART Circle</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
         <div class="content-grid">
