@@ -1507,8 +1507,10 @@ main, .container > *:not(.top-nav) {
 .dark-theme .vmm-card h4 {
     color: var(--accent) !important;
 }
-/* Make header float at the top with a glass effect */
-.top-nav {
+/* ============================================
+   FLOATING HEADER FOR ADMIN NOTE EDITOR ONLY
+   ============================================ */
+body.admin-edit-page .top-nav {
     position: fixed;
     top: 0;
     left: 0;
@@ -1518,8 +1520,6 @@ main, .container > *:not(.top-nav) {
     backdrop-filter: blur(12px);
     box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
-
-/* Add space so the main content doesn't hide under the fixed header */
-.container {
-    margin-top: 80px; /* Adjust if header height changes */
+body.admin-edit-page .container {
+    margin-top: 80px; /* Adjust based on header height */
 }

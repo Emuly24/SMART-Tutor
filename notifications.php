@@ -24,6 +24,20 @@ $messages = $conn->query("SELECT * FROM admin_messages WHERE user_id = $uid ORDE
 $user = $conn->query("SELECT approved FROM users WHERE id = $uid")->fetch_assoc();
 $approved = $user['approved'];
 ?>
+<?php if ($approved): 
+    // Fetch student details for the dynamic message
+    $app_data = $conn->query("
+        SELECT u.fullname, u.class_level, g.group_number
+        FROM users u
+        LEFT JOIN group_members gm ON u.id = gm.user_id
+        LEFT JOIN groups g ON gm.group_id = g.id
+        WHERE u.id = $uid
+    ")->fetch_assoc();
+
+    $fullname = $app_data['fullname'] ?? 'Student';
+    $class = $app_data['class_level'] ?? '';
+    $group_number = $app_data['group_number'] ?? 'Not assigned';
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -35,7 +49,6 @@ $approved = $user['approved'];
     <?php include_once 'includes/header.php'; ?>
 
     <?php include_once 'includes/progress_tracker.php'; ?>
- ?>
 
 <div class="container">
     
@@ -45,11 +58,18 @@ $approved = $user['approved'];
     <div class="grid">
         <?php if ($approved): ?>
             <div class="card success-card">
-                <h2><i class="fas fa-user-check"></i> You’ve Been Approved!</h2>
-                <p>Congratulations! Your application has been reviewed and approved by the SMART Circle admin team.</p>
-                <p><strong>Next step:</strong> Please proceed to the <a href="consent.php">Consent Form</a> to confirm your commitments before accessing the full dashboard.</p>
-            </div>
+        <h2><i class="fas fa-user-check"></i> Congratulations, <?= htmlspecialchars($fullname) ?>!</h2>
+        <p>Your application has been reviewed and approved by the SMART Circle admin team.</p>
+        
+        <?php if ($group_number !== 'Not assigned'): ?>
+            <p>You have been assigned to <strong><?= htmlspecialchars($class) ?> – Group <?= htmlspecialchars($group_number) ?></strong>. Get ready to meet your fellow learners!</p>
+        <?php else: ?>
+            <p>You have been assigned to a group. Please check your dashboard for the group details.</p>
         <?php endif; ?>
+        
+        <p><strong>Next step:</strong> Please proceed to the <a href="consent.php">Consent Form</a> to confirm your commitments before accessing the full dashboard.</p>
+    </div>
+<?php endif; ?>
 
         <?php if ($messages->num_rows == 0): ?>
             <div class="card"><p>No messages yet.</p></div>
