@@ -146,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
         const printWindow = window.open('', '', 'height=600,width=800');
         printWindow.document.write('<html><head><title>Consent Agreement – SMART Circle</title><style>body{font-family:Arial,sans-serif;padding:20px;} .student-details{background:#f5f5f5;padding:10px;margin:15px 0;}</style></head><body>');
         printWindow.document.write(content);
-        printWindow.document.write('<div class="footer"><hr><p>SMART Circle – Discipline & Integrity</p></div>');
+        printWindow.document.write('<div class="footer"><hr><p>SMART Circle – A digital learning community built for your future</p></div>');
         printWindow.document.close();
         printWindow.print();
     }
@@ -231,7 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['agree'])) {
         y += 20;
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
-        doc.text("SMART Circle – Discipline & Integrity", leftMargin, y);
+        doc.text("SMART Circle – A digital learning community built for your future", leftMargin, y);
         doc.save("Consent_Agreement_<?= preg_replace('/[^a-zA-Z0-9]/','_', $user['fullname']) ?>.pdf");
     }
 </script>

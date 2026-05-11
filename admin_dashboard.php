@@ -179,7 +179,7 @@ $suspensions = $conn->query("SELECT COUNT(*) FROM users WHERE status='suspended'
         </div>
     </div>
 
-    <div class="footer">SMART Circle – Discipline & Integrity</div>
+    <div class="footer">SMART Circle – A digital learning community built for your future</div>
 </div>
 <a href="#" class="back-to-top" id="backToTop">↑</a>
 </body>
