@@ -78,7 +78,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $why_join = trim($_POST['why_join'] ?? '');
     $target_points = (int)($_POST['target_points'] ?? 0);
     
-    // Handle custom university
     if ($university === 'Other' && !empty($custom_university)) {
         $university = $custom_university;
         $check = $conn->query("SELECT id FROM universities WHERE name = '$custom_university'");
@@ -87,7 +86,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    // Determine route
     $route = null;
     $has_humanities_subjects = (strpos($subjects_taken, 'History') !== false || strpos($subjects_taken, 'Bible Knowledge') !== false || strpos($subjects_taken, 'Social Studies') !== false || strpos($subjects_taken, 'Life Skills') !== false);
     $has_science_subjects = (strpos($subjects_taken, 'Physics') !== false && strpos($subjects_taken, 'Chemistry') !== false);
