@@ -47,17 +47,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $content = $conn->real_escape_string($content);
     
     if ($note_id_post > 0) {
-        // Update existing note
         $conn->query("UPDATE notes SET title='$title', subject='$subject', class_level='$class', content='$content', created_at=NOW() WHERE id=$note_id_post");
         $note_id = $note_id_post;
     } else {
-        // Insert new note
         $conn->query("INSERT INTO notes (title, subject, class_level, content) VALUES ('$title', '$subject', '$class', '$content')");
         $note_id = $conn->insert_id;
     }
     $conn->query("DELETE FROM note_drafts");
 
-    // Handle group locks (optional)
     if ($group_id) {
         $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
         while ($g = $all_groups->fetch_assoc()) {
@@ -75,13 +72,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: admin_group_locks.php?content_type=note&content_id=$note_id&class_level=" . urlencode($class));
         exit;
     } elseif (isset($_POST['save_as'])) {
-        // Save As: create a new note with a clean ID
         $conn->query("INSERT INTO notes (title, subject, class_level, content) VALUES ('$title (Copy)', '$subject', '$class', '$content')");
         $new_id = $conn->insert_id;
         header("Location: admin_note_editor.php?id=$new_id");
         exit;
     } else {
-        // Regular save – stay and show success
         echo "<script>window.noteId = $note_id; alert('$msg');</script>";
     }
 }
@@ -91,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="stylesheet" href="style.css">
 <!-- TinyMCE -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.7.0/tinymce.min.js"></script>
-<!-- MathQuill CSS & JS (Custom panel will use this) -->
+<!-- MathQuill CSS & JS -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
 <!-- MathJax -->
@@ -104,25 +99,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!-- Highlight.js -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<!-- Cropper (for diagrams) -->
+<!-- Cropper -->
 <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.5.12/dist/cropper.min.css">
 <style>
-    .ck-editor__editable { min-height: 600px; width: 100% !important; }
-    .ck-editor { width: 100% !important; }
-    .ck-editor__editable p { text-align: justify; }
+    /* Hide textarea to prevent raw HTML flash */
+    #editor { display: none; }
+    
+    /* Sticky toolbar container */
+    .sticky-toolbar-wrapper {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: white;
+        padding: 10px 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
     .toolbar-extras {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
         background: var(--card-alt-bg);
         padding: 10px;
         border-radius: 8px;
-        position: sticky;
-        top: 0;
-        z-index: 1000;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     .toolbar-extras button, .toolbar-extras select {
         background: var(--accent);
@@ -160,11 +160,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .lock-toggle { cursor: pointer; background: var(--accent); color: #1e293b; border: none; padding: 4px 12px; border-radius: 20px; }
     .lock-toggle.locked { background: var(--error); color: white; }
     .tox-tinymce { min-height: 600px !important; }
+
+    /* Bottom action bar */
+    .bottom-action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: white;
+        border-top: 1px solid #ddd;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 15px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        z-index: 1500;
+        box-sizing: border-box;
+    }
+    .bottom-action-bar .btn {
+        padding: 8px 20px;
+        border: none;
+        border-radius: 20px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .bottom-action-bar .btn-primary { background: var(--accent); color: #1e293b; }
+    .bottom-action-bar .btn-secondary { background: #e2e8f0; color: #1e293b; }
+    .bottom-action-bar .btn-finish { background: var(--success); color: white; }
+    .bottom-action-bar .btn-finish:hover { background: #2e7d32; }
+    body { padding-bottom: 80px; } /* prevent content from being hidden behind bottom bar */
 </style>
 </head>
 <body>
 <div class="container">
-<div style="padding: 2rem;">
+<div style="padding: 2rem 2rem 6rem 2rem;">
     <form method="post" id="noteForm">
         <input type="hidden" name="note_id" value="<?= $note_id ?>">
         <div class="form-group"><label>Title</label><input type="text" id="noteTitle" name="title" value="<?= htmlspecialchars($existing_note['title'] ?? '') ?>" required></div>
@@ -183,7 +212,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </select>
         </div>
         
-        <!-- Group selection (optional) -->
         <div class="group-selector">
             <h4>🎯 Assign to specific group (optional)</h4>
             <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -199,41 +227,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <small class="help-text">If you select a group, this note will be instantly unlocked for that group and locked for others.</small>
         </div>
 
-        <div class="toolbar-extras">
-            <button type="button" id="symbolBtn">Ω Symbols</button>
-            <button type="button" id="fileUploadBtn">📎 Attach File</button>
-            <button type="button" id="citationBtn">📚 Cite</button>
-            <button type="button" id="mathBtn">∫ Equation</button>
-            <button type="button" id="exampleBtn">📘 Insert Example</button>
-            <button type="button" id="exerciseBtn">✍️ Insert Exercise</button>
-            <button type="button" id="chemistryBtn">🧪 Chemistry</button>
-            <button type="button" id="diagramBtn">🔬 Diagrams</button>
-            <button type="button" id="mediaBtn">🎬 Embed Media</button>
-            <button type="button" id="researchPanelBtn">📖 Research</button>
-            <button type="button" id="libraryEqBtn">📐 Eq Library</button>
-            <button type="button" id="libraryDiagramBtn">🖼️ Diagram Library</button>
-            <button type="button" id="footerBtn">📄 Insert Footer</button>
-            <button type="button" id="referenceBtn">📚 Reference Manager</button>
-            <button type="button" id="editDiagramBtn">✏️ Edit Diagram Image</button>
-            <button type="button" id="templateBtn">🧩 Templates</button>
+        <!-- Sticky wrapper for toolbars -->
+        <div class="sticky-toolbar-wrapper">
+            <div class="toolbar-extras">
+                <button type="button" id="symbolBtn">Ω Symbols</button>
+                <button type="button" id="fileUploadBtn">📎 Attach File</button>
+                <button type="button" id="citationBtn">📚 Cite</button>
+                <button type="button" id="mathBtn">∫ Equation</button>
+                <button type="button" id="mathquillBtn">🧮 MathQuill</button>
+                <button type="button" id="exampleBtn">📘 Insert Example</button>
+                <button type="button" id="exerciseBtn">✍️ Insert Exercise</button>
+                <button type="button" id="chemistryBtn">🧪 Chemistry</button>
+                <button type="button" id="diagramBtn">🔬 Diagrams</button>
+                <button type="button" id="mediaBtn">🎬 Embed Media</button>
+                <button type="button" id="researchPanelBtn">📖 Research</button>
+                <button type="button" id="libraryEqBtn">📐 Eq Library</button>
+                <button type="button" id="libraryDiagramBtn">🖼️ Diagram Library</button>
+                <button type="button" id="footerBtn">📄 Insert Footer</button>
+                <button type="button" id="referenceBtn">📚 Reference Manager</button>
+                <button type="button" id="editDiagramBtn">✏️ Edit Diagram Image</button>
+                <button type="button" id="templateBtn">🧩 Templates</button>
+            </div>
         </div>
-        <div class="form-group"><label>Content</label><textarea name="content" id="editor" style="height: 600px;"><?= htmlspecialchars($existing_note['content'] ?? '') ?></textarea></div>
-        
-        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-            <button type="submit" class="btn">💾 Save Draft</button>
-            <button type="submit" name="save_as" class="btn btn-secondary">📄 Save As</button>
-            <button type="submit" name="finish" class="btn btn-finish" style="background:var(--success);color:white;">✅ Finish, Lock & Unlock</button>
+
+        <div class="form-group"><label>Content</label>
+            <textarea id="editor" name="content" style="height: 600px;"></textarea>
         </div>
     </form>
 
-    <!-- Lock Manager (initially hidden, appears after saving a note) -->
+    <!-- Lock Manager -->
     <div id="lockManager" class="lock-manager">
         <h3>🔒 Group Access Control for this Note</h3>
         <p>Toggle lock/unlock for each group. Locked = group cannot see the note. Unlocked = group can see the note.</p>
         <div id="lockManagerContent"></div>
     </div>
 </div>
-<div class="footer"><a href="admin_notes_list.php" class="btn-back">← Back to Notes</a></div>
+
+<!-- Bottom Action Bar -->
+<div class="bottom-action-bar">
+    <button class="btn btn-secondary" onclick="saveDraftAction()">💾 Save Draft</button>
+    <button class="btn btn-secondary" onclick="saveAsAction()">📄 Save As</button>
+    <button class="btn btn-finish" onclick="finishAction()">✅ Finish, Lock & Unlock</button>
+</div>
+
+<div class="footer" style="margin-bottom: 80px;"><a href="admin_notes_list.php" class="btn-back">← Back to Notes</a></div>
 </div>
 
 <!-- Template Library Modal -->
@@ -247,31 +284,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
-<!-- All modals (same as before) -->
+<!-- Symbol Modal -->
 <div id="symbolModal" class="modal"><div class="modal-content"><span class="close">&times;</span><h3>Insert Symbol</h3><div id="symbolList" style="display:flex;flex-wrap:wrap;gap:8px;max-height:300px;overflow-y:auto;"></div></div></div>
+
+<!-- Citation Modal -->
 <div id="citationModal" class="modal"><div class="modal-content"><h3>Add Citation</h3><div class="form-group"><label>Author(s) (Last, First)</label><input type="text" id="apaAuthor"></div><div class="form-group"><label>Year</label><input type="text" id="apaYear"></div><div class="form-group"><label>Title</label><input type="text" id="apaTitle"></div><div class="form-group"><label>Source</label><input type="text" id="apaSource"></div><div class="form-group"><label>DOI (optional)</label><input type="text" id="apaDoi"></div><button id="addCitationBtn" class="btn">Add</button><button id="closeCitationBtn" class="btn-secondary">Cancel</button></div></div>
+
+<!-- Reference Modal -->
 <div id="referenceModal" class="modal"><div class="modal-content"><h3>Reference List</h3><div id="referenceListContainer" class="citation-list"></div><button id="insertReferencesBtn" class="btn">Insert List</button><button id="closeReferenceBtn" class="btn-secondary">Close</button></div></div>
-<div id="mathHelperModal" class="modal"><div class="modal-content"><h3>Equation Helper</h3><div class="form-group"><label>LaTeX</label><textarea id="latexHelperInput" rows="3"></textarea></div><div class="math-preview" id="mathHelperPreview"></div><button id="insertHelperEquationBtn" class="btn">Insert</button><button id="closeMathHelperBtn" class="btn-secondary">Cancel</button></div></div>
+
+<!-- LaTeX Equation Helper Modal -->
+<div id="mathHelperModal" class="modal"><div class="modal-content"><h3>Equation Helper (LaTeX)</h3>
+    <div class="form-group"><label>LaTeX</label><textarea id="latexHelperInput" rows="3" placeholder="e.g. N(t)=N_0 e^{kt}"></textarea></div>
+    <div class="math-preview" id="mathHelperPreview"></div>
+    <button id="insertHelperEquationBtn" class="btn">Insert</button>
+    <button id="closeMathHelperBtn" class="btn-secondary">Cancel</button>
+</div></div>
+
+<!-- MathQuill Helper Modal -->
+<div id="mathquillModal" class="modal"><div class="modal-content"><h3>MathQuill Equation Editor</h3>
+    <div style="background:#f5f5f5; padding:20px; border-radius:8px; margin:15px 0; text-align:center;">
+        <div id="mathquill-field" style="font-size:24px; min-height:60px; background:white; padding:10px; border:1px solid #ccc; border-radius:4px;"></div>
+    </div>
+    <p style="color:#666;">Type your equation. Use <code>^</code> for superscript, <code>_</code> for subscript, <code>\frac{}{}</code> for fractions.</p>
+    <button id="insertMathquillBtn" class="btn">Insert Equation</button>
+    <button id="closeMathquillBtn" class="btn-secondary">Cancel</button>
+</div></div>
+
+<!-- Diagram Editor Modal -->
 <div id="diagramEditorModal" class="modal"><div class="modal-content"><h3>Edit Diagram</h3><div class="image-editor-container"><div><img id="editorImage" src=""></div><div class="image-controls"><label>Brightness</label><input type="range" id="brightness" min="-100" max="100" value="0"><br><label>Contrast</label><input type="range" id="contrast" min="-100" max="100" value="0"><br><label>Width (px)</label><input type="number" id="resizeWidth"><br><button id="applyImageChanges" class="btn">Apply</button><button id="saveEditedImage" class="btn">Save</button></div></div><button id="closeDiagramEditorBtn" class="btn-secondary">Cancel</button></div></div>
+
+<!-- Media Upload Modal -->
 <div id="mediaUploadModal" class="modal"><div class="modal-content"><h3>Upload Audio/Video</h3><input type="file" id="mediaFileInput" accept="audio/*,video/*"><button id="uploadMediaBtn" class="btn">Upload & Embed</button><button id="closeMediaUploadBtn" class="btn-secondary">Cancel</button></div></div>
+
+<!-- Equation Library Modal -->
 <div id="eqLibraryModal" class="modal"><div class="modal-content"><h3>Equation Library</h3><div id="eqLibraryList" class="library-grid"></div><button id="closeEqLibBtn" class="btn-secondary">Close</button></div></div>
+
+<!-- Diagram Library Modal -->
 <div id="diagramLibraryModal" class="modal"><div class="modal-content"><h3>Diagram Library</h3><div id="diagramLibraryList" class="library-grid"></div><button id="closeDiagramLibBtn" class="btn-secondary">Close</button></div></div>
+
+<!-- Chemistry Modal -->
 <div id="chemistryModal" class="modal"><div class="modal-content"><h3>Common Chemistry Equations</h3><select id="chemistrySelect" style="width:100%;padding:8px;margin-bottom:15px;"><option value="">-- Select --</option><option value="Photosynthesis: 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂">Photosynthesis</option><option value="Cellular Respiration: C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O + ATP">Cellular Respiration</option><option value="Hydrochloric Acid: HCl + H₂O → H₃O⁺ + Cl⁻">Hydrochloric Acid</option><option value="Neutralisation: H⁺ + OH⁻ → H₂O">Neutralisation</option><option value="Electrolysis of Water: 2H₂O → 2H₂ + O₂">Electrolysis of Water</option></select><button id="insertChemistryBtn" class="btn">Insert</button><button id="closeChemistryBtn" class="btn-secondary">Cancel</button></div></div>
+
+<!-- Web Research Modal -->
 <div id="webResearchModal" class="modal"><div class="modal-content"><h3>Web Research</h3><div class="form-group"><label>URL</label><input type="text" id="researchUrl" value="https://scholar.google.com/"></div><button id="openBrowserBtn" class="btn">Open</button><div class="form-group"><label>Notes</label><textarea id="researchText" rows="6"></textarea></div><button id="insertResearchNoteBtn" class="btn">Insert Notes</button><button id="closeWebResearchBtn" class="btn-secondary">Cancel</button></div></div>
+
+<!-- Media Embed Modal -->
 <div id="mediaModal" class="modal"><div class="modal-content"><h3>Embed Media (URL)</h3><div class="form-group"><label>Media URL</label><input type="text" id="mediaUrl"></div><button id="insertMediaBtn" class="btn">Embed</button><button id="closeMediaBtn" class="btn-secondary">Cancel</button></div></div>
 
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
-    // ---------- TinyMCE CORE ----------
+    // ---------- TINYMCE CORE ----------
     tinymce.init({
         selector: '#editor',
         height: 600,
         menubar: true,
         plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
         toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | specialchars | charmap | code',
+        toolbar_sticky: true,
         content_style: 'body { font-family: Inter, sans-serif; }',
         setup: function(editor) {
-            // ---------- PRE-FILL EXISTING CONTENT ----------
+            // ---------- SET CONTENT SAFELY ----------
             const existingContent = <?= json_encode($existing_note['content'] ?? '') ?>;
             if (existingContent) {
                 editor.on('init', function() {
@@ -286,6 +359,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
             editor.addShortcut('Ctrl+S', 'Save Draft', function() {
                 saveDraft(editor);
+            });
+
+            // ---------- ADD CUSTOM MENU ITEMS ----------
+            editor.ui.registry.addMenuItem('save', {
+                text: 'Save',
+                icon: 'save',
+                onAction: function() {
+                    saveDraftAction();
+                }
+            });
+            editor.ui.registry.addMenuItem('saveas', {
+                text: 'Save As...',
+                icon: 'newdocument',
+                onAction: function() {
+                    saveAsAction();
+                }
+            });
+            // Add them to File menu
+            editor.ui.registry.addMenuItem('savegroup', {
+                type: 'separator'
+            });
+            // Prepend to File menu
+            editor.on('init', function() {
+                const menu = editor.menuItems;
+                if (menu['file']) {
+                    // Insert after 'newdocument' (approx)
+                    const fileMenu = menu['file'];
+                    // Better: use custom menu, but for simplicity we add via API
+                    editor.menu.add('file', {
+                        title: 'File',
+                        items: 'newdocument | save | saveas | print'
+                    });
+                }
             });
 
             // ---------- MATHJAX & DIAGRAMS ----------
@@ -322,6 +428,36 @@ document.addEventListener('DOMContentLoaded', function() {
         }));
         console.log('Draft saved to localStorage at ' + new Date().toLocaleTimeString());
     }
+
+    // ---------- FORM SUBMIT HELPERS ----------
+    window.saveDraftAction = function() {
+        // Trigger form submit without special flags
+        const form = document.getElementById('noteForm');
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'save_draft';
+        hidden.value = '1';
+        form.appendChild(hidden);
+        form.submit();
+    };
+    window.saveAsAction = function() {
+        const form = document.getElementById('noteForm');
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'save_as';
+        hidden.value = '1';
+        form.appendChild(hidden);
+        form.submit();
+    };
+    window.finishAction = function() {
+        const form = document.getElementById('noteForm');
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'finish';
+        hidden.value = '1';
+        form.appendChild(hidden);
+        form.submit();
+    };
 
     // ---------- GROUP LOADER ----------
     const classSelect = document.getElementById('noteClass');
@@ -521,7 +657,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // ---------- EQUATION HELPER (MathJax – now working) ----------
+    // ---------- LATEX EQUATION HELPER (Fixed) ----------
     const mathBtn = document.getElementById('mathBtn');
     const mathHelperModal = document.getElementById('mathHelperModal');
     const closeMathHelperBtn = document.getElementById('closeMathHelperBtn');
@@ -554,6 +690,47 @@ document.addEventListener('DOMContentLoaded', function() {
             if (mathHelperPreview) {
                 mathHelperPreview.innerHTML = '';
             }
+        }
+    };
+
+    // ---------- MATHQUILL EQUATION HELPER (New) ----------
+    const mathquillBtn = document.getElementById('mathquillBtn');
+    const mathquillModal = document.getElementById('mathquillModal');
+    const closeMathquillBtn = document.getElementById('closeMathquillBtn');
+    const insertMathquillBtn = document.getElementById('insertMathquillBtn');
+    const mathquillField = document.getElementById('mathquill-field');
+
+    let mqField = null;
+    mathquillBtn.onclick = function() {
+        mathquillModal.style.display = 'flex';
+        setTimeout(() => {
+            if (!mqField && mathquillField) {
+                const MQ = MathQuill.getInterface(2);
+                mqField = MQ.MathField(mathquillField, {
+                    spaceBehavesLikeTab: true,
+                    handlers: {
+                        edit: function() {
+                            // optional live preview
+                        }
+                    }
+                });
+                // Focus the field
+                mqField.focus();
+            }
+        }, 200);
+    };
+    closeMathquillBtn.onclick = function() {
+        mathquillModal.style.display = 'none';
+    };
+    insertMathquillBtn.onclick = function() {
+        if (mqField && tinymce.activeEditor) {
+            const latex = mqField.latex();
+            if (latex.trim()) {
+                tinymce.activeEditor.insertContent('$$ ' + latex + ' $$');
+            }
+            mathquillModal.style.display = 'none';
+            mqField = null; // will reinit next time
+            mathquillField.innerHTML = '';
         }
     };
 
