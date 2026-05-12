@@ -9,7 +9,6 @@ require_once 'check_remember_me.php';
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
-    <!-- ✅ Structured Data (Moved from body to head) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -70,17 +69,6 @@ require_once 'check_remember_me.php';
         <h2><i class="fas fa-star"></i> What Our Students Say</h2>
         <div id="testimonialContainer" class="testimonial-slide"></div>
     </div>
-
-    <div class="footer">
-        <?php if (!isset($_SESSION['user_id'])): ?>
-            <a href="login.php">Login</a> | <a href="signup.php">Sign Up</a>
-        <?php else: ?>
-            <a href="dashboard.php">Dashboard</a> | <a href="logout.php">Logout</a>
-        <?php endif; ?>
-        <br><br>
-        <span style="color: var(--text-muted); font-size: 0.9rem;">SMART Circle – A digital learning community built for your future</span>
-    </div>
-</div>
 
 <!-- Eligibility Modal -->
 <div id="eligibilityModal" class="modal">

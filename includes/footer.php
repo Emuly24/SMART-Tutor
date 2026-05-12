@@ -1,4 +1,9 @@
 <?php
+// Ensure session is started so we can check login status
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Get the current file name dynamically
 $current_file = basename($_SERVER['PHP_SELF']);
 ?>
@@ -11,9 +16,15 @@ $current_file = basename($_SERVER['PHP_SELF']);
 
     <!-- ===== DYNAMIC ADDITIONAL BUTTONS ===== -->
     <?php if ($current_file == 'index.php'): ?>
-        <!-- Homepage: Show Login & Sign Up -->
-        <a href="login.php" class="btn">Login</a>
-        <a href="signup.php" class="btn">Sign Up</a>
+        <!-- Homepage -->
+        <?php if (isset($_SESSION['user_id'])): ?>
+            <!-- Logged‑in user sees Go to Dashboard -->
+            <a href="dashboard.php" class="btn">Go to Dashboard</a>
+        <?php else: ?>
+            <!-- Public user sees Login & Sign Up -->
+            <a href="login.php" class="btn">Login</a>
+            <a href="signup.php" class="btn">Sign Up</a>
+        <?php endif; ?>
     
     <?php elseif ($current_file == 'login.php'): ?>
         <!-- Login page: Show Sign Up -->
@@ -24,11 +35,11 @@ $current_file = basename($_SERVER['PHP_SELF']);
         <a href="login.php" class="btn">Login</a>
 
     <?php elseif ($current_file == 'apply.php'): ?>
-        <!-- Application page: Show Dashboard/Back -->
+        <!-- Application page: Show Dashboard -->
         <a href="dashboard.php" class="btn">Dashboard</a>
 
     <?php elseif ($current_file == 'pending.php' || $current_file == 'consent.php'): ?>
-        <!-- Pending/Consent pages: Show appropriate navigation -->
+        <!-- Pending/Consent pages: Show Dashboard -->
         <a href="dashboard.php" class="btn">Dashboard</a>
 
     <?php endif; ?>

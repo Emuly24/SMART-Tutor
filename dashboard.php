@@ -67,10 +67,13 @@ $att_total = $att_stats['total'] ?? 0;
 $att_present = $att_stats['present'] ?? 0;
 $att_late = $att_stats['late'] ?? 0;
 $attendance_rate = $att_total ? round((($att_present + $att_late) / $att_total) * 100) : 0;
+
+// Message counts for the Notification card
 $msg_count = $conn->query("SELECT COUNT(*) as total, SUM(CASE WHEN read_at IS NULL THEN 1 ELSE 0 END) as unread FROM admin_messages WHERE user_id = $uid");
 $msg_row = $msg_count->fetch_assoc();
-$total_msgs = $msg_row['total'];
-$unread_msgs = $msg_row['unread'];
+$total_msgs = $msg_row['total'] ?? 0;
+$unread_msgs = $msg_row['unread'] ?? 0;
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -78,6 +81,85 @@ $unread_msgs = $msg_row['unread'];
     <title>Dashboard - SMART Circle</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ============================================
+           PREMIUM STAT CARDS
+           ============================================ */
+        .stats-grid {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: nowrap;
+            margin: 1.5rem 0;
+            justify-content: center;
+        }
+        .stats-grid .stat-card {
+            background: var(--card-bg);
+            border-radius: 1rem;
+            padding: 1.2rem 1.5rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(0,0,0,0.05);
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+            transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1);
+            position: relative;
+        }
+        .stats-grid .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--hover-shadow);
+            border-color: var(--accent);
+        }
+        .stats-grid .stat-card i {
+            font-size: 1.8rem;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        .stats-grid .stat-card .stat-number {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text-color);
+            line-height: 1.2;
+        }
+        .stats-grid .stat-card .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stats-grid .stat-card .stat-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        /* Notification Badge */
+        .notif-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--error);
+            color: white;
+            border-radius: 50%;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+        }
+        .notif-badge.zero {
+            background: var(--success);
+            box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4);
+        }
+        .stats-grid .stat-card .notif-icon-wrap {
+            position: relative;
+            display: inline-block;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
@@ -166,24 +248,41 @@ $unread_msgs = $msg_row['unread'];
     </div>
     <?php endif; ?>
 
+    <!-- ===== PREMIUM STAT CARDS ===== -->
     <div class="stats-grid">
         <div class="stat-card">
             <i class="fas fa-dumbbell"></i>
             <div class="stat-number"><?= $done_exercises ?>/<?= $total_exercises ?></div>
-            <div class="stat-label">Exercises Completed</div>
+            <div class="stat-label">Exercises</div>
+            <div class="stat-sub">Completed</div>
         </div>
         <div class="stat-card">
             <i class="fas fa-question-circle"></i>
             <div class="stat-number"><?= $done_quizzes ?>/<?= $total_quizzes ?></div>
-            <div class="stat-label">Quizzes Completed</div>
+            <div class="stat-label">Quizzes</div>
+            <div class="stat-sub">Completed</div>
         </div>
         <div class="stat-card">
             <i class="fas fa-calendar-alt"></i>
             <div class="stat-number"><?= $attendance_rate ?>%</div>
             <div class="stat-label">Attendance (30d)</div>
+            <div class="stat-sub"><?= $att_total ?> sessions</div>
+        </div>
+        <div class="stat-card">
+            <div class="notif-icon-wrap">
+                <i class="fas fa-envelope"></i>
+                <!-- Notification Badge -->
+                <span class="notif-badge <?= $unread_msgs == 0 ? 'zero' : '' ?>">
+                    <?= $unread_msgs ?>
+                </span>
+            </div>
+            <div class="stat-number"><?= $total_msgs ?></div>
+            <div class="stat-label">Messages</div>
+            <div class="stat-sub"><?= $unread_msgs > 0 ? $unread_msgs . ' unread' : 'All read ✓' ?></div>
         </div>
     </div>
 
+    <!-- Progress Bars -->
     <div class="progress-bar">
         <strong>📚 Exercise Progress:</strong> <?= $done_exercises ?>/<?= $total_exercises ?> completed (<?= $total_exercises ? round(($done_exercises/$total_exercises)*100) : 0 ?>%)<br>
         <div class="progress-fill" style="width:<?= $total_exercises ? round(($done_exercises/$total_exercises)*100) : 0 ?>%"></div>
@@ -192,17 +291,6 @@ $unread_msgs = $msg_row['unread'];
         <strong>📊 Quiz Progress:</strong> <?= $done_quizzes ?>/<?= $total_quizzes ?> completed (<?= $total_quizzes ? round(($done_quizzes/$total_quizzes)*100) : 0 ?>%)<br>
         <div class="progress-fill" style="width:<?= $total_quizzes ? round(($done_quizzes/$total_quizzes)*100) : 0 ?>%"></div>
     </div>
-    <div class="stat-card">
-    <i class="fas fa-envelope"></i>
-    <div class="stat-number"><?= $unread_msgs ?></div>
-    <div class="stat-label">Unread Messages</div>
-    <div style="font-size:0.8rem;color:var(--text-muted);">
-        Total: <?= $total_msgs ?>
-        <?php if ($unread_msgs > 0): ?>
-            <span style="color:var(--error);font-weight:bold;">  ●</span>
-        <?php endif; ?>
-    </div>
-</div>
 
     <?php
     $paper_pending = $conn->query("SELECT COUNT(*) FROM exercise_attempts a JOIN note_exercises e ON a.exercise_id=e.id JOIN notes n ON e.note_id=n.id WHERE a.user_id=$uid AND a.status='paper_pending'");
@@ -265,6 +353,6 @@ $unread_msgs = $msg_row['unread'];
     </div>
 
     <?php include_once 'includes/footer.php'; ?>
-<?php include_once 'includes/toc_navigator.php'; ?>
+    <?php include_once 'includes/toc_navigator.php'; ?>
 </body>
 </html>

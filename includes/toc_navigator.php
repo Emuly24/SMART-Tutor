@@ -157,7 +157,20 @@
     const closeBtn = document.getElementById('tocCloseBtn');
     const backToTopBtn = document.getElementById('tocBackToTop');
 
-    // --- 1. Scan the DOM for headings ---
+    // --- Helper: Check if an element is actually visible ---
+    function isElementVisible(el) {
+        // Check the element and all its ancestors
+        while (el) {
+            const style = window.getComputedStyle(el);
+            if (style.display === 'none' || style.visibility === 'hidden' || parseFloat(style.opacity) === 0) {
+                return false;
+            }
+            el = el.parentElement;
+        }
+        return true;
+    }
+
+    // --- 1. Scan the DOM for visible headings ---
     function scanHeadings() {
         // Select only headings inside .container or .note-container to avoid header/footer
         const containers = document.querySelectorAll('.container, .note-container, .admin-note-container, .student-note-container, .apply-container, .consent-container, .login-container, .signup-container');
@@ -165,8 +178,9 @@
         containers.forEach(container => {
             const found = container.querySelectorAll('h2, h3, h4');
             found.forEach(h => {
-                // Skip if heading is empty or directly inside another skipped element
+                // Skip if heading is empty or inside a hidden parent
                 if (h.textContent.trim().length === 0) return;
+                if (!isElementVisible(h)) return;
                 headings.push(h);
             });
         });
@@ -182,6 +196,8 @@
                     }
                     parent = parent.parentElement;
                 }
+                // Also check visibility
+                if (!isElementVisible(h)) return;
                 headings.push(h);
             });
         }
@@ -192,7 +208,7 @@
     function buildTOC(headings) {
         listEl.innerHTML = '';
         if (headings.length === 0) {
-            listEl.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-muted);">No sections found.</div>';
+            listEl.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--text-muted);">No visible sections found.</div>';
             return;
         }
         headings.forEach((h, index) => {
@@ -217,21 +233,6 @@
         const headings = scanHeadings();
         buildTOC(headings);
     }
-    // Highlight current section on scroll
-let currentScrollId = '';
-window.addEventListener('scroll', function() {
-    const items = document.querySelectorAll('.toc-item');
-    let current = null;
-    headings.forEach((h) => {
-        const rect = h.getBoundingClientRect();
-        if (rect.top <= 150) current = h;
-    });
-    if (current) {
-        items.forEach(item => item.style.background = 'transparent');
-        const activeItem = Array.from(items).find(item => item.textContent.trim() === current.textContent.trim());
-        if (activeItem) activeItem.style.background = 'var(--card-alt-bg)';
-    }
-});
 
     // --- 4. Show/hide floating button on scroll ---
     function checkScroll() {

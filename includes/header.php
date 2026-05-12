@@ -112,6 +112,8 @@ $page_titles = [
 $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $current_file));
 ?>
 <nav class="top-nav">
+     <!-- Left Group: Hamburger, Brand, User Info, Page Title -->
+    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; flex: 1;">
     <div class="hamburger">
         <input type="checkbox" id="menu-toggle">
         <label for="menu-toggle" class="menu-icon">☰</label>
@@ -154,19 +156,27 @@ $page_title = $page_titles[$current_file] ?? ucfirst(str_replace('_', ' ', $curr
     <div class="page-title"><?= htmlspecialchars($page_title) ?></div>
 
     <div class="nav-right">
-        <!-- User info – only for logged‑in users -->
+                <!-- User Info – Stacked vertically (Name on top, Tagline below) -->
         <?php if ($role != 'public'): ?>
-            <div class="user-info-stacked">
+            <div class="user-info-stacked" style="display: flex; flex-direction: column; align-items: flex-start; line-height: 1.3;">
                 <div class="user-name-stacked"><?= htmlspecialchars($fullname) ?></div>
                 <?php if ($tagline): ?>
-                    <div class="user-tagline-stacked"><?= htmlspecialchars($tagline) ?></div>
+                    <div class="user-tagline-stacked" style="font-size: 0.75rem; opacity: 0.85;"><?= htmlspecialchars($tagline) ?></div>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
 
-        <!-- About Us – only on homepage, visible to everyone -->
+        <!-- Active Page Title (with color code) -->
+        <div class="page-title" style="background: var(--accent); color: #1e293b; padding: 0.2rem 1rem; border-radius: 2rem; font-weight: 700; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(212,175,55,0.3);">
+            <?= htmlspecialchars($page_title) ?>
+        </div>
+    </div>
+
+    <!-- Right Group: About, Theme, Dashboard, Logout -->
+    <div class="nav-right" style="display: flex; align-items: center; gap: 0.8rem; flex-wrap: nowrap; justify-content: flex-end;">
+        <!-- About Us – only on homepage -->
         <?php if ($current_file === 'index'): ?>
-            <a href="about.php" style="color: white; text-decoration: none; font-weight: 600; margin-right: 0.5rem;">👥 About Us</a>
+            <a href="about.php" style="color: white; text-decoration: none; font-weight: 600;">👥 About Us</a>
         <?php endif; ?>
 
         <button id="theme-toggle" class="theme-btn" aria-label="Toggle theme">🌙</button>
