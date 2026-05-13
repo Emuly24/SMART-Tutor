@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <link rel="stylesheet" href="style.css">
 <!-- TinyMCE -->
 <script src="https://cdn.jsdelivr.net/npm/tinymce@6.4.2/tinymce.min.js"></script>
-<!-- MathQuill CSS & JS -->
+<!-- MathQuill -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
 <!-- MathJax -->
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         display: block; 
     }
     
-    /* Sticky toolbar containers */
+    /* Sticky toolbar container */
     .sticky-toolbar-wrapper {
         position: sticky;
         top: 0;
@@ -134,7 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .toolbar-extras.hidden {
         display: none;
     }
-    /* Toggle button */
+    .toggle-toolbar-container {
+        margin-bottom: 5px;
+    }
     .toggle-toolbar-btn {
         background: var(--accent);
         color: #1e293b;
@@ -145,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         cursor: pointer;
         transition: 0.2s;
         margin-bottom: 5px;
+        display: inline-block;
     }
     .toggle-toolbar-btn:hover {
         background: var(--accent-dark);
@@ -189,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .lock-toggle.locked { background: var(--error); color: white; }
     .tox-tinymce { min-height: 600px !important; }
 
-    /* Bottom action bar - only Finish button */
+    /* Bottom action bar - only Finish */
     .bottom-action-bar {
         position: fixed;
         bottom: 0;
@@ -215,6 +218,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     .bottom-action-bar .btn-finish { background: var(--success); color: white; }
     .bottom-action-bar .btn-finish:hover { background: #2e7d32; }
     body { padding-bottom: 80px; }
+    
+    /* Image editing floating toolbar */
+    .image-edit-toolbar {
+        display: none;
+        position: absolute;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 6px 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 2000;
+        gap: 6px;
+    }
+    .image-edit-toolbar button {
+        background: var(--card-alt-bg);
+        border: none;
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 13px;
+    }
+    .image-edit-toolbar button:hover {
+        background: var(--accent);
+    }
 </style>
 </head>
 <body>
@@ -253,12 +280,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <small class="help-text">If you select a group, this note will be instantly unlocked for that group and locked for others.</small>
         </div>
 
-        <!-- Sticky wrapper for toolbars -->
+        <!-- ✅ TOGGLE BUTTON OUTSIDE FORM & STICKY TOOLBAR -->
         <div class="sticky-toolbar-wrapper">
-            <!-- Toggle Button -->
-            <button id="toggleGoldBtn" class="toggle-toolbar-btn">🛠️ Toggle Tools</button>
-            
-            <div id="goldToolbar" class="toolbar-extras">
+            <div class="toggle-toolbar-container">
+                <button type="button" id="toggleGoldBtn" class="toggle-toolbar-btn">🛠️ Toggle Tools</button>
+            </div>
+            <div id="goldToolbar" class="toolbar-extras hidden">
                 <button type="button" id="symbolBtn">Ω Symbols</button>
                 <button type="button" id="fileUploadBtn">📎 Attach File</button>
                 <button type="button" id="citationBtn">📚 Cite</button>
@@ -300,6 +327,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <div class="footer" style="margin-bottom: 80px;"><a href="admin_notes_list.php" class="btn-back">← Back to Notes</a></div>
 </div>
 
+<!-- ====== MODALS ====== -->
+
 <!-- Template Library Modal -->
 <div id="templateModal" class="modal">
     <div class="modal-content" style="max-width: 1200px;">
@@ -328,7 +357,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button id="closeMathHelperBtn" class="btn-secondary">Cancel</button>
 </div></div>
 
-<!-- MathQuill Helper Modal (Fixed) -->
+<!-- MathQuill Helper Modal -->
 <div id="mathquillModal" class="modal"><div class="modal-content"><h3>MathQuill Equation Editor</h3>
     <div style="background:#f5f5f5; padding:20px; border-radius:8px; margin:15px 0; text-align:center;">
         <div id="mathquill-field" style="font-size:24px; min-height:60px; background:white; padding:10px; border:1px solid #ccc; border-radius:4px;"></div>
@@ -338,8 +367,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button id="closeMathquillBtn" class="btn-secondary">Cancel</button>
 </div></div>
 
-<!-- Diagram Editor Modal -->
-<div id="diagramEditorModal" class="modal"><div class="modal-content"><h3>Edit Diagram</h3><div class="image-editor-container"><div><img id="editorImage" src=""></div><div class="image-controls"><label>Brightness</label><input type="range" id="brightness" min="-100" max="100" value="0"><br><label>Contrast</label><input type="range" id="contrast" min="-100" max="100" value="0"><br><label>Width (px)</label><input type="number" id="resizeWidth"><br><button id="applyImageChanges" class="btn">Apply</button><button id="saveEditedImage" class="btn">Save</button></div></div><button id="closeDiagramEditorBtn" class="btn-secondary">Cancel</button></div></div>
+<!-- Image Cropper Modal -->
+<div id="imageCropperModal" class="modal">
+    <div class="modal-content" style="max-width:900px;">
+        <h3>✂️ Edit Image</h3>
+        <div style="max-height:70vh; overflow:hidden; margin:15px 0;">
+            <img id="cropperImage" src="" style="max-width:100%; max-height:500px;">
+        </div>
+        <div style="display:flex; gap:15px; flex-wrap:wrap; margin:15px 0;">
+            <button id="cropApplyBtn" class="btn" style="background:var(--success);color:white;">✅ Crop</button>
+            <button id="rotateLeftBtn" class="btn" style="background:var(--accent);color:#1e293b;">↺ Rotate Left</button>
+            <button id="rotateRightBtn" class="btn" style="background:var(--accent);color:#1e293b;">↻ Rotate Right</button>
+            <button id="cropResetBtn" class="btn-secondary">Reset</button>
+            <button id="cropCancelBtn" class="btn-secondary" style="background:var(--error);color:white;">Cancel</button>
+        </div>
+    </div>
+</div>
 
 <!-- Media Upload Modal -->
 <div id="mediaUploadModal" class="modal"><div class="modal-content"><h3>Upload Audio/Video</h3><input type="file" id="mediaFileInput" accept="audio/*,video/*"><button id="uploadMediaBtn" class="btn">Upload & Embed</button><button id="closeMediaUploadBtn" class="btn-secondary">Cancel</button></div></div>
@@ -361,34 +404,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <script type="text/javascript">
 document.addEventListener('DOMContentLoaded', function() {
-    // ---------- GOLD TOOLBAR TOGGLE ----------
+    // ---------- GOLD TOOLBAR TOGGLE (FIXED: NO SAVE) ----------
     const toggleBtn = document.getElementById('toggleGoldBtn');
     const goldToolbar = document.getElementById('goldToolbar');
-    // Start hidden?
-    goldToolbar.classList.add('hidden');
-    toggleBtn.addEventListener('click', function() {
+    
+    toggleBtn.addEventListener('click', function(e) {
+        e.preventDefault(); // ✅ PREVENT ANY FORM SUBMISSION
         goldToolbar.classList.toggle('hidden');
         toggleBtn.textContent = goldToolbar.classList.contains('hidden') ? '🛠️ Show Tools' : '🛠️ Hide Tools';
     });
 
-    // ---------- TINYMCE CORE (with sticky toolbar) ----------
+    // ---------- TINYMCE CORE ----------
     tinymce.init({
         selector: '#editor',
         height: 600,
         menubar: true,
         plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
-        toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | specialchars | charmap | code',
+        toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | charmap | code',
         toolbar_sticky: true,
         menubar: 'file edit view insert format tools table',
         content_style: 'body { font-family: Inter, sans-serif; }',
         
-        // Hide raw textarea once loaded
         init_instance_callback: function(editor) {
             document.getElementById('editor').style.display = 'none';
         },
 
         setup: function(editor) {
-            // ---------- SET CONTENT ----------
+            // ---------- EXISTING CONTENT ----------
             const existingContent = <?= json_encode($existing_note['content'] ?? '') ?>;
             if (existingContent) {
                 editor.on('init', function() {
@@ -396,21 +438,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            // ---------- AUTO-SAVE DRAFT ----------
-            setInterval(function() {
-                saveDraft(editor);
-            }, 30000);
-
-            editor.addShortcut('Ctrl+S', 'Save Draft', function() {
-                saveDraft(editor);
-            });
-
-            // ---------- CUSTOM MENU ITEMS: SAVE & SAVE AS IN FILE MENU ----------
-            editor.ui.registry.addMenuItem('save', {
+            // ---------- SAVE & SAVE AS MENU ITEMS IN FILE MENU ----------
+            editor.ui.registry.addMenuItem('customSave', {
                 text: 'Save',
                 icon: 'save',
                 onAction: function() {
-                    // Submit the form with 'save_draft'
                     const form = document.getElementById('noteForm');
                     const hidden = document.createElement('input');
                     hidden.type = 'hidden';
@@ -420,7 +452,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     form.submit();
                 }
             });
-            editor.ui.registry.addMenuItem('saveas', {
+            
+            editor.ui.registry.addMenuItem('customSaveAs', {
                 text: 'Save As...',
                 icon: 'newdocument',
                 onAction: function() {
@@ -433,15 +466,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     form.submit();
                 }
             });
-            // Add them to File menu (customize)
+
+            // ✅ Correct way to add items to File menu in TinyMCE 6
             editor.on('init', function() {
+                // Get the existing file menu
                 editor.menu.add('file', {
                     title: 'File',
-                    items: 'newdocument | save | saveas | print'
+                    items: 'newdocument | customSave customSaveAs | print'
                 });
             });
 
-            // ---------- MATHJAX & DIAGRAMS ----------
+            // ---------- MATHJAX ----------
             editor.on('init', function() {
                 const content = editor.getContent();
                 if (content && window.MathJax) {
@@ -458,8 +493,83 @@ document.addEventListener('DOMContentLoaded', function() {
             editor.on('SetContent', function() {
                 if (window.hljs) setTimeout(hljs.highlightAll, 100);
             });
+
+            // ---------- IMAGE CLICK HANDLER (INLINE EDITING) ----------
+            editor.on('click', function(e) {
+                const target = e.target;
+                if (target.tagName === 'IMG') {
+                    // Show image edit toolbar
+                    const rect = target.getBoundingClientRect();
+                    // We'll work with Cropper.js modal instead
+                    const imgSrc = target.src;
+                    showImageCropper(imgSrc, target);
+                }
+            });
         }
     });
+
+    // ---------- IMAGE CROPPER FUNCTION ----------
+    let cropper = null;
+    let currentImageElement = null;
+    const cropperModal = document.getElementById('imageCropperModal');
+    const cropperImg = document.getElementById('cropperImage');
+    
+    function showImageCropper(src, imgElement) {
+        currentImageElement = imgElement;
+        cropperImg.src = src;
+        cropperModal.style.display = 'flex';
+        
+        setTimeout(() => {
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(cropperImg, {
+                aspectRatio: NaN,
+                viewMode: 1,
+                autoCropArea: 0.8,
+            });
+        }, 300);
+    }
+    
+    document.getElementById('cropApplyBtn').onclick = function() {
+        if (cropper && currentImageElement) {
+            const canvas = cropper.getCroppedCanvas({
+                maxWidth: 800,
+                maxHeight: 800,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            canvas.toBlob(function(blob) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const newSrc = e.target.result;
+                    if (tinymce.activeEditor) {
+                        tinymce.activeEditor.dom.setAttrib(currentImageElement, 'src', newSrc);
+                    }
+                    cropperModal.style.display = 'none';
+                    if (cropper) cropper.destroy();
+                    cropper = null;
+                    currentImageElement = null;
+                };
+                reader.readAsDataURL(blob);
+            });
+        }
+    };
+    
+    document.getElementById('rotateLeftBtn').onclick = function() {
+        if (cropper) cropper.rotate(-90);
+    };
+    document.getElementById('rotateRightBtn').onclick = function() {
+        if (cropper) cropper.rotate(90);
+    };
+    document.getElementById('cropResetBtn').onclick = function() {
+        if (cropper) cropper.reset();
+    };
+    document.getElementById('cropCancelBtn').onclick = function() {
+        cropperModal.style.display = 'none';
+        if (cropper) cropper.destroy();
+        cropper = null;
+        currentImageElement = null;
+    };
 
     // ---------- DRAFT FUNCTIONS ----------
     function saveDraft(editor) {
@@ -476,7 +586,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Draft saved to localStorage at ' + new Date().toLocaleTimeString());
     }
 
-    // ---------- FINISH ACTION (bottom bar) ----------
+    // ---------- FINISH ACTION ----------
     window.finishAction = function() {
         const form = document.getElementById('noteForm');
         const hidden = document.createElement('input');
@@ -685,7 +795,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // ---------- LATEX EQUATION HELPER (Debounced, working) ----------
+    // ---------- LATEX EQUATION HELPER ----------
     const mathBtn = document.getElementById('mathBtn');
     const mathHelperModal = document.getElementById('mathHelperModal');
     const closeMathHelperBtn = document.getElementById('closeMathHelperBtn');
@@ -700,22 +810,19 @@ document.addEventListener('DOMContentLoaded', function() {
         mathHelperModal.style.display = 'none';
     };
 
-    // Debounce function to prevent errors on incomplete LaTeX
     let debounceTimer;
     latexHelperInput.addEventListener('input', function() {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
             if (mathHelperPreview) {
                 const rawLatex = latexHelperInput.value.trim();
-                // Only try to render if there's content
                 if (rawLatex.length > 0) {
                     mathHelperPreview.innerHTML = `\\[ ${rawLatex} \\]`;
                     if (window.MathJax) {
                         MathJax.typesetPromise([mathHelperPreview])
                             .catch((err) => {
                                 console.log("MathJax Error:", err);
-                                // Friendly message for incomplete LaTeX
-                                const msg = "✏️ Your LaTeX is incomplete (e.g., missing subscript/superscript). Keep typing!";
+                                const msg = "✏️ Incomplete LaTeX (keep typing!)";
                                 mathHelperPreview.innerHTML = `<span style='color:#d97706; font-weight:bold;'>${msg}</span>`;
                             });
                     }
@@ -723,7 +830,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     mathHelperPreview.innerHTML = '';
                 }
             }
-        }, 400); // Wait 400ms after user stops typing
+        }, 400);
     });
 
     insertHelperEquationBtn.onclick = function() {
@@ -738,49 +845,39 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // ---------- MATHQUILL EQUATION HELPER (FIXED) ----------
+    // ---------- MATHQUILL ----------
     const mathquillBtn = document.getElementById('mathquillBtn');
     const mathquillModal = document.getElementById('mathquillModal');
     const closeMathquillBtn = document.getElementById('closeMathquillBtn');
     const insertMathquillBtn = document.getElementById('insertMathquillBtn');
     const mathquillField = document.getElementById('mathquill-field');
 
-    let mqFieldInstance = null;
+    let mqField = null;
     mathquillBtn.onclick = function() {
         mathquillModal.style.display = 'flex';
-        // Ensure mathquill-field is empty and visible before initializing
         setTimeout(() => {
             if (mathquillField) {
-                // Clear any previous content
                 mathquillField.innerHTML = '';
                 const MQ = MathQuill.getInterface(2);
-                mqFieldInstance = MQ.MathField(mathquillField, {
+                mqField = MQ.MathField(mathquillField, {
                     spaceBehavesLikeTab: true,
-                    handlers: {
-                        edit: function() {
-                            // Optional live preview
-                        }
-                    }
                 });
-                mqFieldInstance.focus();
+                mqField.focus();
             }
         }, 300);
     };
     closeMathquillBtn.onclick = function() {
         mathquillModal.style.display = 'none';
-        // Clear instance to reinitialize next time
-        if (mqFieldInstance) {
-            mqFieldInstance = null;
-        }
+        if (mqField) mqField = null;
     };
     insertMathquillBtn.onclick = function() {
-        if (mqFieldInstance && tinymce.activeEditor) {
-            const latex = mqFieldInstance.latex();
+        if (mqField && tinymce.activeEditor) {
+            const latex = mqField.latex();
             if (latex.trim()) {
                 tinymce.activeEditor.insertContent('$$ ' + latex + ' $$');
             }
             mathquillModal.style.display = 'none';
-            mqFieldInstance = null; // Reset for next time
+            mqField = null;
             mathquillField.innerHTML = '';
         }
     };
