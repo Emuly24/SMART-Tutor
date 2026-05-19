@@ -52,7 +52,7 @@ $quizzes = $conn->query("SELECT q.id, q.title, q.description, q.time_limit
                 <h3>📖 Notes</h3>
                 <?php if($notes->num_rows): ?>
                     <?php while($n=$notes->fetch_assoc()):?>
-                        <p><strong><?=htmlspecialchars($n['title'])?></strong><br><a href="view_note.php?id=<?=$n['id']?>">Read Note</a></p>
+                        <p><strong><?=htmlspecialchars($n['title'])?></strong><br><a href="student_view_note.php?id=<?=$n['id']?>">Read This Note</a></p>
                     <?php endwhile; ?>
                 <?php else: ?>
                     <p>No notes unlocked yet.</p>
@@ -69,7 +69,7 @@ $quizzes = $conn->query("SELECT q.id, q.title, q.description, q.time_limit
                             Submitted on <?=$a['submitted']?>
                             <?php if($a['marks']!==null) echo " - Marks: {$a['marks']}";?>
                         <?php else:?>
-                            <a href="submit_assignment.php?assignment_id=<?=$a['id']?>">Submit</a>
+                            <a href="student_submit_assignment.php?assignment_id=<?=$a['id']?>">Submit Assignment</a>
                         <?php endif;?>
                         </p>
                     <?php endwhile; ?>

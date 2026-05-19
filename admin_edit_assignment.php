@@ -1,12 +1,11 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+$admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN_HASH') ? ADMIN_HASH : '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu');
 if (!isset($_SESSION['admin_logged'])) {
-    if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], ADMIN_HASH)) {
+    if (!isset($_SERVER['PHP_AUTH_USER']) || !password_verify($_SERVER['PHP_AUTH_PW'], $admin_hash)) {
         header('WWW-Authenticate: Basic realm="SMART Circle Admin"');
         header('HTTP/1.0 401 Unauthorized');
         echo 'Access denied';
@@ -19,13 +18,17 @@ if (!isset($_SESSION['admin_logged'])) {
 $conn = getDB();
 $id = (int)$_GET['id'];
 $assign = $conn->query("SELECT * FROM assignments WHERE id=$id")->fetch_assoc();
-if (!$assign) die("Not found");
+if (!$assign) die("Assignment not found");
+$subjects = ['Mathematics', 'Biology', 'English', 'Physics', 'Chemistry'];
+$classes = ['Form 3', 'Form 4'];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $title = $_POST['title'];
     $desc = $_POST['description'];
     $subj = $_POST['subject'];
     $class = $_POST['class_level'];
     $due = $_POST['due_date'];
+    $group_id = isset($_POST['group_id']) && $_POST['group_id'] ? (int)$_POST['group_id'] : 0;
     $attach = $assign['attachment_file_path'];
     if (isset($_POST['remove_attachment']) && $_POST['remove_attachment'] == 1) {
         if ($attach && file_exists($attach)) unlink($attach);
@@ -45,21 +48,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     $conn->query("UPDATE assignments SET title='$title', description='$desc', attachment_file_path='$attach', subject='$subj', class_level='$class', due_date='$due' WHERE id=$id");
-    echo "<script>alert('Updated'); window.location='admin_assignments_list.php';</script>";
+    
+    // Update locks if a group was selected
+    if ($group_id) {
+        $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
+        while ($g = $all_groups->fetch_assoc()) {
+            $lock = $g['id'] == $group_id ? 0 : 1;
+            $conn->query("INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) 
+                          VALUES ({$g['id']}, 'assignment', $id, $lock)
+                          ON DUPLICATE KEY UPDATE is_locked = $lock");
+        }
+        $msg = "Assignment updated and unlocked for the selected group.";
+    } else {
+        $msg = "Assignment updated.";
+    }
+    echo "<script>alert('$msg'); window.location='admin_assignments_list.php';</script>";
     exit;
 }
 ?>
-<!DOCTYPE html><html><head><title>Edit Assignment</title>    <link rel="stylesheet" href="style.css">
-</head><body>
+<!DOCTYPE html><html><head><title>Edit Assignment</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
+    <div class="container">
+        <div class="card" style="padding: 2rem;">
+            <h2>✏️ Edit Assignment</h2>
+            <form method="post" enctype="multipart/form-data">
+                <div class="form-group"><label>Title</label><input type="text" name="title" value="<?= htmlspecialchars($assign['title']) ?>" required></div>
+                <div class="form-group"><label>Description</label><textarea name="description" rows="4" required><?= htmlspecialchars($assign['description']) ?></textarea></div>
+                
+                <?php if($assign['attachment_file_path']): ?>
+                    <p>Current attachment: <a href="admin_download.php?type=assignment&file=<?= urlencode(basename($assign['attachment_file_path'])) ?>" target="_blank">View</a>
+                    <label><input type="checkbox" name="remove_attachment" value="1"> Remove</label></p>
+                <?php endif; ?>
+                <div class="form-group"><label>Replace/Add Attachment</label><input type="file" name="attachment" accept=".jpg,.png,.pdf,.doc,.txt"></div>
+                
+                <div class="form-group"><label>Subject</label>
+                    <select name="subject" required>
+                        <option value="">-- Select Subject --</option>
+                        <?php foreach ($subjects as $sub): ?>
+                            <option value="<?= htmlspecialchars($sub) ?>" <?= ($assign['subject'] == $sub) ? 'selected' : '' ?>><?= htmlspecialchars($sub) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group"><label>Class</label>
+                    <select name="class_level" required>
+                        <option value="">-- Select Class --</option>
+                        <?php foreach ($classes as $cls): ?>
+                            <option value="<?= $cls ?>" <?= ($assign['class_level'] == $cls) ? 'selected' : '' ?>><?= $cls ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group"><label>Due Date</label><input type="date" name="due_date" value="<?= $assign['due_date'] ?>" required></div>
 
-    
-
-<div class="container">
-
-<div class="content-grid">
-<form method="post" enctype="multipart/form-data"><label>Title</label><input type="text" name="title" value="<?=htmlspecialchars($assign['title'])?>" required><label>Description</label><textarea name="description" rows="4"><?=htmlspecialchars($assign['description'])?></textarea><?php if($assign['attachment_file_path']):?><p>Current attachment: <a href="admin_download.php?type=assignment&file=<?=urlencode(basename($assign['attachment_file_path']))?>" target="_blank">View</a> <label><input type="checkbox" name="remove_attachment" value="1"> Remove</label></p><?php endif;?><label>Replace/Add Attachment</label><input type="file" name="attachment"><label>Subject</label><input type="text" name="subject" value="<?=$assign['subject']?>"><label>Class</label><select name="class_level"><option value="Form 3" <?=($assign['class_level']=='Form 3')?'selected':''?>>Form 3</option><option value="Form 4" <?=($assign['class_level']=='Form 4')?'selected':''?>>Form 4</option></select><label>Due Date</label><input type="date" name="due_date" value="<?=$assign['due_date']?>"><button type="submit">Save</button></form>
-</div>
-<?php include_once 'includes/footer.php'; ?>
-<?php include_once 'includes/toc_navigator.php'; ?>
+                <button type="submit" class="btn">Save Changes</button>
+            </form>
+        </div>
+    </div>
+    <?php include_once 'includes/footer.php'; ?>
+    <?php include_once 'includes/toc_navigator.php'; ?>
 </body></html>

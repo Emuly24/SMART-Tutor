@@ -318,9 +318,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         </table>
     </div>
 
-    <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
-</div>
-
 <script>
     function toggleLockOptions() {
         const type = document.getElementById('lockType').value;
