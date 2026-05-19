@@ -40,12 +40,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
-<!DOCTYPE html><html><head><title><?=htmlspecialchars($note['title'])?> - Admin View</title>
+<!DOCTYPE html>
+<html><head><title><?=htmlspecialchars($note['title'])?> - Admin View</title>
 <link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <style>
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    
     .admin-note-container {
         max-width: 1000px;
         margin: 2rem auto;
@@ -56,6 +59,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-top: 5px solid var(--accent);
         line-height: 1.8;
         font-size: 1.1rem;
+        text-align: inherit;  
+    }
+    /* ---- Equation Box Styling ---- */
+    .equation-box {
+        display: block;
+        width: 90%;
+        max-width: 800px;
+        margin: 1.5rem auto;
+        padding: 1.5rem;
+        background: #f8fafc;
+        border: 2px solid #F1C40F;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        text-align: center;
+        overflow-x: auto;
+    }
+    .equation-box .MathJax_Display {
+        text-align: center !important;
+        margin: 0 !important;
+    }
+    .equation-box mjx-container {
+        display: block !important;
+        margin: 0 auto !important;
+        text-align: center !important;
     }
     .admin-note-container h1, .admin-note-container h2, .admin-note-container h3 {
         color: var(--accent);
@@ -96,6 +123,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-radius: 0.5rem;
         margin: 1rem 0;
     }
+
+    /* Equations always centered */
+.MathJax_Display {
+    text-align: center !important;
+}
 </style>
 </head><body>
 <?php include_once 'includes/header.php'; ?>
@@ -113,7 +145,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <button type="submit" name="resend_notification" class="btn btn-secondary">📨 Resend</button>
             </form>
             <a href="admin_group_locks.php?content_type=note&content_id=<?= $note_id ?>&class_level=<?= $note['class_level'] ?>&route=sciences" class="btn btn-secondary">🔒 Locks</a>
-            <a href="admin_notes_list.php" class="btn-back">← Back</a>
         </div>
     </div>
     <div class="admin-note-container">
