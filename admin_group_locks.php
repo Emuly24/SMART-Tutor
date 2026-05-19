@@ -111,23 +111,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['apply_locks'])) {
                     WHERE l.content_type = '$content_type' AND l.content_id = $content_id AND l.is_locked = 0
                 ");
                 $notification_sent = 0;
-                while ($ug = $unlocked_groups->fetch_assoc()) {
-                    $members = $conn->query("SELECT user_id FROM group_members WHERE group_id = {$ug['id']}");
-                    while ($m = $members->fetch_assoc()) {
-                        $msg_text = "📘 A new note has been unlocked for your group. Check it out!";
-                        if ($note) {
-                            $msg_text = "📘 A new note '{$note['title']}' has been unlocked for your group. Check it out!";
-                        }
-                        $conn->query("INSERT INTO admin_messages (user_id, message) VALUES ({$m['user_id']}, '$msg_text')");
-                        $notification_sent++;
-                    }
-                }
-                if ($notification_sent > 0) {
-                    $msg .= " Notifications sent to $notification_sent student(s).";
-                }
-            }
+while ($ug = $unlocked_groups->fetch_assoc()) {
+    $members = $conn->query("SELECT user_id FROM group_members WHERE group_id = {$ug['id']}");
+    
+    // Prepare the statement once before the inner loop
+    $stmt = $conn->prepare("INSERT INTO admin_messages (user_id, message) VALUES (?, ?)");
+    
+    while ($m = $members->fetch_assoc()) {
+        $msg_text = "📘 A new note has been unlocked for your group. Check it out!";
+        if ($note) {
+            $msg_text = "📘 A new note '{$note['title']}' has been unlocked for your group. Check it out!";
         }
+        
+        // Bind the parameters and execute
+        $stmt->bind_param("is", $m['user_id'], $msg_text);
+        $stmt->execute();
+        $notification_sent++;
     }
+    $stmt->close();
+}
+if ($notification_sent > 0) {
+    $msg .= " Notifications sent to $notification_sent student(s).";
 }
 
 // Fetch lock status for all groups (for display)
