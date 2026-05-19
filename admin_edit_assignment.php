@@ -28,7 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $subj = $_POST['subject'];
     $class = $_POST['class_level'];
     $due = $_POST['due_date'];
-    $group_id = isset($_POST['group_id']) && $_POST['group_id'] ? (int)$_POST['group_id'] : 0;
     $attach = $assign['attachment_file_path'];
     if (isset($_POST['remove_attachment']) && $_POST['remove_attachment'] == 1) {
         if ($attach && file_exists($attach)) unlink($attach);
@@ -48,32 +47,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     $conn->query("UPDATE assignments SET title='$title', description='$desc', attachment_file_path='$attach', subject='$subj', class_level='$class', due_date='$due' WHERE id=$id");
-    
-    // Update locks if a group was selected
-    if ($group_id) {
-        $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
-        while ($g = $all_groups->fetch_assoc()) {
-            $lock = $g['id'] == $group_id ? 0 : 1;
-            $conn->query("INSERT INTO group_content_locks (group_id, content_type, content_id, is_locked) 
-                          VALUES ({$g['id']}, 'assignment', $id, $lock)
-                          ON DUPLICATE KEY UPDATE is_locked = $lock");
-        }
-        $msg = "Assignment updated and unlocked for the selected group.";
-    } else {
-        $msg = "Assignment updated.";
-    }
-    echo "<script>alert('$msg'); window.location='admin_assignments_list.php';</script>";
+    echo "<script>alert('Assignment updated'); window.location='admin_assignments_list.php';</script>";
     exit;
 }
 ?>
-<!DOCTYPE html><html><head><title>Edit Assignment</title><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html><html><head><title>Edit Assignment</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.4.2/tinymce.min.js"></script>
+</head><body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
         <div class="card" style="padding: 2rem;">
             <h2>✏️ Edit Assignment</h2>
             <form method="post" enctype="multipart/form-data">
                 <div class="form-group"><label>Title</label><input type="text" name="title" value="<?= htmlspecialchars($assign['title']) ?>" required></div>
-                <div class="form-group"><label>Description</label><textarea name="description" rows="4" required><?= htmlspecialchars($assign['description']) ?></textarea></div>
+                <div class="form-group"><label>Description</label><textarea name="description" id="editor"><?= htmlspecialchars($assign['description']) ?></textarea></div>
                 
                 <?php if($assign['attachment_file_path']): ?>
                     <p>Current attachment: <a href="admin_download.php?type=assignment&file=<?= urlencode(basename($assign['attachment_file_path'])) ?>" target="_blank">View</a>
@@ -103,6 +90,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </form>
         </div>
     </div>
+    <script>
+        tinymce.init({
+            selector: '#editor',
+            height: 300,
+            menubar: false,
+            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
+            toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | charmap | code',
+            content_style: 'body { font-family: Inter, sans-serif; }'
+        });
+    </script>
     <?php include_once 'includes/footer.php'; ?>
     <?php include_once 'includes/toc_navigator.php'; ?>
 </body></html>

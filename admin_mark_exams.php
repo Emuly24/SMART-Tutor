@@ -80,8 +80,6 @@ if ($exam_id && $user_id) {
                 <a href="admin_mark_exams.php?exam_id=<?=$exam_id?>" class="btn-back">Back to students</a>
             </div>
         </div>
-        <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
-        <a href="#" class="back-to-top" id="backToTop">↑</a>
     </body></html>
     <?php
     exit;
@@ -110,8 +108,6 @@ if ($exam_id) {
                 <a href="admin_mark_exams.php" class="btn-back">Back to all exams</a>
             </div>
         </div>
-        <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
-        <a href="#" class="back-to-top" id="backToTop">↑</a>
     </body></html>
     <?php
     exit;

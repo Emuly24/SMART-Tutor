@@ -14,7 +14,6 @@ if (!is_content_unlocked('exam', $exam_id, $uid)) {
 
     
 <div class='container'><div class='header'><a href='exams.php'>Exams</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This exam is not yet available for your group. Please wait until the admin unlocks it.</div><a href='exams.php'>← Back to Exams</a></div>
-<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>");
 }
 

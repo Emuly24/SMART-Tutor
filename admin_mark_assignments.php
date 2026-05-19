@@ -56,7 +56,6 @@ if ($aid && $uid) {
             </div>
         </div>
         <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
-        <a href="#" class="back-to-top" id="backToTop">↑</a>
     </body></html><?php exit;
 }
 
@@ -81,7 +80,6 @@ if ($aid) {
             </div>
         </div>
         <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
-        <a href="#" class="back-to-top" id="backToTop">↑</a>
     </body></html><?php exit;
 }
 

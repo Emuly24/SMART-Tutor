@@ -76,7 +76,7 @@ if (!$user['consent_signed']) {
 if ($user['status'] == 'suspended') {
     $end = $user['suspension_end'];
     if ($end && $end >= date('Y-m-d')) {
-        die('<!DOCTYPE html><html><head><title>Suspended</title><link rel="stylesheet" href="style.css"></head><body><div class="container"><div class="card error"><h1>Account Suspended</h1><p>You are suspended until ' . $end . '. Contact the admin.</p><a href="logout.php" class="btn-danger">Logout</a></div></div><a href="#" class="back-to-top" id="backToTop">↑</a></body></html>');
+        die('<!DOCTYPE html><html><head><title>Suspended</title><link rel="stylesheet" href="style.css"></head><body><div class="container"><div class="card error"><h1>Account Suspended</h1><p>You are suspended until ' . $end . '. Contact the admin.</p><a href="logout.php" class="btn-danger">Logout</a></div></div></body></html>');
     } else {
         $conn2 = getDB();
         $conn2->query("UPDATE users SET status='active', suspension_end=NULL WHERE id=$user_id");
@@ -84,7 +84,7 @@ if ($user['status'] == 'suspended') {
     }
 }
 if ($user['status'] == 'dismissed') {
-    die('<!DOCTYPE html><html><head><title>Dismissed</title><link rel="stylesheet" href="style.css"></head><body><div class="container"><div class="card error"><h1>Access Denied</h1><p>You have been dismissed from SMART Circle.</p><a href="logout.php" class="btn-danger">Logout</a></div></div><a href="#" class="back-to-top" id="backToTop">↑</a></body></html>');
+    die('<!DOCTYPE html><html><head><title>Dismissed</title><link rel="stylesheet" href="style.css"></head><body><div class="container"><div class="card error"><h1>Access Denied</h1><p>You have been dismissed from SMART Circle.</p><a href="logout.php" class="btn-danger">Logout</a></div></div></body></html>');
 }
 
 // --- 4. FULLY APPROVED AND CONSENT SIGNED → full access ---

@@ -59,8 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-top: 5px solid var(--accent);
         line-height: 1.8;
         font-size: 1.1rem;
-        text-align: inherit;  
+        text-align: inherit;  /* Allows alignment from editor */
     }
+    
     /* ---- Equation Box Styling ---- */
     .equation-box {
         display: block;
@@ -72,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border: 2px solid #F1C40F;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        text-align: center;
+        text-align: center;  /* Forces equation inside to center */
         overflow-x: auto;
     }
     .equation-box .MathJax_Display {
@@ -84,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         margin: 0 auto !important;
         text-align: center !important;
     }
+
     .admin-note-container h1, .admin-note-container h2, .admin-note-container h3 {
         color: var(--accent);
     }
@@ -125,9 +127,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     /* Equations always centered */
-.MathJax_Display {
-    text-align: center !important;
-}
+    .MathJax_Display {
+        text-align: inherit; /* Let the container decide, avoid forced center */
+    }
 </style>
 </head><body>
 <?php include_once 'includes/header.php'; ?>

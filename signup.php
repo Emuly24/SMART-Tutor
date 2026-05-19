@@ -134,8 +134,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <p>Already have an account? <a href="login.php">Login here</a></p>
         <?php endif; ?>
     </div>
-    <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
-    <a href="#" class="back-to-top" id="backToTop">↑</a>
     <script>
         // Save form data to sessionStorage on input change
         document.querySelectorAll('input[name="fullname"], input[name="phone"], input[name="email"], input[name="school"]').forEach(function(input) {

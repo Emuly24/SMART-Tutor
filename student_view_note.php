@@ -24,7 +24,6 @@ if (!is_content_unlocked('note', $note_id, $uid)) {
             </div>
         </div>
     </div>
-    <a href="#" class="back-to-top" id="backToTop">↑</a>
     <?php include_once 'includes/testimonial_prompt.php'; ?>
     </body></html>
     <?php
@@ -77,6 +76,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_paper'])) {
 
 $msg = '';
 if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. Your promise to submit on paper has been recorded.";
+
+// Fetch existing attempts to check which sections are unlocked
+$exercise_attempts = [];
+$ex_result = $conn->query("SELECT e.id, e.sort_order, a.status, a.answer_text FROM note_exercises e LEFT JOIN exercise_attempts a ON e.id = a.exercise_id AND a.user_id = $uid WHERE e.note_id = $note_id");
+while ($row = $ex_result->fetch_assoc()) {
+    $exercise_attempts[$row['id']] = [
+        'status' => $row['status'] ?? 'not_attempted',
+        'answer_text' => $row['answer_text'] ?? '',
+        'sort_order' => $row['sort_order']
+    ];
+}
 ?>
 <!DOCTYPE html>
 <html><head><title><?=htmlspecialchars($note['title'])?></title>
@@ -102,6 +112,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. 
     .student-note-container h1, .student-note-container h2, .student-note-container h3 {
         color: var(--accent);
     }
+    
     /* ---- Equation Box Styling ---- */
     .equation-box {
         display: block;
@@ -125,6 +136,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. 
         margin: 0 auto !important;
         text-align: center !important;
     }
+
     .student-note-container img {
         max-width: 100%;
         height: auto;
@@ -156,10 +168,9 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. 
         color: #1e293b;
     }
 
-    /* Equations always centered */
-.MathJax_Display {
-    text-align: center !important;
-}
+    .MathJax_Display {
+        text-align: inherit; /* Let the container decide */
+    }
 
     .locked-section-wrapper {
         max-height: 0;
@@ -280,7 +291,7 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. 
             <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
                 <form method="post" enctype="multipart/form-data" style="flex:1;">
                     <input type="hidden" name="exercise_id" value="<?=$ex['id']?>">
-                    <div class="form-group"><label>Your answer (text)</label><textarea name="answer_text" rows="2"></textarea></div>
+                    <div class="form-group"><label>Your answer (text)</label><textarea name="answer_text" rows="2"><?=htmlspecialchars($ex['answer_text'] ?? '')?></textarea></div>
                     <div class="form-group"><label>OR upload file (image, PDF, text)</label><input type="file" name="answer_file" accept=".jpg,.png,.pdf,.txt"></div>
                     <button type="submit" name="submit_digital">Submit Digital Answer</button>
                 </form>
@@ -351,7 +362,34 @@ if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. 
         });
     }
 
+    // ---------- AUTO-UNLOCK ON LOAD ----------
+    document.addEventListener('DOMContentLoaded', function() {
+        const exerciseStatus = <?php echo json_encode($exercise_attempts); ?>;
+        
+        // Iterate through all locked section wrappers
+        const wrappers = document.querySelectorAll('.locked-section-wrapper');
+        wrappers.forEach(wrapper => {
+            // Find the corresponding form inside the wrapper to get the exercise ID
+            const form = wrapper.querySelector('form[data-exercise-key]');
+            if (form) {
+                const exerciseKey = form.getAttribute('data-exercise-key');
+                const exerciseIdInput = form.querySelector('input[name="exercise_id"]');
+                if (exerciseIdInput) {
+                    const exerciseId = parseInt(exerciseIdInput.value);
+                    // Check if the exercise is already attempted
+                    if (exerciseStatus[exerciseId] && (exerciseStatus[exerciseId].status === 'marked' || exerciseStatus[exerciseId].status === 'paper_pending')) {
+                        unlockSection(wrapper.id);
+                    }
+                }
+            }
+        });
+
+        // Trigger MathJax to re-render any un-rendered equations
+        if (window.MathJax) {
+            MathJax.typesetPromise().catch(() => {});
+        }
+    });
+
     mermaid.initialize({startOnLoad:true});
 </script>
-<a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>

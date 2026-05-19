@@ -13,8 +13,7 @@ if (!$as) die("Invalid assignment.");
 if (!is_content_unlocked('assignment', $aid, $uid)) {
     die("<!DOCTYPE html><html><head><title>Assignment Locked</title><link rel='stylesheet' href='style.css'></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class='container'><div class='header'><a href='assignments.php'>Assignments</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This assignment is not yet available for your group.</div><a href='assignments.php'>← Back</a></div><div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
-
+<div class='container'><div class='header'><a href='assignments.php'>Assignments</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This assignment is not yet available for your group.</div><a href='assignments.php'>← Back</a></div>
 <a href="#" class="back-to-top" id="backToTop">↑</a>
 </body></html>");
 }

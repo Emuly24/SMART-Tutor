@@ -30,8 +30,8 @@ if (!$userStatus || !$userStatus['approved']) {
             </div>
         </div>
     </div>
-    <div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
-    <a href="#" class="back-to-top" id="backToTop">↑</a>
+    <?php include_once 'includes/footer.php'; ?>
+    <?php include_once 'includes/toc_navigator.php'; ?>
     <?php include_once 'includes/testimonial_prompt.php'; ?>
     </body>
     </html>
@@ -352,7 +352,5 @@ $unread_msgs = $msg_row['unread'] ?? 0;
         </div>
     </div>
 
-    <?php include_once 'includes/footer.php'; ?>
-    <?php include_once 'includes/toc_navigator.php'; ?>
 </body>
 </html>

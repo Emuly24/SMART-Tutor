@@ -40,7 +40,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $conn->query("INSERT INTO assignments (title, description, attachment_file_path, subject, class_level, due_date) VALUES ('$title', '$desc', '$attach', '$subj', '$class', '$due')");
     $ass_id = $conn->insert_id;
     
-    // Apply locks if a specific group/route/class was selected
     if ($group_id) {
         $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
         while ($g = $all_groups->fetch_assoc()) {
@@ -57,14 +56,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 ?>
-<!DOCTYPE html><html><head><title>Create Assignment</title><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html><html><head><title>Create Assignment</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.4.2/tinymce.min.js"></script>
+</head><body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
         <div class="card" style="padding: 2rem;">
             <h2>📝 Create New Assignment</h2>
             <form method="post" enctype="multipart/form-data">
                 <div class="form-group"><label>Title</label><input type="text" name="title" required></div>
-                <div class="form-group"><label>Description</label><textarea name="description" rows="4" required></textarea></div>
+                <div class="form-group"><label>Description</label><textarea name="description" id="editor"></textarea></div>
                 <div class="form-group"><label>Attachment (optional)</label><input type="file" name="attachment" accept=".jpg,.png,.pdf,.doc,.txt"></div>
                 <div class="form-group"><label>Subject</label>
                     <select name="subject" required>
@@ -111,7 +112,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <script>
-        // Group loader logic (same as note editor)
+        tinymce.init({
+            selector: '#editor',
+            height: 300,
+            menubar: false,
+            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
+            toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | charmap | code',
+            content_style: 'body { font-family: Inter, sans-serif; }'
+        });
+        
         function loadGroups() {
             const classVal = document.getElementById('classFilter').value;
             const routeVal = document.getElementById('routeFilter').value;

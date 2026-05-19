@@ -33,7 +33,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 ?>
-<!DOCTYPE html><html><head><title>Edit Exam</title><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html><html><head><title>Edit Exam</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/tinymce@6.4.2/tinymce.min.js"></script>
+</head><body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
         <div class="card" style="padding: 2rem;">
@@ -52,16 +54,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <select name="class_level" required>
                         <option value="">-- Select Class --</option>
                         <?php foreach ($classes as $cls): ?>
-                            <option value="<?= htmlspecialchars($cls) ?>" <?= ($exam['class_level'] == $cls) ? 'selected' : '' ?>><?= htmlspecialchars($cls) ?></option>
+                            <option value="<?= $cls ?>" <?= ($exam['class_level'] == $cls) ? 'selected' : '' ?>><?= $cls ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div class="form-group"><label>Description</label><textarea name="description" rows="4"><?= htmlspecialchars($exam['description']) ?></textarea></div>
+                <div class="form-group"><label>Description</label><textarea name="description" id="editor"><?= htmlspecialchars($exam['description']) ?></textarea></div>
                 <div class="form-group"><label>Duration (minutes)</label><input type="number" name="duration_minutes" value="<?= $exam['duration_minutes'] ?>"></div>
                 <button type="submit" class="btn">Save Changes</button>
             </form>
         </div>
     </div>
+    <script>
+        tinymce.init({
+            selector: '#editor',
+            height: 300,
+            menubar: false,
+            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
+            toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | charmap | code',
+            content_style: 'body { font-family: Inter, sans-serif; }'
+        });
+    </script>
     <?php include_once 'includes/footer.php'; ?>
     <?php include_once 'includes/toc_navigator.php'; ?>
 </body></html>
