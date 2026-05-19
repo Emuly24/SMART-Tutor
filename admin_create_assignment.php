@@ -112,14 +112,190 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
     <script>
-        tinymce.init({
-            selector: '#editor',
-            height: 300,
-            menubar: false,
-            plugins: 'anchor autolink charmap codesample emoticons image link lists media searchreplace table visualblocks wordcount code',
-            toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | charmap | code',
-            content_style: 'body { font-family: Inter, sans-serif; }'
-        });
+        // ---------- TINYMCE ----------
+    tinymce.init({
+    selector: '#editor',
+    height: 600,
+    menubar: true,
+    plugins: 'anchor autolink charmap codesample emoticons image imagetools link lists media searchreplace table visualblocks wordcount code',
+    toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | charmap | code | editimage',
+    toolbar_sticky: true,
+    menubar: 'file edit view insert format tools table',
+    content_style: 'body { font-family: Inter, sans-serif; }',
+    
+    // Store clean HTML only
+    forced_root_block: false,
+    valid_elements: '*[*]',
+    extended_valid_elements: 'script[type|src|async],style[type]',
+    sanitize: false,
+    allow_script_urls: true,
+    
+    images_upload_url: 'note_editor_api.php?action=upload_image',
+    automatic_uploads: true,
+    image_advtab: true,
+    image_dimensions: true,
+    image_caption: true,
+    
+        init_instance_callback: function(editor) {
+        document.getElementById('editor').style.display = 'none';
+        },
+        setup: function(editor) {
+            // ---------- SET CONTENT (WITH LOCALSTORAGE RESTORE) ----------
+            const existingContent = <?= json_encode($existing_note['content'] ?? '') ?>;
+            
+            editor.on('init', function() {
+                // 1. Check for a backup FIRST
+                const backupJson = localStorage.getItem('my_perfect_7_hour_backup');
+                let contentToSet = existingContent;
+
+                if (backupJson) {
+                    try {
+                        const backupData = JSON.parse(backupJson);
+                        // Check if the backup has valid content and is not empty
+                        if (backupData.content && backupData.content.length > 100) {
+                            const confirmRestore = confirm(
+                                "⚠️ Unsaved work found in your browser from " + 
+                                new Date(backupData.timestamp).toLocaleString() + 
+                                ".\n\nRestore it now?"
+                            );
+                            if (confirmRestore) {
+                                contentToSet = backupData.content;
+                                // Also restore the title if it exists
+                                if (backupData.title) {
+                                    document.getElementById('noteTitle').value = backupData.title;
+                                }
+                                // Clear the backup so it doesn't ask again on the next refresh
+                                localStorage.removeItem('my_perfect_7_hour_backup');
+                            } else {
+                                // User declined, clear the backup to stop the prompt on future refreshes
+                                localStorage.removeItem('my_perfect_7_hour_backup');
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Backup corrupted or invalid:", e);
+                        localStorage.removeItem('my_perfect_7_hour_backup');
+                    }
+                }
+
+                // 2. Set the final content
+                editor.setContent(contentToSet);
+            });
+
+            // ---------- AUTO-SAVE (EVERY 30 SECONDS) ----------
+            setInterval(function() {
+                autoSaveToServer(editor);
+            }, 30000);
+
+            // ---------- CTRL+S ----------
+            editor.addShortcut('Ctrl+S', 'Auto Save', function() {
+                autoSaveToServer(editor);
+            });
+
+            // ---------- FILE MENU ----------
+            editor.ui.registry.addMenuItem('customSave', {
+                text: 'Save (Auto)',
+                icon: 'save',
+                onAction: function() {
+                    autoSaveToServer(editor);
+                }
+            });
+            editor.ui.registry.addMenuItem('customSaveAs', {
+                text: 'Save As...',
+                icon: 'newdocument',
+                onAction: function() {
+                    const form = document.getElementById('noteForm');
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'save_as';
+                    hidden.value = '1';
+                    form.appendChild(hidden);
+                    form.submit();
+                }
+            });
+            editor.on('init', function() {
+                editor.menu.add('file', {
+                    title: 'File',
+                    items: 'newdocument | customSave customSaveAs | print'
+                });
+            });
+
+            // ---------- MATHJAX ----------
+            editor.on('init', function() {
+                const content = editor.getContent();
+                if (content && window.MathJax) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = content;
+                    MathJax.typesetPromise([tempDiv]).then(() => {
+                        editor.setContent(tempDiv.innerHTML);
+                    }).catch(() => {});
+                }
+                if (window.mermaid) mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+                if (window.hljs) hljs.highlightAll();
+            });
+            editor.on('SetContent', function() {
+                if (window.hljs) setTimeout(hljs.highlightAll, 100);
+            });
+        }
+    });
+    // ---------- IMAGE CROPPER ----------
+    let cropper = null;
+    let currentImageElement = null;
+    const cropperModal = document.getElementById('imageCropperModal');
+    const cropperImg = document.getElementById('cropperImage');
+    
+    function showImageCropper(src, imgElement) {
+        currentImageElement = imgElement;
+        cropperImg.src = src;
+        cropperModal.style.display = 'flex';
+        setTimeout(() => {
+            if (cropper) cropper.destroy();
+            cropper = new Cropper(cropperImg, {
+                aspectRatio: NaN,
+                viewMode: 1,
+                autoCropArea: 0.8,
+            });
+        }, 300);
+    }
+    
+    document.getElementById('cropApplyBtn').onclick = function() {
+        if (cropper && currentImageElement && tinymce.activeEditor) {
+            const canvas = cropper.getCroppedCanvas({
+                maxWidth: 800,
+                maxHeight: 800,
+                fillColor: '#fff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high',
+            });
+            canvas.toBlob(function(blob) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const newSrc = e.target.result;
+                    tinymce.activeEditor.dom.setAttrib(currentImageElement, 'src', newSrc);
+                    cropperModal.style.display = 'none';
+                    if (cropper) cropper.destroy();
+                    cropper = null;
+                    currentImageElement = null;
+                };
+                reader.readAsDataURL(blob);
+            });
+        }
+    };
+    document.getElementById('rotateLeftBtn').onclick = function() {
+        if (cropper) cropper.rotate(-90);
+    };
+    document.getElementById('rotateRightBtn').onclick = function() {
+        if (cropper) cropper.rotate(90);
+    };
+    document.getElementById('cropResetBtn').onclick = function() {
+        if (cropper) cropper.reset();
+    };
+    document.getElementById('cropCancelBtn').onclick = function() {
+        cropperModal.style.display = 'none';
+        if (cropper) cropper.destroy();
+        cropper = null;
+        currentImageElement = null;
+    };
+
         
         function loadGroups() {
             const classVal = document.getElementById('classFilter').value;
