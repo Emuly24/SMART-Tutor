@@ -43,9 +43,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html><head><title><?=htmlspecialchars($note['title'])?> - Admin View</title>
 <link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- ===== FIXED MathJax CONFIG ===== -->
+<script>
+MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    },
+    svg: {
+        fontCache: 'global'
+    }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+
 <style>
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     
@@ -59,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border-top: 5px solid var(--accent);
         line-height: 1.8;
         font-size: 1.1rem;
-        text-align: inherit;  /* Allows alignment from editor */
+        text-align: inherit; 
     }
     
     /* ---- Equation Box Styling ---- */
@@ -73,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         border: 2px solid #F1C40F;
         border-radius: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        text-align: center;  /* Forces equation inside to center */
+        text-align: center;
         overflow-x: auto;
     }
     .equation-box .MathJax_Display {
@@ -126,9 +140,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         margin: 1rem 0;
     }
 
-    /* Equations always centered */
     .MathJax_Display {
-        text-align: inherit; /* Let the container decide, avoid forced center */
+        text-align: inherit;
     }
 </style>
 </head><body>
@@ -156,4 +169,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <?php include_once 'includes/footer.php'; ?>
 <script>mermaid.initialize({startOnLoad:true});</script>
 <?php include_once 'includes/toc_navigator.php'; ?>
+
+<!-- ===== Force render MathJax ===== -->
+<script>
+    MathJax.typesetPromise().then(() => {
+        console.log('Admin View MathJax typeset complete.');
+    });
+</script>
 </body></html>
