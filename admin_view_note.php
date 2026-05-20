@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
-<!-- ===== FIXED MathJax CONFIG ===== -->
+<!-- ===== MathJax CONFIG ===== -->
 <script>
 MathJax = {
     tex: {
@@ -162,7 +162,7 @@ MathJax = {
             <a href="admin_group_locks.php?content_type=note&content_id=<?= $note_id ?>&class_level=<?= $note['class_level'] ?>&route=sciences" class="btn btn-secondary">🔒 Locks</a>
         </div>
     </div>
-    <div class="admin-note-container">
+    <div class="admin-note-container" id="note-content">
         <?=$note['content']?>
     </div>
 </div>
@@ -170,10 +170,51 @@ MathJax = {
 <script>mermaid.initialize({startOnLoad:true});</script>
 <?php include_once 'includes/toc_navigator.php'; ?>
 
-<!-- ===== Force render MathJax ===== -->
+<!-- ===== FIX: Unescape LaTeX before rendering ===== -->
 <script>
-    MathJax.typesetPromise().then(() => {
-        console.log('Admin View MathJax typeset complete.');
-    });
+(function() {
+    // Get the note container
+    const container = document.getElementById('note-content');
+    if (!container) return;
+
+    // Get HTML content as string
+    let html = container.innerHTML;
+
+    // Fix common escaping issues from TinyMCE
+    // Replace HTML entities for backslashes with actual backslashes
+    html = html.replace(/&bsol;/g, '\\');
+    html = html.replace(/&#92;/g, '\\');
+    html = html.replace(/\\\\/g, '\\'); // Double backslashes to single
+
+    // Ensure $$...$$ are preserved
+    // Some editors convert $$ to &dollar;&dollar; or \$\$
+    html = html.replace(/&dollar;/g, '$');
+    html = html.replace(/\\\$/g, '$');
+
+    // Update the container
+    container.innerHTML = html;
+
+    // Wait for MathJax to load then render
+    if (window.MathJax) {
+        MathJax.typesetPromise().then(() => {
+            console.log('✅ MathJax render complete (after unescape)');
+        }).catch(() => {});
+    } else {
+        // If MathJax not loaded yet, retry after a delay
+        let attempts = 0;
+        const checkMathJax = setInterval(() => {
+            attempts++;
+            if (window.MathJax) {
+                clearInterval(checkMathJax);
+                MathJax.typesetPromise().then(() => {
+                    console.log('✅ MathJax render complete (delayed)');
+                }).catch(() => {});
+            } else if (attempts > 20) {
+                clearInterval(checkMathJax);
+                console.warn('MathJax did not load in time');
+            }
+        }, 500);
+    }
+})();
 </script>
 </body></html>

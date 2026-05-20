@@ -34,6 +34,7 @@ if (function_exists('log_activity')) {
     log_activity($uid, "view_note", "Note ID: $note_id");
 }
 
+// --------------------- STUDENT EXERCISE HANDLING ---------------------
 $error = $success = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_digital'])) {
     $ex_id = (int)$_POST['exercise_id'];
@@ -76,6 +77,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_paper'])) {
 
 $msg = '';
 if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. Your promise to submit on paper has been recorded.";
+
+// Fetch existing attempts to check which sections are unlocked
+$exercise_attempts = [];
+$ex_result = $conn->query("SELECT e.id, e.sort_order, a.status, a.answer_text FROM note_exercises e LEFT JOIN exercise_attempts a ON e.id = a.exercise_id AND a.user_id = $uid WHERE e.note_id = $note_id");
+while ($row = $ex_result->fetch_assoc()) {
+    $exercise_attempts[$row['id']] = [
+        'status' => $row['status'] ?? 'not_attempted',
+        'answer_text' => $row['answer_text'] ?? '',
+        'sort_order' => $row['sort_order']
+    ];
+}
 ?>
 <!DOCTYPE html>
 <html><head><title><?=htmlspecialchars($note['title'])?></title>
@@ -367,41 +379,31 @@ MathJax = {
 
     // ---------- AUTO-UNLOCK ON LOAD ----------
     document.addEventListener('DOMContentLoaded', function() {
+        const exerciseStatus = <?php echo json_encode($exercise_attempts); ?>;
+
         const wrappers = document.querySelectorAll('.locked-section-wrapper');
         wrappers.forEach(wrapper => {
-            // Find the corresponding form inside the wrapper to get the exercise ID
             const form = wrapper.querySelector('form[data-exercise-key]');
             if (form) {
                 const exerciseIdInput = form.querySelector('input[name="exercise_id"]');
-                // ---------- AUTO-UNLOCK ON LOAD ----------
-document.addEventListener('DOMContentLoaded', function() {
-    // This array comes from PHP at the top of the file
-    const exerciseStatus = <?php echo json_encode($exercise_attempts); ?>;
-
-    const wrappers = document.querySelectorAll('.locked-section-wrapper');
-    wrappers.forEach(wrapper => {
-        // Find the form inside the wrapper that contains the exercise_id
-        const form = wrapper.querySelector('form[data-exercise-key]');
-        if (form) {
-            const exerciseIdInput = form.querySelector('input[name="exercise_id"]');
-            if (exerciseIdInput) {
-                const exerciseId = parseInt(exerciseIdInput.value);
-                // Check if this exercise has already been submitted/marked
-                if (exerciseStatus[exerciseId] && 
-                   (exerciseStatus[exerciseId].status === 'marked' || 
-                    exerciseStatus[exerciseId].status === 'paper_pending')) {
-                    unlockSection(wrapper.id);
+                if (exerciseIdInput) {
+                    const exerciseId = parseInt(exerciseIdInput.value);
+                    // Check if this exercise has already been submitted/marked
+                    if (exerciseStatus[exerciseId] && 
+                       (exerciseStatus[exerciseId].status === 'marked' || 
+                        exerciseStatus[exerciseId].status === 'paper_pending')) {
+                        unlockSection(wrapper.id);
+                    }
                 }
             }
+        });
+
+        // Force MathJax to render any equations in the newly unlocked sections
+        if (window.MathJax) {
+            MathJax.typesetPromise().catch(() => {});
         }
     });
 
-    // Force MathJax to render any equations in the newly unlocked sections
-    if (window.MathJax) {
-        MathJax.typesetPromise().catch(() => {});
-    }
-});
-
     mermaid.initialize({startOnLoad:true});
 </script>
-</body></html>
+</body></html>s
