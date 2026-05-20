@@ -1,6 +1,5 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -11,10 +10,8 @@ if (!$exam) die("Exam not found.");
 if (!is_content_unlocked('exam', $exam_id, $uid)) {
     die("<!DOCTYPE html><html><head><title>Exam Locked</title><link rel='stylesheet' href='style.css'></head><body>
     <?php include_once 'includes/header.php'; ?>
-
-    
-<div class='container'><div class='header'><a href='exams.php'>Exams</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This exam is not yet available for your group. Please wait until the admin unlocks it.</div><a href='exams.php'>← Back to Exams</a></div>
-</body></html>");
+    <div class='container'><div class='card error'><h2>🔒 Exam Locked</h2><p>This exam is not yet available for your group.</p></div></div>
+    </body></html>");
 }
 
 $sub = $conn->query("SELECT * FROM exam_submissions WHERE exam_id=$exam_id AND user_id=$uid")->fetch_assoc();
@@ -59,7 +56,27 @@ $saved = [];
 $res = $conn->query("SELECT question_id, answer_text FROM exam_answers WHERE exam_id=$exam_id AND user_id=$uid");
 while ($r = $res->fetch_assoc()) $saved[$r['question_id']] = $r['answer_text'];
 ?>
-<!DOCTYPE html><html><head><title><?=htmlspecialchars($exam['title'])?></title><link rel="stylesheet" href="style.css"><script>let remaining=<?=$remaining?>; function timer(){if(remaining<=0){document.getElementById('timer').innerHTML="Submitting..."; document.getElementById('examForm').submit();} let mins=Math.floor(remaining/60); let secs=remaining%60; document.getElementById('timer').innerHTML=`Time left: ${mins}m ${secs}s`; remaining--; setTimeout(timer,1000);} window.onload=timer;</script></head><body><div class="container"></div><form id="examForm" method="post" enctype="multipart/form-data"><?php $qno=1; while($q=$questions->fetch_assoc()):?><div class="card"><b><?=$qno?>. <?=nl2br(htmlspecialchars($q['question_text']))?></b> (<?=$q['points']?> pts)<br><?php if($q['question_type']!='multiple_choice'):?><textarea name="answers[<?=$q['id']?>]" rows="4" class="form-group"><?=htmlspecialchars($saved[$q['id']]??'')?></textarea><br>OR upload file: <input type="file" name="answer_files[<?=$q['id']?>]" accept=".jpg,.png,.pdf"><?php else: $opts=json_decode($q['options'],true); foreach($opts as $opt):?><label><input type="radio" name="answers[<?=$q['id']?>]" value="<?=htmlspecialchars($opt)?>" <?=(($saved[$q['id']]??'')==$opt)?'checked':''?>> <?=$opt?></label><br><?php endforeach; endif;?></div><?php $qno++; endwhile;?><button type="submit" name="submit_exam" class="btn">Submit Exam</button></form><div class="footer"><a href="dashboard.php" class="btn-back">← Back</a></div></div>
+<!DOCTYPE html><html><head><title><?=htmlspecialchars($exam['title'])?></title><link rel="stylesheet" href="style.css">
+<script>let remaining=<?=$remaining?>; function timer(){if(remaining<=0){document.getElementById('timer').innerHTML="Submitting..."; document.getElementById('examForm').submit();} let mins=Math.floor(remaining/60); let secs=remaining%60; document.getElementById('timer').innerHTML=`Time left: ${mins}m ${secs}s`; remaining--; setTimeout(timer,1000);} window.onload=timer;</script>
+</head><body>
+<?php include_once 'includes/header.php'; ?>
+<div class="container">
+    <div id="timer" style="text-align:center;font-size:1.5rem;font-weight:bold;color:var(--accent);margin:1rem 0;"></div>
+    <form id="examForm" method="post" enctype="multipart/form-data">
+        <?php $qno=1; while($q=$questions->fetch_assoc()): ?>
+        <div class="card" style="padding:1.5rem;margin-bottom:1.5rem;">
+            <b><?=$qno?>. <?=nl2br(htmlspecialchars($q['question_text']))?></b> (<?=$q['points']?> pts)<br>
+            <?php if($q['question_type']!='multiple_choice'):?>
+                <textarea name="answers[<?=$q['id']?>]" rows="4" class="form-control" style="width:100%;"><?=htmlspecialchars($saved[$q['id']]??'')?></textarea>
+                <br>OR upload file: <input type="file" name="answer_files[<?=$q['id']?>]" accept=".jpg,.png,.pdf">
+            <?php else: $opts=json_decode($q['options'],true); foreach($opts as $opt):?>
+                <label><input type="radio" name="answers[<?=$q['id']?>]" value="<?=htmlspecialchars($opt)?>" <?=(($saved[$q['id']]??'')==$opt)?'checked':''?>> <?=$opt?></label><br>
+            <?php endforeach; endif;?>
+        </div>
+        <?php $qno++; endwhile;?>
+        <button type="submit" name="submit_exam" class="btn">Submit Exam</button>
+    </form>
+</div>
 <?php include_once 'includes/footer.php'; ?>
 <?php include_once 'includes/toc_navigator.php'; ?>
 </body></html>

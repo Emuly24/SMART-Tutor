@@ -1,10 +1,7 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (function_exists('getAdminHash')) {
     $admin_hash = getAdminHash();
@@ -44,18 +41,18 @@ if ($aid && $uid) {
     ?><html><head><title>Mark Assignment</title><link rel="stylesheet" href="style.css"></head><body>
         <?php include_once 'includes/header.php'; ?>
         <div class="container">
-            <div class="content-grid">
+            <div class="card" style="padding:2rem;">
                 <p><strong>Submission:</strong><br><?=nl2br(htmlspecialchars($sub['submission_text']))?><?php if($sub['file_path']) echo "<br><a href='admin_download.php?type=assignment&file=" . urlencode(basename($sub['file_path'])) . "' target='_blank'>View file</a>";?></p>
                 <form method="post">
                     <input type="hidden" name="submission_id" value="<?=$sub['id']?>">
-                    <label>Marks (out of ?)</label><input type="number" name="marks" value="<?=$sub['marks']?>">
-                    <label>Feedback</label><textarea name="feedback"><?=htmlspecialchars($sub['feedback'])?></textarea>
-                    <button type="submit" name="save_marks">Save</button>
+                    <div class="form-group"><label>Marks (out of ?)</label><input type="number" name="marks" value="<?=$sub['marks']?>"></div>
+                    <div class="form-group"><label>Feedback</label><textarea name="feedback" rows="3"><?=htmlspecialchars($sub['feedback'])?></textarea></div>
+                    <button type="submit" name="save_marks" class="btn">Save Marks</button>
                 </form>
-                <a href="admin_mark_assignments.php?assignment_id=<?=$aid?>">Back</a>
             </div>
         </div>
-        <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+        <?php include_once 'includes/footer.php'; ?>
+        <?php include_once 'includes/toc_navigator.php'; ?>
     </body></html><?php exit;
 }
 
@@ -72,21 +69,21 @@ if ($aid) {
                 <?php else: ?>
                     <?php while($s=$subs->fetch_assoc()):?>
                         <div class="card">
-                            <a href="admin_mark_assignments.php?assignment_id=<?=$aid?>&user_id=<?=$s['user_id']?>"><?=htmlspecialchars($s['fullname'])?></a> - Marks: <?=$s['marks']??'Not marked'?>
+                            <a href="admin_mark_assignments.php?assignment_id=<?=$aid?>&user_id=<?=$s['user_id']?>"><?=htmlspecialchars($s['fullname'])?></a>
+                            <br>Marks: <?=$s['marks']??'Not marked'?>
                         </div>
                     <?php endwhile; ?>
                 <?php endif; ?>
-                <a href="admin_assignments_list.php">Back to assignments</a>
             </div>
         </div>
-        <div class="footer"><a href="admin_dashboard.php" class="btn-back">← Back</a></div>
+        <?php include_once 'includes/footer.php'; ?>
+        <?php include_once 'includes/toc_navigator.php'; ?>
     </body></html><?php exit;
 }
 
 $assignments = $conn->query("SELECT a.*, (SELECT COUNT(*) FROM assignment_submissions WHERE assignment_id=a.id) as subcnt FROM assignments a ORDER BY a.due_date DESC");
 ?>
-<!DOCTYPE html>
-<html><head><title>Mark Assignments</title><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html><html><head><title>Mark Assignments</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
         <h1>Mark Assignments</h1>
@@ -107,6 +104,7 @@ $assignments = $conn->query("SELECT a.*, (SELECT COUNT(*) FROM assignment_submis
                 <?php endwhile; ?>
             <?php endif; ?>
         </div>
-       <?php include_once 'includes/footer.php'; ?>
-<?php include_once 'includes/toc_navigator.php'; ?>
+    </div>
+    <?php include_once 'includes/footer.php'; ?>
+    <?php include_once 'includes/toc_navigator.php'; ?>
 </body></html>

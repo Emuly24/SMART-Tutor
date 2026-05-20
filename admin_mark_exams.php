@@ -1,12 +1,8 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 
-// Admin authentication
 if (function_exists('getAdminHash')) {
     $admin_hash = getAdminHash();
 } elseif (defined('ADMIN_HASH')) {
@@ -29,7 +25,6 @@ if (!isset($_SESSION['admin_logged'])) {
 
 $conn = getDB();
 
-// Handle marking an answer
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['mark_answer'])) {
     $aid = (int)$_POST['answer_id'];
     $marks = (int)$_POST['marks'];
@@ -56,9 +51,9 @@ if ($exam_id && $user_id) {
     <html><head><title>Mark Exam</title><link rel="stylesheet" href="style.css"></head><body>
         <?php include_once 'includes/header.php'; ?>
         <div class="container">
-            <div class="content-grid">
+            <div class="card" style="padding:2rem;">
                 <?php while($a=$answers->fetch_assoc()): ?>
-                    <div>
+                    <div style="margin-bottom:1.5rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);">
                         <strong><?=nl2br(htmlspecialchars($a['question_text']))?></strong> (<?=$a['points']?> pts)<br>
                         <em>Answer:</em> <?=nl2br(htmlspecialchars($a['answer_text']))?>
                         <?php if($a['answer_file_path']) echo "<br><a href='admin_download.php?type=exam&file=" . urlencode(basename($a['answer_file_path'])) . "' target='_blank'>View file</a>"; ?>
@@ -67,19 +62,17 @@ if ($exam_id && $user_id) {
                         <?php else: ?>
                             <form method="post">
                                 <input type="hidden" name="answer_id" value="<?=$a['answer_id']?>">
-                                <label>Marks (max <?=$a['points']?>):</label>
-                                <input type="number" name="marks" min="0" max="<?=$a['points']?>" required>
-                                <label>Feedback:</label>
-                                <input type="text" name="feedback">
+                                <div class="form-group"><label>Marks (max <?=$a['points']?>):</label><input type="number" name="marks" min="0" max="<?=$a['points']?>" required></div>
+                                <div class="form-group"><label>Feedback:</label><input type="text" name="feedback"></div>
                                 <button type="submit" name="mark_answer" class="btn">Save Marks</button>
                             </form>
                         <?php endif; ?>
                     </div>
-                    <hr>
                 <?php endwhile; ?>
-                <a href="admin_mark_exams.php?exam_id=<?=$exam_id?>" class="btn-back">Back to students</a>
             </div>
         </div>
+        <?php include_once 'includes/footer.php'; ?>
+        <?php include_once 'includes/toc_navigator.php'; ?>
     </body></html>
     <?php
     exit;
@@ -101,23 +94,22 @@ if ($exam_id) {
                     <?php while($s=$students->fetch_assoc()): ?>
                         <div class="card">
                             <a href="admin_mark_exams.php?exam_id=<?=$exam_id?>&user_id=<?=$s['id']?>"><?=htmlspecialchars($s['fullname'])?></a>
-                            (Score: <?=$s['total_score'] ?? 'pending'?>)
+                            <br>Score: <?=$s['total_score'] ?? 'pending'?>
                         </div>
                     <?php endwhile; ?>
                 <?php endif; ?>
-                <a href="admin_mark_exams.php" class="btn-back">Back to all exams</a>
             </div>
         </div>
+        <?php include_once 'includes/footer.php'; ?>
+        <?php include_once 'includes/toc_navigator.php'; ?>
     </body></html>
     <?php
     exit;
 }
 
-// Main exam list
 $exams = $conn->query("SELECT e.id, e.title, e.subject, (SELECT COUNT(DISTINCT user_id) FROM exam_submissions WHERE exam_id=e.id AND status='submitted') as pending FROM exams e ORDER BY e.created_at DESC");
 ?>
-<!DOCTYPE html>
-<html><head><title>Mark Exams</title><link rel="stylesheet" href="style.css"></head><body>
+<!DOCTYPE html><html><head><title>Mark Exams</title><link rel="stylesheet" href="style.css"></head><body>
     <?php include_once 'includes/header.php'; ?>
     <div class="container">
         <h1>Mark Exams</h1>
@@ -138,6 +130,7 @@ $exams = $conn->query("SELECT e.id, e.title, e.subject, (SELECT COUNT(DISTINCT u
                 <?php endwhile; ?>
             <?php endif; ?>
         </div>
-        <?php include_once 'includes/footer.php'; ?>
-<?php include_once 'includes/toc_navigator.php'; ?>
+    </div>
+    <?php include_once 'includes/footer.php'; ?>
+    <?php include_once 'includes/toc_navigator.php'; ?>
 </body></html>

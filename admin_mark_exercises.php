@@ -1,10 +1,7 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
+if (session_status() === PHP_SESSION_NONE) session_start();
 
 if (function_exists('getAdminHash')) {
     $admin_hash = getAdminHash();
@@ -86,11 +83,11 @@ $notes = $conn->query("SELECT DISTINCT n.id, n.title FROM notes n JOIN note_exer
                             JOIN notes n ON e.note_id=n.id 
                             WHERE a.user_id={$s['id']} AND e.note_id=$note_id ORDER BY e.sort_order");
                         while($a = $attempts->fetch_assoc()): ?>
-                            <div class="marking-block">
+                            <div class="marking-block" style="background:var(--card-bg); padding:1.5rem; border-radius:1rem; margin-bottom:1.5rem; box-shadow:var(--card-shadow);">
                                 <strong>Exercise:</strong> <?=nl2br(htmlspecialchars($a['question']))?><br>
                                 <strong>Status:</strong> <?=$a['status']?><br>
                                 <?php if ($a['status'] == 'paper_pending'): ?>
-                                    <div class="warning">Promise made at: <?=$a['promised_at']?>. Deadline: <?=date('Y-m-d H:i:s', strtotime($a['promised_at'].' +24 hours'))?></div>
+                                    <div class="warning" style="background:#fef9e7;padding:1rem;border-radius:0.5rem;margin:0.5rem 0;">Promise made at: <?=$a['promised_at']?>. Deadline: <?=date('Y-m-d H:i:s', strtotime($a['promised_at'].' +24 hours'))?></div>
                                 <?php endif; ?>
                                 <strong>Student's answer:</strong><br>
                                 <?=nl2br(htmlspecialchars($a['answer_text']))?>
@@ -116,6 +113,7 @@ $notes = $conn->query("SELECT DISTINCT n.id, n.title FROM notes n JOIN note_exer
                 <?php endwhile; ?>
             <?php endif; ?>
         <?php endif; ?>
-        <?php include_once 'includes/footer.php'; ?>
-<?php include_once 'includes/toc_navigator.php'; ?>
+    </div>
+    <?php include_once 'includes/footer.php'; ?>
+    <?php include_once 'includes/toc_navigator.php'; ?>
 </body></html>

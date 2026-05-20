@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_paper'])) {
 $msg = '';
 if (isset($_GET['msg']) && $_GET['msg'] == 'paper_promised') $msg = "Thank you. Your promise to submit on paper has been recorded.";
 
-// Fetch existing attempts to check which sections are unlocked
+// Fetch existing attempts
 $exercise_attempts = [];
 $ex_result = $conn->query("SELECT e.id, e.sort_order, a.status, a.answer_text FROM note_exercises e LEFT JOIN exercise_attempts a ON e.id = a.exercise_id AND a.user_id = $uid WHERE e.note_id = $note_id");
 while ($row = $ex_result->fetch_assoc()) {
@@ -95,7 +95,7 @@ while ($row = $ex_result->fetch_assoc()) {
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
-<!-- ===== FIXED MathJax CONFIG ===== -->
+<!-- ===== MathJax CONFIG ===== -->
 <script>
 MathJax = {
     tex: {
@@ -187,50 +187,125 @@ MathJax = {
         text-align: inherit;
     }
 
-    .locked-section-wrapper {
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-        transition: max-height 0.8s ease, opacity 0.8s ease, margin 0.8s ease;
-        margin: 0;
-    }
-    .locked-section-wrapper.unlocked {
-        max-height: 3000px;
-        opacity: 1;
+    /* ---- AUTO-LOCKING SYSTEM CSS ---- */
+    .exercise-block {
+        position: relative;
         margin: 2rem 0;
-    }
-    .locked-placeholder {
-        background: #f0f4f8;
-        padding: 1rem;
+        padding: 1.5rem;
         border-radius: 1rem;
-        text-align: center;
-        color: #64748b;
-        font-size: 0.9rem;
-        box-shadow: inset 0 0 0 1px var(--border);
-        margin: 1.5rem 0;
+        transition: all 0.5s ease;
+        border: 1px solid var(--border);
     }
-    .locked-placeholder strong {
-        color: var(--error);
+    .exercise-block.locked {
+        opacity: 0.4;
+        pointer-events: none;
+        user-select: none;
+        filter: blur(2px);
+        position: relative;
     }
-    .locked-placeholder .lock-icon {
-        font-size: 1.5rem;
+    .exercise-block.locked::before {
+        content: "🔒 This section is locked. Complete the previous exercise to unlock.";
         display: block;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(255,255,255,0.95);
+        padding: 1rem 2rem;
+        border-radius: 1rem;
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: var(--error);
+        border: 2px solid var(--error);
+        z-index: 10;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        width: 90%;
+        max-width: 500px;
+        text-align: center;
+    }
+    .exercise-block.unlocked {
+        opacity: 1;
+        pointer-events: auto;
+        user-select: auto;
+        filter: none;
+    }
+    .exercise-block.unlocked::before {
+        display: none;
+    }
+    .exercise-block.completed {
+        border-left: 5px solid var(--success);
+        background: #f0fdf4;
+    }
+    
+    /* ---- FLOATING BUTTONS ---- */
+    .floating-actions {
+        display: none;
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        z-index: 1000;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.8rem;
+        min-width: 220px;
+        transition: all 0.3s ease;
+        border: 2px solid var(--accent);
+    }
+    .floating-actions.visible {
+        display: flex;
+    }
+    .floating-actions .btn {
+        width: 100%;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+    .floating-actions .btn-secondary {
+        background: var(--border);
+    }
+    .floating-actions .btn-paper {
+        background: #f39c12;
+        color: white;
+    }
+    .floating-actions .btn-paper:hover {
+        background: #e67e22;
+    }
+    .floating-actions .btn-submit {
+        background: var(--success);
+        color: white;
+    }
+    .floating-actions .btn-submit:hover {
+        background: #1b8a3a;
+    }
+    .floating-actions .text-input {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 0.5rem;
+    }
+    .floating-actions .file-input {
+        font-size: 0.8rem;
+    }
+    .floating-actions .feedback {
+        font-size: 0.9rem;
+        text-align: center;
+    }
+    .exercise-indicator {
+        font-weight: bold;
+        text-align: center;
+        color: var(--accent);
         margin-bottom: 0.5rem;
     }
-    .locked-section-wrapper .real-content {
-        display: none;
-    }
-    .locked-section-wrapper.unlocked .real-content {
-        display: block;
-    }
-    .locked-section-wrapper.unlocked .locked-placeholder {
-        display: none;
-    }
 
-    .submit-status {
-        font-size: 0.9rem;
-        margin-top: 0.5rem;
-        color: var(--success);
+    @media (max-width: 600px) {
+        .floating-actions {
+            right: 1rem;
+            bottom: 1rem;
+            min-width: 160px;
+            padding: 0.8rem;
+        }
     }
 </style>
 </head>
@@ -319,91 +394,321 @@ MathJax = {
     </div>
     <?php endwhile; ?>
 </div>
+
+<!-- ===== FLOATING ACTION BUTTONS ===== -->
+<div id="floatingActions" class="floating-actions">
+    <div class="exercise-indicator" id="exerciseIndicator">📝 Exercise</div>
+    <form id="digitalForm" method="post" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:0.5rem;">
+        <input type="hidden" name="exercise_id" id="activeExerciseId" value="">
+        <textarea name="answer_text" class="text-input" rows="2" placeholder="Type your answer here..."></textarea>
+        <input type="file" name="answer_file" class="file-input" accept=".jpg,.png,.pdf,.txt">
+        <button type="submit" name="submit_digital" class="btn btn-submit">💻 Submit Digital</button>
+    </form>
+    <form id="paperForm" method="post" style="display:flex; flex-direction:column; gap:0.5rem;">
+        <input type="hidden" name="exercise_id" id="activeExerciseIdPaper" value="">
+        <button type="submit" name="submit_paper" class="btn btn-paper">📄 I will submit on paper</button>
+    </form>
+    <div id="floatingFeedback" class="feedback"></div>
+</div>
+
 <?php include_once 'includes/footer.php'; ?>
 <script>
     const currentNoteId = <?php echo $note_id; ?>;
+    const exerciseAttempts = <?php echo json_encode($exercise_attempts); ?>;
 
-    function unlockSection(sectionId) {
-        const wrapper = document.getElementById(sectionId);
-        if (wrapper) {
-            wrapper.classList.add('unlocked');
-        }
-    }
-
-    function submitExercise(event, exerciseKey, nextSectionId) {
-        event.preventDefault();
-        const form = event.target;
-        const textarea = form.querySelector('textarea');
-        const feedbackDiv = document.getElementById(exerciseKey + '-feedback');
-
-        if (!textarea.value.trim() || textarea.value.trim().length < 5) {
-            if (feedbackDiv) {
-                feedbackDiv.innerHTML = '❌ Please write a full working for all questions.';
-                feedbackDiv.style.color = '#ef4444';
-            }
-            return;
-        }
-
-        if (feedbackDiv) {
-            feedbackDiv.innerHTML = '⏳ Submitting...';
-            feedbackDiv.style.color = '#f59e0b';
-        }
-
-        const formData = new FormData(form);
-        formData.append('submit_digital', '1');
-
-        fetch('student_view_note.php?id=' + currentNoteId, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.text())
-        .then(data => {
-            if (data.includes('Digital answer submitted!') || data.includes('success')) {
-                feedbackDiv.innerHTML = '✅ Exercise submitted successfully! You may proceed.';
-                feedbackDiv.style.color = '#22c55e';
-                unlockSection(nextSectionId);
-                if (window.MathJax) {
-                    MathJax.typesetPromise();
-                }
-            } else {
-                feedbackDiv.innerHTML = '❌ Submission failed. Please try again.';
-                feedbackDiv.style.color = '#ef4444';
-            }
-        })
-        .catch(error => {
-            console.error('Submission error:', error);
-            feedbackDiv.innerHTML = '❌ Network error. Please check your connection and try again.';
-            feedbackDiv.style.color = '#ef4444';
-        });
-    }
-
-    // ---------- AUTO-UNLOCK ON LOAD ----------
     document.addEventListener('DOMContentLoaded', function() {
-        const exerciseStatus = <?php echo json_encode($exercise_attempts); ?>;
+        const container = document.getElementById('main-container');
+        const floatingActions = document.getElementById('floatingActions');
+        const exerciseIndicator = document.getElementById('exerciseIndicator');
+        const activeExerciseIdInput = document.getElementById('activeExerciseId');
+        const activeExerciseIdPaperInput = document.getElementById('activeExerciseIdPaper');
+        const digitalForm = document.getElementById('digitalForm');
+        const paperForm = document.getElementById('paperForm');
+        const floatingFeedback = document.getElementById('floatingFeedback');
 
-        const wrappers = document.querySelectorAll('.locked-section-wrapper');
-        wrappers.forEach(wrapper => {
-            const form = wrapper.querySelector('form[data-exercise-key]');
-            if (form) {
-                const exerciseIdInput = form.querySelector('input[name="exercise_id"]');
-                if (exerciseIdInput) {
-                    const exerciseId = parseInt(exerciseIdInput.value);
-                    // Check if this exercise has already been submitted/marked
-                    if (exerciseStatus[exerciseId] && 
-                       (exerciseStatus[exerciseId].status === 'marked' || 
-                        exerciseStatus[exerciseId].status === 'paper_pending')) {
-                        unlockSection(wrapper.id);
+        // ===== 1. AUTO-DETECT EXERCISES =====
+        // Look for headings that contain "Exercise" and extract the form after them
+        const exerciseNodes = [];
+        const headings = container.querySelectorAll('h3, h4');
+        headings.forEach(heading => {
+            const text = heading.textContent.trim();
+            if (text.toLowerCase().startsWith('exercise')) {
+                // Find the form associated with this exercise
+                let form = heading.nextElementSibling;
+                while (form && !form.matches('form')) {
+                    form = form.nextElementSibling;
+                }
+                if (form) {
+                    const idInput = form.querySelector('input[name="exercise_id"]');
+                    if (idInput) {
+                        const id = parseInt(idInput.value);
+                        exerciseNodes.push({
+                            id: id,
+                            heading: heading,
+                            form: form,
+                            section: heading.parentElement // Wrap the whole block
+                        });
                     }
                 }
             }
         });
 
-        // Force MathJax to render any equations in the newly unlocked sections
-        if (window.MathJax) {
-            MathJax.typesetPromise().catch(() => {});
+        // Fallback: look for data-exercise-key forms
+        if (exerciseNodes.length === 0) {
+            const forms = container.querySelectorAll('form[data-exercise-key]');
+            forms.forEach(form => {
+                const idInput = form.querySelector('input[name="exercise_id"]');
+                if (idInput) {
+                    exerciseNodes.push({
+                        id: parseInt(idInput.value),
+                        heading: null,
+                        form: form,
+                        section: form.closest('div') || form.parentElement
+                    });
+                }
+            });
         }
-    });
 
-    mermaid.initialize({startOnLoad:true});
+        // If still no exercises, hide floating buttons
+        if (exerciseNodes.length === 0) {
+            floatingActions.style.display = 'none';
+            return;
+        }
+
+        // ===== 2. WRAP AND LOCK SECTIONS =====
+        // Group content into exercise blocks
+        let currentBlock = document.createElement('div');
+        currentBlock.className = 'exercise-block';
+        let currentId = null;
+        let currentIndex = 0;
+
+        // We'll traverse the container and split at exercise boundaries
+        const children = Array.from(container.childNodes);
+        const blocks = [];
+        let tempBlock = document.createElement('div');
+        tempBlock.className = 'exercise-block';
+        let foundFirstExercise = false;
+
+        children.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE && node.textContent.trim().toLowerCase().startsWith('exercise')) {
+                // Check if this node is an exercise heading
+                const isExerciseHeading = exerciseNodes.some(ex => ex.heading === node);
+                if (isExerciseHeading) {
+                    if (foundFirstExercise) {
+                        // Save the current block
+                        blocks.push(tempBlock);
+                        tempBlock = document.createElement('div');
+                        tempBlock.className = 'exercise-block';
+                    }
+                    foundFirstExercise = true;
+                    tempBlock.appendChild(node.cloneNode(true));
+                    return;
+                }
+            }
+            if (foundFirstExercise) {
+                tempBlock.appendChild(node.cloneNode(true));
+            }
+        });
+        if (foundFirstExercise && tempBlock.children.length > 0) {
+            blocks.push(tempBlock);
+        }
+
+        // If we found blocks, replace the container content
+        if (blocks.length > 0) {
+            container.innerHTML = '';
+            blocks.forEach((block, index) => {
+                // Find the exercise ID for this block
+                let foundId = null;
+                const forms = block.querySelectorAll('form');
+                forms.forEach(form => {
+                    const idInput = form.querySelector('input[name="exercise_id"]');
+                    if (idInput) foundId = parseInt(idInput.value);
+                });
+                block.dataset.exerciseId = foundId || index;
+                block.dataset.index = index;
+                container.appendChild(block);
+            });
+        }
+
+        // ===== 3. APPLY INITIAL LOCK STATES =====
+        const exerciseBlocks = container.querySelectorAll('.exercise-block');
+        let currentExerciseIndex = -1;
+
+        // Find the first incomplete exercise
+        exerciseBlocks.forEach((block, index) => {
+            const id = parseInt(block.dataset.exerciseId);
+            const status = exerciseAttempts[id]?.status || 'not_attempted';
+            if (status === 'marked' || status === 'paper_pending') {
+                block.classList.add('completed', 'unlocked');
+                block.classList.remove('locked');
+            } else {
+                // First incomplete exercise
+                if (currentExerciseIndex === -1) {
+                    currentExerciseIndex = index;
+                    block.classList.add('unlocked');
+                    block.classList.remove('locked');
+                } else {
+                    block.classList.add('locked');
+                    block.classList.remove('unlocked');
+                }
+            }
+        });
+
+        // If all completed, unlock the last one
+        if (exerciseBlocks.length > 0 && currentExerciseIndex === -1) {
+            exerciseBlocks[exerciseBlocks.length - 1].classList.add('unlocked');
+            exerciseBlocks[exerciseBlocks.length - 1].classList.remove('locked');
+            currentExerciseIndex = exerciseBlocks.length - 1;
+        }
+
+        // ===== 4. INTERSECTION OBSERVER FOR SCROLLING =====
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const block = entry.target;
+                    const id = parseInt(block.dataset.exerciseId);
+                    const status = exerciseAttempts[id]?.status || 'not_attempted';
+
+                    if (status === 'marked' || status === 'paper_pending') {
+                        return; // Already completed
+                    }
+
+                    // Show floating buttons
+                    floatingActions.classList.add('visible');
+                    activeExerciseIdInput.value = id;
+                    activeExerciseIdPaperInput.value = id;
+                    exerciseIndicator.textContent = `📝 Exercise ${id}`;
+                    floatingFeedback.innerHTML = '';
+
+                    // Ensure this block is unlocked
+                    block.classList.remove('locked');
+                    block.classList.add('unlocked');
+
+                    // Lock all subsequent blocks
+                    let lockNext = false;
+                    exerciseBlocks.forEach(b => {
+                        const bId = parseInt(b.dataset.exerciseId);
+                        if (bId === id) {
+                            lockNext = true;
+                        } else if (lockNext) {
+                            b.classList.add('locked');
+                            b.classList.remove('unlocked');
+                        }
+                    });
+                }
+            });
+        }, { threshold: 0.4 });
+
+        exerciseBlocks.forEach(block => {
+            observer.observe(block);
+        });
+
+        // ===== 5. HANDLE SUBMISSIONS =====
+        digitalForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const exId = parseInt(activeExerciseIdInput.value);
+            const formData = new FormData(this);
+            const text = formData.get('answer_text')?.trim() || '';
+            const file = formData.get('answer_file');
+
+            if (!text && (!file || file.size === 0)) {
+                floatingFeedback.innerHTML = '❌ Please provide an answer (text or file).';
+                floatingFeedback.style.color = '#ef4444';
+                return;
+            }
+
+            floatingFeedback.innerHTML = '⏳ Submitting...';
+            floatingFeedback.style.color = '#f59e0b';
+
+            fetch('student_view_note.php?id=' + currentNoteId, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data.includes('Digital answer submitted!') || data.includes('success')) {
+                    floatingFeedback.innerHTML = '✅ Submitted!';
+                    floatingFeedback.style.color = '#22c55e';
+                    exerciseAttempts[exId] = { status: 'digital_pending' };
+                    // Unlock next block
+                    let found = false;
+                    exerciseBlocks.forEach(block => {
+                        const bId = parseInt(block.dataset.exerciseId);
+                        if (bId === exId) {
+                            found = true;
+                            block.classList.add('completed');
+                            block.classList.remove('locked');
+                            block.classList.add('unlocked');
+                        } else if (found) {
+                            block.classList.remove('locked');
+                            block.classList.add('unlocked');
+                            found = false;
+                        }
+                    });
+                    setTimeout(() => {
+                        floatingActions.classList.remove('visible');
+                        if (window.MathJax) MathJax.typesetPromise();
+                    }, 1500);
+                } else {
+                    floatingFeedback.innerHTML = '❌ Submission failed. Please try again.';
+                    floatingFeedback.style.color = '#ef4444';
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                floatingFeedback.innerHTML = '❌ Network error.';
+                floatingFeedback.style.color = '#ef4444';
+            });
+        });
+
+        paperForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const exId = parseInt(activeExerciseIdPaperInput.value);
+            const formData = new FormData(this);
+
+            floatingFeedback.innerHTML = '⏳ Recording promise...';
+            floatingFeedback.style.color = '#f59e0b';
+
+            fetch('student_view_note.php?id=' + currentNoteId, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data.includes('promised to submit') || data.includes('success')) {
+                    floatingFeedback.innerHTML = '✅ Promise recorded!';
+                    floatingFeedback.style.color = '#22c55e';
+                    exerciseAttempts[exId] = { status: 'paper_pending' };
+                    // Unlock next block
+                    let found = false;
+                    exerciseBlocks.forEach(block => {
+                        const bId = parseInt(block.dataset.exerciseId);
+                        if (bId === exId) {
+                            found = true;
+                            block.classList.add('completed');
+                            block.classList.remove('locked');
+                            block.classList.add('unlocked');
+                        } else if (found) {
+                            block.classList.remove('locked');
+                            block.classList.add('unlocked');
+                            found = false;
+                        }
+                    });
+                    setTimeout(() => {
+                        floatingActions.classList.remove('visible');
+                        if (window.MathJax) MathJax.typesetPromise();
+                    }, 1500);
+                } else {
+                    floatingFeedback.innerHTML = '❌ Promise failed. Please try again.';
+                    floatingFeedback.style.color = '#ef4444';
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                floatingFeedback.innerHTML = '❌ Network error.';
+                floatingFeedback.style.color = '#ef4444';
+            });
+        });
+    });
 </script>
-</body></html>s
+</body></html>

@@ -1,6 +1,5 @@
 <?php
 require_once 'check_remember_me.php';
-
 require_once 'config.php';
 require_once 'check_access.php';
 $conn = getDB();
@@ -13,9 +12,8 @@ if (!$as) die("Invalid assignment.");
 if (!is_content_unlocked('assignment', $aid, $uid)) {
     die("<!DOCTYPE html><html><head><title>Assignment Locked</title><link rel='stylesheet' href='style.css'></head><body>
     <?php include_once 'includes/header.php'; ?>
-<div class='container'><div class='header'><a href='assignments.php'>Assignments</a><a href='logout.php' class='logout'>Logout</a></div><div class='error'>This assignment is not yet available for your group.</div><a href='assignments.php'>← Back</a></div>
-<a href="#" class="back-to-top" id="backToTop">↑</a>
-</body></html>");
+    <div class='container'><div class='card error'><h2>🔒 Assignment Locked</h2><p>This assignment is not yet available for your group.</p></div></div>
+    </body></html>");
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $text = trim($_POST['submission_text']);
@@ -34,7 +32,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 ?>
-<!DOCTYPE html><html><head><title>Submit Assignment</title><link rel="stylesheet" href="style.css"></head><body><div class="container"><div class="form-container"><form method="post" enctype="multipart/form-data"><div class="form-group"><label>Your Answer (text)</label><textarea name="submission_text" rows="6"></textarea></div><div class="form-group"><label>OR Upload File</label><input type="file" name="submission_file" accept=".jpg,.png,.pdf,.doc,.txt"></div><button type="submit">Submit</button></form></div></div><div class="footer"><a href="index.php" class="btn-back">← Back</a></div>
-<?php include_once 'includes/footer.php'; ?>
-<?php include_once 'includes/toc_navigator.php'; ?>
+<!DOCTYPE html><html><head><title>Submit Assignment</title><link rel="stylesheet" href="style.css"></head><body>
+    <?php include_once 'includes/header.php'; ?>
+    <div class="container">
+        <div class="card" style="padding: 2rem;">
+            <h2>📝 Submit Assignment</h2>
+            <form method="post" enctype="multipart/form-data">
+                <div class="form-group"><label>Your Answer (text)</label><textarea name="submission_text" rows="6" class="form-control"></textarea></div>
+                <div class="form-group"><label>OR Upload File</label><input type="file" name="submission_file" accept=".jpg,.png,.pdf,.doc,.txt" class="form-control"></div>
+                <button type="submit" class="btn">Submit</button>
+            </form>
+        </div>
+    </div>
+    <?php include_once 'includes/footer.php'; ?>
+    <?php include_once 'includes/toc_navigator.php'; ?>
 </body></html>
