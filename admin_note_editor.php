@@ -1,6 +1,39 @@
 <?php
 require_once 'check_remember_me.php';
 require_once 'config.php';
+
+// ===== SECTION EXTRACTION FUNCTION =====
+function extractSectionsFromHTML($html, $conn, $note_id) {
+    $html = trim($html);
+    preg_match_all('/<h[34][^>]*>.*?Exercise.*?<\/h[34]>/i', $html, $matches, PREG_OFFSET_CAPTURE);
+    $headings = $matches[0];
+    $sections = [];
+    $lastPos = 0;
+    
+    foreach ($headings as $index => $heading) {
+        $pos = $heading[1];
+        if ($index == 0) {
+            $introContent = substr($html, 0, $pos);
+            if (trim($introContent)) {
+                $sections[] = ['type' => 'introduction', 'content' => $introContent, 'exercise_id' => null];
+            }
+        }
+        $nextPos = isset($headings[$index + 1]) ? $headings[$index + 1][1] : strlen($html);
+        $exerciseContent = substr($html, $pos, $nextPos - $pos);
+        $exerciseId = null;
+        if (preg_match('/Exercise\s+(\d+)/i', $heading[0], $idMatch)) {
+            $exerciseId = (int)$idMatch[1];
+        }
+        $sections[] = ['type' => 'exercise', 'content' => $exerciseContent, 'exercise_id' => $exerciseId];
+        $lastPos = $nextPos;
+    }
+    
+    if (empty($sections)) {
+        $sections[] = ['type' => 'introduction', 'content' => $html, 'exercise_id' => null];
+    }
+    return $sections;
+}
+
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 $admin_hash = function_exists('getAdminHash') ? getAdminHash() : (defined('ADMIN_HASH') ? ADMIN_HASH : '$2y$12$mQu7vfNTUfh5cSoif6Gjje6zLtc2RtDFphO.rVMs/kfn75Q92PTcu');
@@ -54,6 +87,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $note_id = $conn->insert_id;
     }
     $conn->query("DELETE FROM note_drafts");
+
+    // ===== AUTO-EXTRACT SECTIONS =====
+    $sections = extractSectionsFromHTML($content, $conn, $note_id);
+    
+    // Clear existing sections for this note
+    $conn->query("DELETE FROM note_sections WHERE note_id = $note_id");
+    
+    // Insert new sections
+    foreach ($sections as $index => $section) {
+        $sort_order = $index + 1;
+        $section_type = $section['type'];
+        $section_content = $conn->real_escape_string($section['content']);
+        $exercise_id = $section['exercise_id'] ? $section['exercise_id'] : 'NULL';
+        
+        // If it's an exercise, ensure a row in note_exercises
+        if ($section['type'] == 'exercise' && $section['exercise_id']) {
+            $checkEx = $conn->query("SELECT id FROM note_exercises WHERE note_id = $note_id AND sort_order = $sort_order");
+            if ($checkEx->num_rows == 0) {
+                $conn->query("INSERT INTO note_exercises (note_id, sort_order, question) VALUES ($note_id, $sort_order, 'Exercise $sort_order')");
+            }
+            $exRow = $conn->query("SELECT id FROM note_exercises WHERE note_id = $note_id AND sort_order = $sort_order")->fetch_assoc();
+            $exercise_id = $exRow['id'];
+        }
+        
+        $conn->query("INSERT INTO note_sections (note_id, sort_order, section_type, content, exercise_id) 
+            VALUES ($note_id, $sort_order, '$section_type', '$section_content', " . ($exercise_id ? $exercise_id : 'NULL') . ")");
+    }
 
     if ($group_id) {
         $all_groups = $conn->query("SELECT id FROM groups WHERE class_level = '$class'");
@@ -505,90 +565,42 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ---------- TINYMCE ----------
     tinymce.init({
-    selector: '#editor',
-    height: 600,
-    menubar: true,
-    plugins: 'anchor autolink charmap codesample emoticons image imagetools link lists media searchreplace table visualblocks wordcount code',
-    toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | charmap | code | editimage',
-    toolbar_sticky: true,
-    menubar: 'file edit view insert format tools table',
-    content_style: 'body { font-family: Inter, sans-serif; }',
-    
-    // Store clean HTML only
-    forced_root_block: false,
-    valid_elements: '*[*]',
-    extended_valid_elements: 'script[type|src|async],style[type]',
-    sanitize: false,
-    allow_script_urls: true,
-    
-    images_upload_url: 'note_editor_api.php?action=upload_image',
-    automatic_uploads: true,
-    image_advtab: true,
-    image_dimensions: true,
-    image_caption: true,
-    
+        selector: '#editor',
+        height: 600,
+        menubar: true,
+        plugins: 'anchor autolink charmap codesample emoticons image imagetools link lists media searchreplace table visualblocks wordcount code',
+        toolbar: 'undo redo | styleselect | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | casechange | charmap | code | editimage',
+        toolbar_sticky: true,
+        menubar: 'file edit view insert format tools table',
+        content_style: 'body { font-family: Inter, sans-serif; }',
+        forced_root_block: false,
+        valid_elements: '*[*]',
+        extended_valid_elements: 'script[type|src|async],style[type]',
+        sanitize: false,
+        allow_script_urls: true,
+        images_upload_url: 'note_editor_api.php?action=upload_image',
+        automatic_uploads: true,
+        image_advtab: true,
+        image_dimensions: true,
+        image_caption: true,
         init_instance_callback: function(editor) {
-        document.getElementById('editor').style.display = 'none';
+            document.getElementById('editor').style.display = 'none';
         },
         setup: function(editor) {
-            // ---------- SET CONTENT (WITH LOCALSTORAGE RESTORE) ----------
             const existingContent = <?= json_encode($existing_note['content'] ?? '') ?>;
-            
-            editor.on('init', function() {
-                // 1. Check for a backup FIRST
-                const backupJson = localStorage.getItem('my_perfect_7_hour_backup');
-                let contentToSet = existingContent;
+            if (existingContent) {
+                editor.on('init', function() {
+                    editor.setContent(existingContent);
+                });
+            }
 
-                if (backupJson) {
-                    try {
-                        const backupData = JSON.parse(backupJson);
-                        // Check if the backup has valid content and is not empty
-                        if (backupData.content && backupData.content.length > 100) {
-                            const confirmRestore = confirm(
-                                "⚠️ Unsaved work found in your browser from " + 
-                                new Date(backupData.timestamp).toLocaleString() + 
-                                ".\n\nRestore it now?"
-                            );
-                            if (confirmRestore) {
-                                contentToSet = backupData.content;
-                                // Also restore the title if it exists
-                                if (backupData.title) {
-                                    document.getElementById('noteTitle').value = backupData.title;
-                                }
-                                // Clear the backup so it doesn't ask again on the next refresh
-                                localStorage.removeItem('my_perfect_7_hour_backup');
-                            } else {
-                                // User declined, clear the backup to stop the prompt on future refreshes
-                                localStorage.removeItem('my_perfect_7_hour_backup');
-                            }
-                        }
-                    } catch (e) {
-                        console.error("Backup corrupted or invalid:", e);
-                        localStorage.removeItem('my_perfect_7_hour_backup');
-                    }
-                }
+            setInterval(() => autoSaveToServer(editor), 30000);
+            editor.addShortcut('Ctrl+S', 'Auto Save', () => autoSaveToServer(editor));
 
-                // 2. Set the final content
-                editor.setContent(contentToSet);
-            });
-
-            // ---------- AUTO-SAVE (EVERY 30 SECONDS) ----------
-            setInterval(function() {
-                autoSaveToServer(editor);
-            }, 30000);
-
-            // ---------- CTRL+S ----------
-            editor.addShortcut('Ctrl+S', 'Auto Save', function() {
-                autoSaveToServer(editor);
-            });
-
-            // ---------- FILE MENU ----------
             editor.ui.registry.addMenuItem('customSave', {
                 text: 'Save (Auto)',
                 icon: 'save',
-                onAction: function() {
-                    autoSaveToServer(editor);
-                }
+                onAction: () => autoSaveToServer(editor)
             });
             editor.ui.registry.addMenuItem('customSaveAs', {
                 text: 'Save As...',
@@ -610,7 +622,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
-            // ---------- MATHJAX ----------
             editor.on('init', function() {
                 const content = editor.getContent();
                 if (content && window.MathJax) {
@@ -628,6 +639,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+
     // ---------- IMAGE CROPPER ----------
     let cropper = null;
     let currentImageElement = null;
