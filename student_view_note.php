@@ -85,6 +85,16 @@ $sections = $conn->query("SELECT s.*, e.status as attempt_status, e.answer_text
     LEFT JOIN exercise_attempts e ON ex.id = e.exercise_id AND e.user_id = $uid
     WHERE s.note_id = $note_id
     ORDER BY s.sort_order");
+
+// Helper function to clean up literal \r\n and double escapes
+function clean_content($raw) {
+    // Remove literal backslash-r-backslash-n (caused by double escaping)
+    $cleaned = str_replace(['\\r\\n', '\\r', '\\n'], ["\r\n", "\r", "\n"], $raw);
+    // Remove any remaining backslashes that escaped quotes etc.
+    $cleaned = stripslashes($cleaned);
+    // Convert actual newlines to <br> for proper display
+    return nl2br($cleaned);
+}
 ?>
 <!DOCTYPE html>
 <html><head><title><?=htmlspecialchars($note['title'])?></title>
@@ -234,38 +244,52 @@ $sections = $conn->query("SELECT s.*, e.status as attempt_status, e.answer_text
     </div>
     <div class="student-note-container" id="main-container">
         <?php 
-        $firstExerciseId = null;
-        while($sec = $sections->fetch_assoc()): 
+        // Collect all exercise sections first to assign sequential numbers
+        $exerciseList = [];
+        $sectionData = [];
+        while($sec = $sections->fetch_assoc()) {
+            $sectionData[] = $sec;
+            if ($sec['section_type'] == 'exercise' && $sec['exercise_id']) {
+                $exerciseList[] = $sec['exercise_id'];
+            }
+        }
+        
+        // Number exercises sequentially
+        $exerciseNumberMap = [];
+        foreach ($exerciseList as $index => $exId) {
+            $exerciseNumberMap[$exId] = $index + 1;
+        }
+        
+        // Now render sections with proper locking
+        $prevCompleted = false;
+        $firstExerciseSeen = false;
+        foreach ($sectionData as $sec): 
             $isExercise = ($sec['section_type'] == 'exercise');
-            $isLocked = true;
+            $isLocked = false;
             $isCompleted = false;
-            if ($isExercise) {
+            
+            if ($isExercise && $sec['exercise_id']) {
+                $exId = $sec['exercise_id'];
                 $status = $sec['attempt_status'] ?? 'not_attempted';
                 $isCompleted = ($status == 'marked' || $status == 'paper_pending');
-                $isLocked = (!$isCompleted);
-            }
-            // Unlock all sections before the first exercise
-            if (!$firstExerciseId && !$isExercise) {
-                $isLocked = false;
-            }
-            if ($isExercise && $firstExerciseId === null) {
-                $firstExerciseId = $sec['exercise_id'];
-                // The first exercise is not locked if it's the current one
-                $isLocked = false;
-            }
-            // If this is a later exercise and previous is completed, unlock it
-            static $prevCompleted = false;
-            if ($isExercise) {
-                if ($prevCompleted) {
-                    $isLocked = false;
+                
+                // Locking logic: first exercise unlocked, later locked until previous completed
+                if (!$firstExerciseSeen) {
+                    $firstExerciseSeen = true;
+                    $isLocked = false; // first exercise always unlocked
+                } else {
+                    $isLocked = !$prevCompleted;
                 }
                 $prevCompleted = $isCompleted;
             }
+            
+            $cleanContent = clean_content($sec['content']);
         ?>
         <div class="section-block <?= $isLocked ? 'locked' : 'unlocked' ?> <?= $isCompleted ? 'completed' : '' ?>" 
              data-section-id="<?= $sec['id'] ?>"
-             data-exercise-id="<?= $sec['exercise_id'] ?? '' ?>">
-            <?= $sec['content'] ?>
+             data-exercise-id="<?= $sec['exercise_id'] ?? '' ?>"
+             data-exercise-number="<?= isset($exerciseNumberMap[$sec['exercise_id']]) ? $exerciseNumberMap[$sec['exercise_id']] : '' ?>">
+            <?= $cleanContent ?>
             <?php if ($isExercise && $sec['exercise_id']): ?>
                 <div class="exercise-form-wrapper" style="display:none;">
                     <input type="hidden" name="exercise_id" value="<?= $sec['exercise_id'] ?>">
@@ -305,14 +329,16 @@ $sections = $conn->query("SELECT s.*, e.status as attempt_status, e.answer_text
         const paperForm = document.getElementById('paperForm');
         const floatingFeedback = document.getElementById('floatingFeedback');
 
-        // 1. Find all exercise sections
+        // 1. Find all exercise sections and their numbers
         const exerciseSections = [];
         const blocks = document.querySelectorAll('.section-block');
         blocks.forEach(block => {
             const exerciseId = block.dataset.exerciseId;
-            if (exerciseId) {
+            const exerciseNumber = block.dataset.exerciseNumber;
+            if (exerciseId && exerciseNumber) {
                 exerciseSections.push({
                     id: parseInt(exerciseId),
+                    number: parseInt(exerciseNumber),
                     block: block,
                     status: block.classList.contains('completed') ? 'completed' : 'locked'
                 });
@@ -325,7 +351,8 @@ $sections = $conn->query("SELECT s.*, e.status as attempt_status, e.answer_text
                 if (entry.isIntersecting) {
                     const block = entry.target;
                     const exerciseId = block.dataset.exerciseId;
-                    if (!exerciseId) return;
+                    const exerciseNumber = block.dataset.exerciseNumber;
+                    if (!exerciseId || !exerciseNumber) return;
 
                     // Check if already completed
                     if (block.classList.contains('completed')) {
@@ -336,7 +363,7 @@ $sections = $conn->query("SELECT s.*, e.status as attempt_status, e.answer_text
                     floatingActions.classList.add('visible');
                     activeExerciseIdInput.value = exerciseId;
                     activeExerciseIdPaperInput.value = exerciseId;
-                    exerciseIndicator.textContent = `📝 Exercise ${exerciseId}`;
+                    exerciseIndicator.textContent = `📝 Exercise ${exerciseNumber}`;
                     floatingFeedback.innerHTML = '';
 
                     // Ensure this block is unlocked (but keep later ones locked)

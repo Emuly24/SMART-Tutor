@@ -88,31 +88,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $conn->query("DELETE FROM note_drafts");
 
-    // ===== AUTO-EXTRACT SECTIONS =====
-    $sections = extractSectionsFromHTML($content, $conn, $note_id);
-    
-    // Clear existing sections for this note
-    $conn->query("DELETE FROM note_sections WHERE note_id = $note_id");
-    
-    // Insert new sections
-    foreach ($sections as $index => $section) {
-        $sort_order = $index + 1;
-        $section_type = $section['type'];
-        $section_content = $conn->real_escape_string($section['content']);
-        $exercise_id = $section['exercise_id'] ? $section['exercise_id'] : 'NULL';
-        
-        // If it's an exercise, ensure a row in note_exercises
-        if ($section['type'] == 'exercise' && $section['exercise_id']) {
-            $checkEx = $conn->query("SELECT id FROM note_exercises WHERE note_id = $note_id AND sort_order = $sort_order");
-            if ($checkEx->num_rows == 0) {
-                $conn->query("INSERT INTO note_exercises (note_id, sort_order, question) VALUES ($note_id, $sort_order, 'Exercise $sort_order')");
+    // ===== AUTO-EXTRACT SECTIONS (only on full save, not auto_save) =====
+    if (!isset($_POST['auto_save'])) {
+        $sections = extractSectionsFromHTML($content, $conn, $note_id);
+        $conn->query("DELETE FROM note_sections WHERE note_id = $note_id");
+        foreach ($sections as $index => $section) {
+            $sort_order = $index + 1;
+            $section_type = $section['type'];
+            $section_content = $conn->real_escape_string($section['content']);
+            $exercise_id = $section['exercise_id'] ? $section['exercise_id'] : 'NULL';
+            
+            if ($section['type'] == 'exercise' && $section['exercise_id']) {
+                $checkEx = $conn->query("SELECT id FROM note_exercises WHERE note_id = $note_id AND sort_order = $sort_order");
+                if ($checkEx->num_rows == 0) {
+                    $conn->query("INSERT INTO note_exercises (note_id, sort_order, question) VALUES ($note_id, $sort_order, 'Exercise $sort_order')");
+                }
+                $exRow = $conn->query("SELECT id FROM note_exercises WHERE note_id = $note_id AND sort_order = $sort_order")->fetch_assoc();
+                $exercise_id = $exRow['id'];
             }
-            $exRow = $conn->query("SELECT id FROM note_exercises WHERE note_id = $note_id AND sort_order = $sort_order")->fetch_assoc();
-            $exercise_id = $exRow['id'];
+            
+            $conn->query("INSERT INTO note_sections (note_id, sort_order, section_type, content, exercise_id) 
+                VALUES ($note_id, $sort_order, '$section_type', '$section_content', " . ($exercise_id ? $exercise_id : 'NULL') . ")");
         }
-        
-        $conn->query("INSERT INTO note_sections (note_id, sort_order, section_type, content, exercise_id) 
-            VALUES ($note_id, $sort_order, '$section_type', '$section_content', " . ($exercise_id ? $exercise_id : 'NULL') . ")");
     }
 
     if ($group_id) {
@@ -342,6 +339,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <div class="bottom-action-bar">
+    <!-- ✅ Save button calls manualSave() – works with both normal & auto‑save -->
     <button class="btn btn-save" onclick="manualSave()">💾 Save</button>
     <button class="btn btn-finish" onclick="finishAction()">✅ Finish, Lock & Unlock</button>
 </div>
@@ -384,7 +382,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div id="citationModal" class="modal"><div class="modal-content"><h3>Add Citation</h3><div class="form-group"><label>Author(s) (Last, First)</label><input type="text" id="apaAuthor"></div><div class="form-group"><label>Year</label><input type="text" id="apaYear"></div><div class="form-group"><label>Title</label><input type="text" id="apaTitle"></div><div class="form-group"><label>Source</label><input type="text" id="apaSource"></div><div class="form-group"><label>DOI (optional)</label><input type="text" id="apaDoi"></div><button id="addCitationBtn" class="btn">Add</button><button id="closeCitationBtn" class="btn-secondary">Cancel</button></div></div>
 
-<div id="referenceModal" class="modal"><div class="modal-content"><h3>Reference List</h3><div id="referenceListContainer" class="citation-list"></div><button id="insertReferencesBtn" class="btn">Insert List</button><button id="closeReferenceBtn" class="btn-secondary">Close</button></div></div>
+<div id="referenceModal" class="modal"><div class="modal-content"><h3>Reference List</h3><div id="referenceListContainer" class="citation-list"></div><button id="insertReferencesBtn" class="btn">Insert List</button><button id="closeReferenceBtn" class="btn-secondary">Cancel</button></div></div>
 
 <div id="mathHelperModal" class="modal"><div class="modal-content"><h3>Equation Helper (LaTeX)</h3>
     <div class="form-group"><label>LaTeX</label><textarea id="latexHelperInput" rows="3" placeholder="e.g. N(t)=N_0 e^{kt}"></textarea></div>
@@ -471,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ---------- AUTO SAVE ----------
+    // ---------- AUTO SAVE (every 30 seconds) ----------
     function autoSaveToServer(editor) {
         if (!editor) return;
         const title = document.getElementById('noteTitle').value;
@@ -493,63 +491,55 @@ document.addEventListener('DOMContentLoaded', function() {
             body: formData
         })
         .then(response => {
-            if (!response.ok) {
-                throw new Error('Server error ' + response.status);
-            }
+            if (!response.ok) throw new Error('Server error ' + response.status);
             return response.text();
         })
         .then(() => {
-            showSavedNotification('✅ Saved successfully');
+            showSavedNotification('✅ Saved automatically');
         })
         .catch(err => {
             console.error('Auto-save failed:', err);
-            showSavedNotification('❌ Save failed! Check console for details.');
+            showSavedNotification('❌ Auto-save failed!');
         });
     }
 
-    // ---------- MANUAL SAVE ----------
+    // ---------- MANUAL SAVE (called by Save button & menu) ----------
     window.manualSave = function() {
-        let attempts = 0;
-        const checkEditor = setInterval(() => {
-            attempts++;
-            if (tinymce.activeEditor) {
-                clearInterval(checkEditor);
-                autoSaveToServer(tinymce.activeEditor);
-            } else if (attempts > 30) {
-                clearInterval(checkEditor);
-                const title = document.getElementById('noteTitle').value;
-                const subject = document.querySelector('select[name="subject"]').value;
-                const classLevel = document.querySelector('select[name="class_level"]').value;
-                const content = document.getElementById('editor').value;
-                const noteId = <?= $note_id ?>;
+        if (tinymce.activeEditor) {
+            // Use fetch (auto_save=1) – updates notes but NOT note_sections (that's fine for drafts)
+            autoSaveToServer(tinymce.activeEditor);
+        } else {
+            // Fallback: read raw textarea
+            const title = document.getElementById('noteTitle').value;
+            const subject = document.querySelector('select[name="subject"]').value;
+            const classLevel = document.querySelector('select[name="class_level"]').value;
+            const content = document.getElementById('editor').value;
+            const noteId = <?= $note_id ?>;
 
-                const formData = new FormData();
-                formData.append('title', title);
-                formData.append('subject', subject);
-                formData.append('class_level', classLevel);
-                formData.append('content', content);
-                formData.append('note_id', noteId);
-                formData.append('auto_save', '1');
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('subject', subject);
+            formData.append('class_level', classLevel);
+            formData.append('content', content);
+            formData.append('note_id', noteId);
+            formData.append('auto_save', '1');
 
-                fetch(window.location.href, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Server error ' + response.status);
-                    }
-                    return response.text();
-                })
-                .then(() => {
-                    showSavedNotification('✅ Saved successfully (fallback)');
-                })
-                .catch(err => {
-                    console.error('Auto-save failed:', err);
-                    showSavedNotification('❌ Save failed! Please try again.');
-                });
-            }
-        }, 100);
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Server error ' + response.status);
+                return response.text();
+            })
+            .then(() => {
+                showSavedNotification('✅ Saved manually (fallback)');
+            })
+            .catch(err => {
+                console.error('Manual save failed:', err);
+                showSavedNotification('❌ Save failed!');
+            });
+        }
     };
 
     // ---------- FINISH ACTION ----------
@@ -560,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hidden.name = 'finish';
         hidden.value = '1';
         form.appendChild(hidden);
-        form.submit();
+        form.submit(); // full POST → extracts sections
     };
 
     // ---------- TINYMCE ----------
@@ -594,13 +584,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
+            // Auto-save every 30 seconds
             setInterval(() => autoSaveToServer(editor), 30000);
-            editor.addShortcut('Ctrl+S', 'Auto Save', () => autoSaveToServer(editor));
 
+            // Ctrl+S triggers manualSave
+            editor.addShortcut('Ctrl+S', 'Save', () => window.manualSave());
+
+            // ----- FILE MENU (custom items) -----
             editor.ui.registry.addMenuItem('customSave', {
-                text: 'Save (Auto)',
+                text: 'Save (Manual)',
                 icon: 'save',
-                onAction: () => autoSaveToServer(editor)
+                onAction: () => window.manualSave()
             });
             editor.ui.registry.addMenuItem('customSaveAs', {
                 text: 'Save As...',
@@ -615,6 +609,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     form.submit();
                 }
             });
+
+            // Add the custom menu to the File menu
             editor.on('init', function() {
                 editor.menu.add('file', {
                     title: 'File',
@@ -622,6 +618,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             });
 
+            // MathJax, Mermaid, Highlight.js after content changes
             editor.on('init', function() {
                 const content = editor.getContent();
                 if (content && window.MathJax) {
